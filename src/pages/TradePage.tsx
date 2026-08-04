@@ -4,6 +4,8 @@ import { Token, WalletState, Activity, PriceAlert } from "../types";
 import BondingCurveChart from "../components/BondingCurveChart";
 import TerminalLog, { TerminalLine } from "../components/TerminalLog";
 import { LineChart, Line, ResponsiveContainer, YAxis, AreaChart, Area, Tooltip as RechartsTooltip } from "recharts";
+import { getContractAddresses, getExplorerTxUrl, isAddressConfigured } from "../lib/contracts";
+import { executeBondingCurveTrade } from "../lib/contractClient";
 import { 
   getSpotPrice, 
   getTokensForEth, 
@@ -231,7 +233,29 @@ export default function TradePage({
     const num = parseFloat(inputVal) || 0;
     if (num <= 0 || tradeLoading) return;
 
+    const { bondingCurve } = getContractAddresses();
+    if (!isAddressConfigured(bondingCurve)) {
+      addTerminalLog("error", "TRADE_BLOCKED: Bonding curve contract is not configured for this Base network.");
+      showToast("Trading is disabled until the verified bonding curve address and ABI are configured.", "error");
+      return;
+    }
+
     setTradeLoading(true);
+    executeBondingCurveTrade({ tokenAddress: token.address, mode: tradeMode, amount: String(num), slippagePercent: slippage })
+      .then(({ hash }) => {
+        addTerminalLog(tradeMode, `ONCHAIN_${tradeMode.toUpperCase()}: Transaction confirmed ${hash}`);
+        showToast(`${tradeMode === "buy" ? "Buy" : "Sell"} confirmed on Base.`, "success");
+        window.open(getExplorerTxUrl(hash), "_blank", "noopener,noreferrer");
+        setInputVal("");
+        onRefreshWallet();
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Transaction rejected or failed.";
+        addTerminalLog("error", `ONCHAIN_TRADE_ERROR: ${message}`);
+        showToast(message, "error");
+      })
+      .finally(() => setTradeLoading(false));
+    return;
 
     // 1. Validate Token Balance for Sell Order
     if (tradeMode === "sell" && num > tokenBalance) {

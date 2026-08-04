@@ -4,6 +4,7 @@ import { HelmetProvider, Helmet } from "react-helmet-async";
 import { User, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { auth, db } from "./lib/firebase";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { connectInjectedWallet, getAglBalance, getNativeBalance } from "./lib/contractClient";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import WalletModal from "./components/WalletModal";
@@ -363,66 +364,28 @@ export default function App() {
   };
 
   const handleWalletConnect = async (type: "metamask" | "coinbase" | "walletconnect" | "smart") => {
-    let address = "";
-    let ethBalance = 0.0;
-    let aglBalance = 0;
-
-    if (typeof window !== "undefined" && (window as any).ethereum && (type === "metamask" || type === "coinbase" || type === "walletconnect")) {
-      try {
-        // Explicit request using standard eth_requestAccounts
-        const accounts = await (window as any).ethereum.request({ method: "eth_requestAccounts" });
-        if (accounts && accounts.length > 0) {
-          address = accounts[0];
-          addTerminalLog("success", `WALLET_CONNECT: Wallet account linked successfully via MetaMask / Injected Provider: ${address}`);
-        }
-      } catch (err: any) {
-        showToast("Injected wallet connection failed. Connecting mock wallet instead.", "info");
-        addTerminalLog("info", `WALLET_CONNECT: Injected wallet error: ${err.message || String(err)}`);
-      }
+    if (type === "smart") {
+      showToast("Smart Account support requires a configured account-abstraction provider.", "info");
+      addTerminalLog("error", "WALLET_CONNECT: Smart Account provider is not configured; no demo address was created.");
+      return;
     }
 
-    if (!address) {
-      address = "0x" + Math.random().toString(16).substr(2, 40);
-      if (type === "smart") {
-        address = "0xAA" + Math.random().toString(16).substr(2, 38);
-      }
-      addTerminalLog("info", `WALLET_CONNECT: Injected provider not found/rejected. Generated demo address: ${address}`);
-    }
-
-    // Now query real on-chain balance using JSON-RPC provider pointing to Base Mainnet!
     try {
-      addTerminalLog("info", "FETCH_BALANCES: Querying native and AGL balances on Base Mainnet...");
-      const baseProvider = new ethers.JsonRpcProvider("https://mainnet.base.org");
-      const ethBalRaw = await baseProvider.getBalance(address);
-      ethBalance = parseFloat(ethers.formatEther(ethBalRaw));
-
-      // Query AGL balance
-      try {
-        const aglTokenContract = new ethers.Contract(
-          "0xea1221b4d80a89bd8c75248fae7c176bd1854698", 
-          ["function balanceOf(address) external view returns (uint256)"], 
-          baseProvider
-        );
-        const aglBalRaw = await aglTokenContract.balanceOf(address);
-        aglBalance = parseFloat(ethers.formatEther(aglBalRaw));
-      } catch (e) {
-        addTerminalLog("info", "FETCH_BALANCES: AGL token balance query failed on-chain.");
-        aglBalance = 0;
-      }
-    } catch (err) {
-      addTerminalLog("error", "FETCH_BALANCES: Base Mainnet RPC connection failed. Falling back to default balances.");
-      ethBalance = 0.0;
-      aglBalance = 0;
-    }
+      const connected = await connectInjectedWallet();
+      const address = connected.address;
+      addTerminalLog("success", `WALLET_CONNECT: Connected ${address} through the injected wallet provider.`);
+      const [ethValue, agl] = await Promise.all([getNativeBalance(address), getAglBalance(address)]);
+      const ethBalance = Number(ethValue);
+      const aglBalance = agl ? Number(agl.value) : 0;
 
     const newWallet: WalletState = {
       isConnected: true,
       address,
       balanceEth: ethBalance,
       aglTokenBalance: aglBalance,
-      isSmartAccount: type === "smart",
+      isSmartAccount: false,
       walletType: type,
-      sponsoredGasEth: type === "smart" ? 0.05 : 0,
+      sponsoredGasEth: 0,
       aglCredits: wallet.aglCredits || 500
     };
 
@@ -452,6 +415,11 @@ export default function App() {
       details: `Connected decentralized identity wallet (${type}) to Agunnaya Studio`
     });
     refreshAllData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Wallet connection failed.";
+      showToast(message, "error");
+      addTerminalLog("error", `WALLET_CONNECT_ERROR: ${message}`);
+    }
   };
 
   const handleWalletDisconnect = () => {
