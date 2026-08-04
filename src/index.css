@@ -97,4 +97,19 @@ body {
   color: #f4f4f5;
   font-family: var(--font-sans);
   overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button, a, input, textarea, select { touch-action: manipulation; }
+button, [role="button"] { min-height: 44px; }
+:focus-visible { outline: 2px solid #60a5fa; outline-offset: 3px; }
+
+@media (max-width: 768px) {
+  .terminal-scroll { overscroll-behavior: contain; }
+  [role="dialog"] { max-height: calc(100dvh - 1rem); overflow-y: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }

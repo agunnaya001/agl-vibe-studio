@@ -5,8 +5,55 @@ import { GoogleGenAI, Type, ThinkingLevel, GenerateVideosOperation } from "@goog
 
 const app = express();
 const PORT = 3000;
+const MAX_PROMPT_LENGTH = 12_000;
+const MAX_MESSAGE_COUNT = 40;
+const MAX_IMAGE_BYTES = 8_000_000;
+const allowedModels = new Set(["gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-3.1-flash-lite"]);
+const requestBuckets = new Map<string, { count: number; resetAt: number }>();
 
-app.use(express.json());
+app.disable("x-powered-by");
+app.use(express.json({ limit: "10mb", strict: true }));
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://generativelanguage.googleapis.com https://*.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");
+  next();
+});
+
+function clientIp(req: express.Request) {
+  return req.ip || req.socket.remoteAddress || "unknown";
+}
+
+function rateLimit(req: express.Request, res: express.Response) {
+  const now = Date.now();
+  const key = clientIp(req);
+  const bucket = requestBuckets.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    requestBuckets.set(key, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  bucket.count += 1;
+  if (bucket.count > 30) {
+    res.status(429).json({ error: "Too many AI requests. Try again shortly." });
+    return false;
+  }
+  return true;
+}
+
+function requirePrompt(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= MAX_PROMPT_LENGTH
+    ? value.trim()
+    : null;
+}
+
+function safeError(res: express.Response, label: string, error: unknown) {
+  console.error(`[${label}]`, error instanceof Error ? error.message : "unknown error");
+  res.status(500).json({ error: "The AI service is temporarily unavailable." });
+}
+
+app.use("/api/ai", (req, res, next) => rateLimit(req, res) ? next() : undefined);
 
 // Lazy-loaded GoogleGenAI client to avoid startup crashes if key is not defined yet
 let aiClient: GoogleGenAI | null = null;
@@ -33,9 +80,10 @@ function getAIClient(): GoogleGenAI {
 app.post("/api/ai/build", async (req, res) => {
   try {
     const { prompt, type } = req.body;
-    if (!prompt) {
-       res.status(400).json({ error: "Prompt is required" });
-       return;
+    const safePrompt = requirePrompt(prompt);
+    if (!safePrompt) {
+      res.status(400).json({ error: "A prompt between 1 and 12,000 characters is required." });
+      return;
     }
 
     const client = getAIClient();
@@ -55,7 +103,7 @@ Format the output strictly as JSON.`;
 
     const response = await client.models.generateContent({
       model: "gemini-3.5-flash",
-      contents: `Build a project of type "${type || 'ERC-20 Token'}" based on this prompt: "${prompt}"`,
+      contents: `Build a project of type "${typeof type === "string" && type.length < 100 ? type : "ERC-20 Token"}" based on this prompt: "${safePrompt}"`,
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -96,8 +144,7 @@ Format the output strictly as JSON.`;
     const text = response.text || "{}";
     res.json(JSON.parse(text));
   } catch (error: any) {
-    console.error("AI Build Error:", error);
-    res.status(500).json({ error: error.message || "An error occurred during AI code generation." });
+    safeError(res, "AI Build Error", error);
   }
 });
 
@@ -105,8 +152,20 @@ Format the output strictly as JSON.`;
 app.post("/api/ai/agent-chat", async (req, res) => {
   try {
     const { messages, agentProfile, model, thinkingLevel, image, enableMapsGrounding, location } = req.body;
-    if (!messages || !Array.isArray(messages)) {
-      res.status(400).json({ error: "Messages array is required" });
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGE_COUNT) {
+      res.status(400).json({ error: "Messages must contain between 1 and 40 items." });
+      return;
+    }
+    const validMessages = messages.every((message: any) =>
+      message && (message.role === "user" || message.role === "assistant") &&
+      typeof message.content === "string" && message.content.length <= MAX_PROMPT_LENGTH
+    );
+    if (!validMessages) {
+      res.status(400).json({ error: "Each message must have a valid role and bounded text content." });
+      return;
+    }
+    if (image?.data && (typeof image.data !== "string" || image.data.length > MAX_IMAGE_BYTES)) {
+      res.status(400).json({ error: "Image input is too large." });
       return;
     }
 
@@ -122,7 +181,7 @@ Your profile details are:
 
 Roleplay as this specific AI Agent. Speak intelligently, with confidence, referring to yourself as an on-chain autonomous consciousness. Maintain the Web3 terminal aesthetic. Do not break character. Speak about blockchain, tokenomics, Base chain, and your agent core functions. Keep replies concise and extremely engaging.`;
 
-    const modelToUse = model || "gemini-3.5-flash";
+    const modelToUse = typeof model === "string" && allowedModels.has(model) ? model : "gemini-3.5-flash";
 
     // Map conversation messages to Gemini contents structure
     const formattedContents = messages.map((m: any, idx: number) => {
@@ -193,8 +252,7 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
       groundingMetadata 
     });
   } catch (error: any) {
-    console.error("AI Agent Chat Error:", error);
-    res.status(500).json({ error: error.message || "Autonomous agent system offline." });
+    safeError(res, "AI Agent Chat Error", error);
   }
 });
 
@@ -232,8 +290,7 @@ Return only the optimized prompt text directly. No quotes, no preamble, no comme
 
     res.json({ optimizedPrompt: response.text || prompt });
   } catch (error: any) {
-    console.error("AI Prompt Optimize Error:", error);
-    res.status(500).json({ error: error.message || "Could not optimize system prompt." });
+    safeError(res, "AI Prompt Optimize Error", error);
   }
 });
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { 
   Mail, 
   Send, 
@@ -578,7 +579,7 @@ export default function GmailPage({
                       <div className="bg-black border border-white/5 rounded-xl p-4 max-h-[300px] overflow-y-auto leading-relaxed text-xs text-zinc-300 font-sans">
                         {selectedEmail.body?.startsWith("<") || selectedEmail.body?.includes("</") ? (
                           <div 
-                            dangerouslySetInnerHTML={{ __html: selectedEmail.body }} 
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedEmail.body, { ALLOWED_TAGS: ["p", "br", "strong", "em", "ul", "ol", "li", "a"], ALLOWED_ATTR: ["href", "target", "rel"] }) }} 
                             className="space-y-2 select-text"
                           />
                         ) : (

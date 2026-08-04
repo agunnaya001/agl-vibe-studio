@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type MouseEvent } from "react";
 import { Wallet, Shield, Zap, Key } from "lucide-react";
 import { WalletState } from "../types";
 
@@ -26,7 +26,7 @@ export default function WalletModal({ isOpen, onClose, onConnect }: WalletModalP
 
   if (!isOpen) return null;
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
     }

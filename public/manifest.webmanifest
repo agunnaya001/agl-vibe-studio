@@ -1,0 +1,18 @@
+{
+  "name": "Agunnaya Labs Studio",
+  "short_name": "Agunnaya Studio",
+  "description": "AI-powered Web3 development studio for Base.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#0052ff",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Open Dashboard", "url": "/?tab=dashboard", "icons": [{ "src": "/icon.svg", "sizes": "any" }] },
+    { "name": "Create Project", "url": "/?tab=create", "icons": [{ "src": "/icon.svg", "sizes": "any" }] }
+  ]
+}
