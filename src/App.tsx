@@ -309,27 +309,14 @@ export default function App() {
     }
   };
 
-  // Load real on-chain balances for connected wallet from Base Mainnet
+  // Load real on-chain balances for connected wallet from the selected Base network
   const syncWalletBalancesOnChain = async (addr: string) => {
     if (!addr) return;
     try {
-      addTerminalLog("info", `SYNC: Querying native and AGL balances for ${addr.slice(0, 8)}... on Base Mainnet.`);
-      const baseProvider = new ethers.JsonRpcProvider("https://mainnet.base.org");
-      const ethBalRaw = await baseProvider.getBalance(addr);
-      const ethBalance = parseFloat(ethers.formatEther(ethBalRaw));
-
-      let aglBalance = 0;
-      try {
-        const aglTokenContract = new ethers.Contract(
-          "0xea1221b4d80a89bd8c75248fae7c176bd1854698", 
-          ["function balanceOf(address) external view returns (uint256)"], 
-          baseProvider
-        );
-        const aglBalRaw = await aglTokenContract.balanceOf(addr);
-        aglBalance = parseFloat(ethers.formatEther(aglBalRaw));
-      } catch (e) {
-        console.warn("AGL token on-chain fetch failed", e);
-      }
+      addTerminalLog("info", `SYNC: Querying native and AGL balances for ${addr.slice(0, 8)}... on the selected Base network.`);
+      const [ethValue, agl] = await Promise.all([getNativeBalance(addr), getAglBalance(addr)]);
+      const ethBalance = Number(ethValue);
+      const aglBalance = agl ? Number(agl.value) : 0;
 
       const currentWallet = AgunnayaDatabase.getWallet();
       const updatedWallet: WalletState = {

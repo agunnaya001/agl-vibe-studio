@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { getContractAddresses, isAddressConfigured } from "../lib/contracts";
 import { ArrowLeftRight, Landmark, Lock, Coins, Sparkles, AlertCircle, TrendingUp, HelpCircle, Activity } from "lucide-react";
 
 interface DeFiPageProps {
@@ -30,14 +31,14 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
           ["function creditsPerAGL() external view returns (uint256)"],
           provider
         );
-        const rate = await creditsContract.creditsPerAGL().catch(() => 100n);
+        const rate = await creditsContract.creditsPerAGL();
         const calculatedRate = 10000 + Number(rate) * 100;
         setOnChainRate(calculatedRate);
         setPriceLoading(false);
-        addTerminalLog("system", `AMM_ORACLE: Updated AGL/ETH spot price from Base Mainnet contract. Rate: 1 ETH = ${calculatedRate.toLocaleString()} AGL.`);
+        addTerminalLog("system", `AMM_ORACLE: Updated AGL/ETH spot price from the configured credits contract. Rate: 1 ETH = ${calculatedRate.toLocaleString()} AGL.`);
       } catch (err) {
         console.error("Failed to fetch on-chain price ticker:", err);
-        setOnChainRate(20000);
+        setOnChainRate(0);
         setPriceLoading(false);
       }
     };
@@ -68,10 +69,17 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
     }
     const amt = parseFloat(swapAmount) || 0;
     if (amt <= 0) return;
-    setSwapping(true);
+    const { aglCredits } = getContractAddresses();
+    if (!isAddressConfigured(aglCredits) || onChainRate <= 0) {
+      showToast("Swaps are disabled until live contract pricing is available.", "error");
+      addTerminalLog("error", "SWAP_BLOCKED: No verified live pricing or credits contract is configured.");
+      return;
+    }
+    showToast("This route is read-only until the verified swap router is configured.", "info");
+    addTerminalLog("info", "SWAP_BLOCKED: Refused local balance mutation; a verified swap router is required.");
+    return;
 
-    addTerminalLog("info", `Executing on-chain liquidity routing from ${swapFrom} to ${swapTo} (Spot Rate: 1 ETH = ${onChainRate.toLocaleString()} AGL)...`);
-
+    /*
     setTimeout(() => {
       if (swapFrom === "ETH") {
         if (amt > wallet.balanceEth) {
@@ -115,6 +123,7 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
       setSwapEstim("0");
       setSwapping(false);
     }, 1500);
+    */
   };
 
   const handleStake = (e: React.FormEvent) => {
@@ -128,6 +137,10 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
       showToast("Invalid or insufficient AGL balance.", "error");
       return;
     }
+    showToast("Staking is disabled until a verified staking contract is configured.", "info");
+    addTerminalLog("info", "STAKE_BLOCKED: Refused local balance mutation; no verified staking contract is configured.");
+    return;
+
     setStakingLoading(true);
 
     addTerminalLog("info", `Locking ${amt} AGL in yield farming staking pool...`);
@@ -149,6 +162,9 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
 
   const handleClaimStakingRewards = () => {
     if (unclaimedRewards <= 0) return;
+    showToast("Rewards are unavailable until staking is connected to a verified contract.", "info");
+    addTerminalLog("info", "CLAIM_BLOCKED: No verified staking contract is configured.");
+    return;
     
     const earned = unclaimedRewards;
     setUnclaimedRewards(0);

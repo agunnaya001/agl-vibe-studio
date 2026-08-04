@@ -19,6 +19,18 @@ export const BASE_NETWORKS = {
   },
 } as const;
 
+export const AGL_CREDITS_ADDRESS = "0x13866F31c60822Ff70684213b9727915Ddf2c183";
+
+export const AGL_CREDITS_ABI = [
+  "function aglToken() view returns (address)",
+  "function creditsPerAGL() view returns (uint256)",
+  "function totalCreditsPurchased(address) view returns (uint256)",
+  "function totalAGLBurnedBy(address) view returns (uint256)",
+  "function totalAGLBurned() view returns (uint256)",
+  "function previewCredits(uint256) view returns (uint256)",
+  "function purchaseCredits(uint256)",
+] as const;
+
 export const AGL_TOKEN_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function decimals() view returns (uint8)",
@@ -44,8 +56,9 @@ export function getNetwork(): BaseNetwork {
 export function getContractAddresses(network: BaseNetwork = getNetwork()) {
   const prefix = network === "base" ? "VITE_BASE_MAINNET" : "VITE_BASE_SEPOLIA";
   return {
-    aglToken: env[`${prefix}_AGL_TOKEN_ADDRESS`] || "",
+    aglToken: env[`${prefix}_AGL_TOKEN_ADDRESS`] || (network === "base" ? "0xea1221b4d80a89bd8c75248fae7c176bd1854698" : ""),
     bondingCurve: env[`${prefix}_BONDING_CURVE_ADDRESS`] || "",
+    aglCredits: network === "base" ? AGL_CREDITS_ADDRESS : "",
   };
 }
 

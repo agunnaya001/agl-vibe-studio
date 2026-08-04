@@ -46,14 +46,14 @@ export function getEthReturnForTokens(currentSupply: number, tokensToSell: numbe
   return { gross, fee, net };
 }
 
-// INITIAL SEED DATA
+// Local demo catalog only. These entries are intentionally not treated as deployed contracts.
 const SEED_TOKENS: Token[] = [
   {
     address: "0xea1221b4d80a89bd8c75248fae7c176bd1854698",
     name: "Agunnaya Utility Token",
     symbol: "AGL",
     description: "The official utility token of Agunnaya Labs Studio. Used to unlock premium templates, pay for autonomous AI Agent triggers at a discount, secure governance rights, and stake for premium yield.",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    creator: "demo-creator-agl",
     creatorFeesEarned: 12.45,
     currentPrice: BASE_PRICE + SLOPE * 8500000,
     supply: 8500000,
@@ -70,11 +70,11 @@ const SEED_TOKENS: Token[] = [
     createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000
   },
   {
-    address: "0x3456...ef01",
+    address: "demo-token-baic",
     name: "Base AI Core",
     symbol: "BAIC",
     description: "An AI agent token supporting decentralized machine learning consensus on Base. Automatically buys compute bandwidth on-chain.",
-    creator: "0xCreatorOfBAIC",
+    creator: "demo-creator-baic",
     creatorFeesEarned: 1.87,
     currentPrice: BASE_PRICE + SLOPE * 4200000,
     supply: 4200000,
@@ -91,11 +91,11 @@ const SEED_TOKENS: Token[] = [
     createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
   },
   {
-    address: "0x89ab...bcde",
+    address: "demo-token-chad",
     name: "Meme Pad Chad",
     symbol: "CHAD",
     description: "The ultimate hyper-deflationary meme asset on Base. Real physical gainz simulated mathematically via linear curves.",
-    creator: "0xMemeMaster",
+    creator: "demo-creator-chad",
     creatorFeesEarned: 5.42,
     currentPrice: BASE_PRICE + SLOPE * 12500000,
     supply: 12500000,
@@ -115,11 +115,11 @@ const SEED_TOKENS: Token[] = [
 
 const SEED_NFTS: NFTCollection[] = [
   {
-    contractAddress: "0x7890...cdef",
+    contractAddress: "demo-nft-genesis-keys",
     name: "Agunnaya Genesis Keys",
     symbol: "AGK",
     description: "A premium collection of 1000 fully on-chain 3D access keys on Base. Unlocks unlimited free deployments, early access to new AI Agents, and active fee share on Agunnaya Labs Studio.",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    creator: "demo-creator-agl",
     mintPrice: 0.05,
     currentSupply: 420,
     maxSupply: 1000,
@@ -158,11 +158,11 @@ const SEED_NFTS: NFTCollection[] = [
 
 const SEED_DAOS: DAO[] = [
   {
-    contractAddress: "0xdad1...eade",
+    contractAddress: "demo-dao-builders-guild",
     name: "Base Builders Guild DAO",
     symbol: "BBG",
     description: "A community DAO designed to fund open-source development tools, public goods, and meme generators exclusively on Base. Supported by Agunnaya Labs multi-sig.",
-    creator: "0xBBGCreator",
+    creator: "demo-creator-bbg",
     governanceTokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", // AGL token as gov token
     treasuryBalanceEth: 25.5,
     memberCount: 142,
@@ -171,7 +171,7 @@ const SEED_DAOS: DAO[] = [
         id: "prop-1",
         title: "Sponsor Base Memefest Hackathon 2026",
         description: "Deploy 5 ETH from the guild treasury to provide cash prizes for the best bonding curve meme coin created using Agunnaya Studio.",
-        creator: "0xGuildElder",
+        creator: "demo-creator-guild",
         status: "Active",
         votesFor: 852000,
         votesAgainst: 12000,
@@ -182,7 +182,7 @@ const SEED_DAOS: DAO[] = [
         id: "prop-2",
         title: "Integrate Gas sponsorship and Account Abstraction",
         description: "Deploy 2 ETH to sponsor gas fees for new users launching their first contract via Agunnaya AI Builder.",
-        creator: "0xSmartDev",
+        creator: "demo-creator-smart-dev",
         status: "Passed",
         votesFor: 1200000,
         votesAgainst: 5000,
@@ -196,11 +196,11 @@ const SEED_DAOS: DAO[] = [
 
 const SEED_GAMEFI: GameFiProject[] = [
   {
-    contractAddress: "0x9876...5432",
+    contractAddress: "demo-gamefi-arcade",
     name: "Base Cyber Arena",
     symbol: "BCA",
     description: "An arcade-inspired, retro Battle Pass game where players complete daily on-chain developer challenges to earn XP, achievements, and unlock exclusive rewards.",
-    creator: "0xArcadeMaster",
+    creator: "demo-creator-arcade",
     prizePoolEth: 4.25,
     activeSeasons: 2,
     createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
@@ -215,9 +215,9 @@ const SEED_GAMEFI: GameFiProject[] = [
       { id: "ach-3", title: "Master Governor", description: "Create a DAO and submit your first treasury grant proposal.", badgeIcon: "ShieldAlert", unlocked: false }
     ],
     leaderboard: [
-      { rank: 1, user: "0x4795...4D5B", xp: 1240, score: 9800 },
-      { rank: 2, user: "0xGuildElder", xp: 950, score: 7200 },
-      { rank: 3, user: "0xMemeMaster", xp: 820, score: 6100 }
+      { rank: 1, user: "demo-user-genesis", xp: 1240, score: 9800 },
+      { rank: 2, user: "demo-user-guild", xp: 950, score: 7200 },
+      { rank: 3, user: "demo-user-meme", xp: 820, score: 6100 }
     ],
     battlePass: [
       { level: 1, xpRequired: 100, rewardName: "Beginner Dev Badge", rewardType: "badge", unlocked: true },
@@ -233,8 +233,8 @@ const SEED_AGENTS: AIAgent[] = [
     name: "Agunnaya Labs Sentinel",
     symbol: "SENT",
     description: "Your autonomous blockchain security sentinel. Watches Base transactions, checks code for vulnerabilities, and advises on Gas-optimal multi-sig paths.",
-    contractAddress: "0xAgentSentinelAddress",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    contractAddress: "demo-agent-sentinel",
+    creator: "demo-creator-agl",
     tokenPrice: 0.005,
     usageFeeEth: 0.001,
     lifetimeRevenueEth: 0.142,
@@ -252,8 +252,8 @@ const SEED_AGENTS: AIAgent[] = [
     name: "Base Oracle Agent",
     symbol: "BORA",
     description: "An autonomous data broker. Fetches off-chain API data, formats it into verifiable Merkle trees, and signs on-chain state updates.",
-    contractAddress: "0xAgentOracleAddress",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    contractAddress: "demo-agent-oracle",
+    creator: "demo-creator-agl",
     tokenPrice: 0.008,
     usageFeeEth: 0.002,
     lifetimeRevenueEth: 0.088,
@@ -270,15 +270,15 @@ const SEED_AGENTS: AIAgent[] = [
 
 const SEED_STAKING: StakingPool[] = [
   { id: "s-1", tokenName: "Agunnaya Labs Token", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 38.5, tvlEth: 12.8, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 7 },
-  { id: "s-2", tokenName: "Meme Pad Chad", tokenSymbol: "CHAD", tokenAddress: "0x89ab...bcde", apr: 82.0, tvlEth: 4.15, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 0 },
-  { id: "s-3", tokenName: "Base AI Core", tokenSymbol: "BAIC", tokenAddress: "0x3456...ef01", apr: 48.0, tvlEth: 6.42, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 14 }
+  { id: "s-2", tokenName: "Meme Pad Chad", tokenSymbol: "CHAD", tokenAddress: "demo-token-chad", apr: 82.0, tvlEth: 4.15, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 0 },
+  { id: "s-3", tokenName: "Base AI Core", tokenSymbol: "BAIC", tokenAddress: "demo-token-baic", apr: 48.0, tvlEth: 6.42, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 14 }
 ];
 
 const SEED_ACTIVITIES: Activity[] = [
-  { id: "a-1", type: "create", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 1000000000, ethValue: 0, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000, details: "Platform genesis launch of Agunnaya Labs Utility Token" },
-  { id: "a-2", type: "buy", tokenSymbol: "CHAD", tokenAddress: "0x89ab...bcde", user: "0x9821...5523", amount: 12000, ethValue: 0.015, timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000, details: "Bought 12,000 CHAD tokens on the bonding curve" },
-  { id: "a-3", type: "mint", tokenSymbol: "AGK", tokenAddress: "0x7890...cdef", user: "0x9821...5523", amount: 1, ethValue: 0.05, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000, details: "Minted Agunnaya Genesis Key #1 access NFT" },
-  { id: "a-4", type: "vote", tokenSymbol: "BBG", tokenAddress: "0xdad1...eade", user: "0x4795...4D5B", amount: 50000, ethValue: 0, timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000, details: "Voted FOR Proposal #2 'AA integration' with 50,000 voting weight" }
+  { id: "a-1", type: "create", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", user: "demo-user-genesis", amount: 1000000000, ethValue: 0, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000, details: "Platform genesis launch of Agunnaya Labs Utility Token" },
+  { id: "a-2", type: "buy", tokenSymbol: "CHAD", tokenAddress: "demo-token-chad", user: "demo-user-trader", amount: 12000, ethValue: 0.015, timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000, details: "Bought 12,000 CHAD tokens on the bonding curve" },
+  { id: "a-3", type: "mint", tokenSymbol: "AGK", tokenAddress: "demo-nft-genesis-keys", user: "demo-user-trader", amount: 1, ethValue: 0.05, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000, details: "Minted Agunnaya Genesis Key #1 access NFT" },
+  { id: "a-4", type: "vote", tokenSymbol: "BBG", tokenAddress: "demo-dao-builders-guild", user: "demo-user-genesis", amount: 50000, ethValue: 0, timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000, details: "Voted FOR Proposal #2 'AA integration' with 50,000 voting weight" }
 ];
 
 const DEFAULT_WALLET: WalletState = {

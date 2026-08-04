@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { AGL_CREDITS_ABI, AGL_TOKEN_ABI, BASE_NETWORKS, getContractAddresses, getNetwork, isAddressConfigured } from "../lib/contracts";
 import { 
   Flame, 
   Coins, 
@@ -28,25 +29,9 @@ interface AGLCreditsPageProps {
   setWalletState: (wallet: WalletState) => void;
 }
 
-const BASE_RPC_URL = "https://mainnet.base.org";
-const CONTRACT_ADDRESS = "0x13866F31c60822Ff70684213b9727915Ddf2c183";
-
-const AGL_CREDITS_ABI = [
-  "function aglToken() external view returns (address)",
-  "function creditsPerAGL() external view returns (uint256)",
-  "function totalCreditsPurchased(address) external view returns (uint256)",
-  "function totalAGLBurnedBy(address) external view returns (uint256)",
-  "function totalAGLBurned() external view returns (uint256)",
-  "function previewCredits(uint256 aglAmount) external view returns (uint256)",
-  "function purchaseCredits(uint256 aglAmount) external"
-];
-
-const ERC20_ABI = [
-  "function balanceOf(address) external view returns (uint256)",
-  "function allowance(address owner, address spender) external view returns (uint256)",
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function symbol() external view returns (string)"
-];
+const BASE_RPC_URL = BASE_NETWORKS[getNetwork()].rpcUrl;
+const CONTRACT_ADDRESS = getContractAddresses().aglCredits;
+const ERC20_ABI = AGL_TOKEN_ABI;
 
 export default function AGLCreditsPage({ 
   wallet, 
@@ -110,13 +95,16 @@ export default function AGLCreditsPage({
   const loadContractStats = async () => {
     setLoadingStats(true);
     try {
+      if (!isAddressConfigured(CONTRACT_ADDRESS)) {
+        throw new Error("AGL Credits contract is not configured for the selected network.");
+      }
       const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, AGL_CREDITS_ABI, provider);
 
       const [rate, totalBurnedRaw, tokenAddr] = await Promise.all([
-        contract.creditsPerAGL().catch(() => 100n), // fallback to 100 credits per AGL
-        contract.totalAGLBurned().catch(() => 0n),
-        contract.aglToken().catch(() => "0xea1221b4d80a89bd8c75248fae7c176bd1854698")
+        contract.creditsPerAGL(),
+        contract.totalAGLBurned(),
+        contract.aglToken()
       ]);
 
       setCreditsPerAgl(Number(rate));
@@ -126,12 +114,11 @@ export default function AGLCreditsPage({
       addLocalLog("success", `Global contract stats loaded. Rate: ${rate} Credits per AGL. AGL Token: ${tokenAddr}`);
     } catch (err: any) {
       console.error("Error loading contract stats:", err);
-      // Fallback
-      setCreditsPerAgl(100);
-      setTotalProtocolBurned("42,500");
-      setAglTokenAddress("0xea1221b4d80a89bd8c75248fae7c176bd1854698");
+      setCreditsPerAgl(0);
+      setTotalProtocolBurned("0");
+      setAglTokenAddress("");
       setLoadingStats(false);
-      addLocalLog("warn", "Using offline fallback values. Could not query Base Mainnet RPC.");
+      addLocalLog("error", "Live AGL Credits contract data is unavailable for the selected network.");
     }
   };
 
@@ -199,16 +186,13 @@ export default function AGLCreditsPage({
       addLocalLog("success", `On-chain wallet stats loaded successfully (${isWeb3 ? (onWrongNetwork ? "Web3 Direct Provider [Wrong Chain]" : "Web3 Direct Provider [Base Mainnet]") : "Base RPC Public Gateway"})`);
     } catch (err: any) {
       console.error("Error loading user stats:", err);
-      // Fallback/Simulated values based on the mock wallet balances
-      setOnChainEthBalance(wallet.balanceEth.toFixed(4));
-      setOnChainAglBalance(wallet.aglTokenBalance.toLocaleString());
-      setUserCreditsPurchased((wallet.aglCredits || 0).toLocaleString());
-      // Estimate sandbox AGL burned based on sandbox credits rate (default 100 if rate not loaded yet)
-      const rate = creditsPerAgl || 100;
-      setUserAglBurned(((wallet.aglCredits || 0) / rate).toFixed(1));
-      setCurrentAllowance(ethers.parseEther("1000000")); // Auto mock allow
+      setOnChainEthBalance("0");
+      setOnChainAglBalance("0");
+      setUserCreditsPurchased("0");
+      setUserAglBurned("0");
+      setCurrentAllowance(0n);
       setLoadingUserStats(false);
-      addLocalLog("warn", "Loaded Sandbox simulated stats. Connect a real Web3 wallet to sync with Base Mainnet.");
+      addLocalLog("error", "Live wallet statistics are unavailable; no simulated balances were displayed.");
     }
   };
 

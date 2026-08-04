@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { ethers } from "ethers";
-import { BASE_NETWORKS, getExplorerTxUrl, isAddressConfigured } from "../lib/contracts";
+import { AGL_CREDITS_ADDRESS, BASE_NETWORKS, getContractAddresses, getExplorerTxUrl, isAddressConfigured } from "../lib/contracts";
 import { toSlippageMinimum } from "../lib/contractClient";
 
 describe("Base contract integration", () => {
   it("defines both Base networks with the correct chain IDs", () => {
     expect(BASE_NETWORKS.base.id).toBe(8453);
     expect(BASE_NETWORKS["base-sepolia"].id).toBe(84532);
+  });
+
+  it("centralizes the verified Base mainnet contracts without inventing a curve address", () => {
+    expect(getContractAddresses("base").aglToken).toBe("0xea1221b4d80a89bd8c75248fae7c176bd1854698");
+    expect(getContractAddresses("base").aglCredits).toBe(AGL_CREDITS_ADDRESS);
+    expect(getContractAddresses("base").bondingCurve).toBe("");
   });
 
   it("validates contract addresses and builds explorer links", () => {
