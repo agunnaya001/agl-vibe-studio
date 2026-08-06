@@ -243,7 +243,11 @@ const SEED_AGENTS: AIAgent[] = [
     avatarUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=60",
     aglRewardDiscounts: true,
     chatHistory: [
-      { role: "assistant", content: "Sentinel security subroutines loaded. Enter query or drag-and-drop a smart contract file to audit." }
+      { role: "assistant", content: "Sentinel security subroutines loaded. Enter query or drag-and-drop a smart contract file to audit." },
+      { role: "user", content: "Audit this ERC20 vault contract for reentrancy and unauthorized transferFrom exploits." },
+      { role: "assistant", content: "🛡️ AUDIT REPORT FOR ERC20 VAULT:\n1. Reentrancy Vulnerability: PASSED. ReentrancyGuard modifier present on withdraw() method.\n2. Allowance Validation: WARNING. Ensure safetransferFrom() is used to prevent unhandled boolean returns from non-standard ERC20 tokens.\n3. Access Controls: PASSED. onlyOwner correctly guards administrative functions on Base Mainnet." },
+      { role: "user", content: "What is the recommended gas limit for executing a 5-signature batch transaction on Base?" },
+      { role: "assistant", content: "⚡ GAS RECOMMENDATION:\nBase L2 gas limit for 5-sig Safe multi-sig batch execution is approximately 145,000 gas units. Estimated cost at current L2 gas prices is ~0.000021 ETH ($0.06 USD)." }
     ],
     createdAt: Date.now() - 12 * 24 * 60 * 60 * 1000
   },
@@ -262,7 +266,9 @@ const SEED_AGENTS: AIAgent[] = [
     avatarUrl: "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=128&auto=format&fit=crop&q=60",
     aglRewardDiscounts: false,
     chatHistory: [
-      { role: "assistant", content: "Oracle node online. Ready to pipe off-chain parameters onto Base." }
+      { role: "assistant", content: "Oracle node online. Ready to pipe off-chain parameters onto Base." },
+      { role: "user", content: "Fetch real-time spot price and Merkle root proof for AGL/ETH pool on Base DEX." },
+      { role: "assistant", content: "🌐 BORA ORACLE DATA FEED:\n• AGL/ETH Spot Price: 0.0000112 ETH ($0.0336 USD)\n• 24h Reserve Depth: 12.85 ETH\n• Merkle Root Hash: 0x9f8b7a6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a\n• Attestation Signature: Verified by 8 validator nodes." }
     ],
     createdAt: Date.now() - 4 * 24 * 60 * 60 * 1000
   }
@@ -554,6 +560,17 @@ export class AgunnayaDatabase {
     agents.forEach(a => {
       this.saveToFirestore("agents", a.id, a);
     });
+  }
+
+  static saveAgent(agent: AIAgent) {
+    const agents = this.getAgents();
+    const idx = agents.findIndex(a => a.id.toLowerCase() === agent.id.toLowerCase());
+    if (idx !== -1) {
+      agents[idx] = agent;
+    } else {
+      agents.push(agent);
+    }
+    this.saveAgents(agents);
   }
 
   static getStaking(): StakingPool[] {

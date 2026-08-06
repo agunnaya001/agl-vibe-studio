@@ -46,6 +46,7 @@ import AIDeploymentWizardModal from "../components/AIDeploymentWizardModal";
 import TokenSecurityAudit from "../components/TokenSecurityAudit";
 import GasCostEstimator from "../components/GasCostEstimator";
 import ContractVerificationModal from "../components/ContractVerificationModal";
+import { ContractVerificationTab } from "../components/ContractVerificationTab";
 import { WalletState } from "../types";
 import { Wand2 } from "lucide-react";
 
@@ -95,6 +96,9 @@ export default function TokenFactoryPage({
   const [lookupAddress, setLookupAddress] = useState("");
   const [lookupCreator, setLookupCreator] = useState<string | null>(null);
   const [isSearchingCreator, setIsSearchingCreator] = useState(false);
+
+  // Tab Navigation State
+  const [factoryTab, setFactoryTab] = useState<"hub" | "verification" | "airdrop" | "burn" | "registry">("hub");
 
   // Gas cost estimator state
   const [showGasEstimator, setShowGasEstimator] = useState(true);
@@ -529,6 +533,94 @@ export default function TokenFactoryPage({
         </div>
       </div>
 
+      {/* SUB-NAVIGATION TAB BAR */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-zinc-950/90 border border-white/10 backdrop-blur-md shadow-lg">
+        <button
+          id="tab-factory-hub"
+          type="button"
+          onClick={() => setFactoryTab("hub")}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold font-display transition-all flex items-center gap-2 cursor-pointer ${
+            factoryTab === "hub"
+              ? "bg-[#0052FF] text-white shadow-lg shadow-[#0052FF]/20"
+              : "text-zinc-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <PlusCircle className="w-4 h-4 text-blue-300" />
+          <span>Deploy & Hub</span>
+        </button>
+
+        <button
+          id="tab-factory-verification"
+          type="button"
+          onClick={() => setFactoryTab("verification")}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold font-display transition-all flex items-center gap-2 cursor-pointer ${
+            factoryTab === "verification"
+              ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+              : "text-zinc-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-300" />
+          <span>Contract Verification Tab</span>
+          {createdTokenAddress && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          )}
+        </button>
+
+        <button
+          id="tab-factory-airdrop"
+          type="button"
+          onClick={() => setFactoryTab("airdrop")}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold font-display transition-all flex items-center gap-2 cursor-pointer ${
+            factoryTab === "airdrop"
+              ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
+              : "text-zinc-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Send className="w-4 h-4 text-purple-300" />
+          <span>Bulk Airdrop</span>
+        </button>
+
+        <button
+          id="tab-factory-burn"
+          type="button"
+          onClick={() => setFactoryTab("burn")}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold font-display transition-all flex items-center gap-2 cursor-pointer ${
+            factoryTab === "burn"
+              ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20"
+              : "text-zinc-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Flame className="w-4 h-4 text-rose-300" />
+          <span>Token Burner</span>
+        </button>
+
+        <button
+          id="tab-factory-registry"
+          type="button"
+          onClick={() => setFactoryTab("registry")}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold font-display transition-all flex items-center gap-2 cursor-pointer ${
+            factoryTab === "registry"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+              : "text-zinc-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Layers className="w-4 h-4 text-blue-300" />
+          <span>Token Registry ({tokenList.length})</span>
+        </button>
+      </div>
+
+      {/* TAB CONTENT VIEW: CONTRACT VERIFICATION TAB */}
+      {factoryTab === "verification" && (
+        <ContractVerificationTab
+          tokenList={tokenList}
+          createdTokenAddress={createdTokenAddress}
+          wallet={wallet}
+          showToast={showToast}
+          addTerminalLog={addTerminalLog}
+          onRefreshTokens={loadFactoryData}
+        />
+      )}
+
       {/* REAL-TIME CONTRACT MONITOR */}
       <ContractMonitor 
         contractAddress={TOKEN_FACTORY_ADDRESS}
@@ -719,12 +811,15 @@ export default function TokenFactoryPage({
                 <button
                   type="button"
                   id="btn-verify-created-contract"
-                  onClick={() => setVerificationTarget({
-                    address: createdTokenAddress,
-                    name: tokenName || "Custom Token",
-                    symbol: tokenSymbol || "CTKN",
-                    creator: wallet.address
-                  })}
+                  onClick={() => {
+                    setFactoryTab("verification");
+                    setVerificationTarget({
+                      address: createdTokenAddress,
+                      name: tokenName || "Custom Token",
+                      symbol: tokenSymbol || "CTKN",
+                      creator: wallet.address
+                    });
+                  }}
                   className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-mono font-bold text-[11px] flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -1365,12 +1460,15 @@ export default function TokenFactoryPage({
                     </button>
 
                     <button
-                      onClick={() => setVerificationTarget({
-                        address: item.address,
-                        name: item.name || "Custom Token",
-                        symbol: item.symbol || "CTKN",
-                        creator: item.creator
-                      })}
+                      onClick={() => {
+                        setFactoryTab("verification");
+                        setVerificationTarget({
+                          address: item.address,
+                          name: item.name || "Custom Token",
+                          symbol: item.symbol || "CTKN",
+                          creator: item.creator
+                        });
+                      }}
                       className="py-1.5 px-2 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-300 font-mono text-[9px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
                     >
                       <ShieldCheck className="w-3 h-3 text-teal-400" />

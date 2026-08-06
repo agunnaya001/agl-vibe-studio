@@ -13,11 +13,12 @@ import {
 } from "../lib/gemini";
 import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
 import InsufficientCreditsModal from "../components/InsufficientCreditsModal";
+import { AgentInteractionHistory } from "../components/AgentInteractionHistory";
 import { 
   Bot, Send, BrainCircuit, X, MessageSquare, Plus, Zap, Award, Coins, 
   Sparkles, Cpu, Layers, ShieldCheck, Mic, MicOff, Image as ImageIcon, 
   MapPin, Eye, Film, Download, RefreshCw, Sliders, Play, Trash2, Loader2, Info,
-  Flame, TrendingUp, Check, Copy, ArrowRight, Lock, Code
+  Flame, TrendingUp, Check, Copy, ArrowRight, Lock, Code, Terminal
 } from "lucide-react";
 
 interface AgentStudioPageProps {
@@ -36,8 +37,8 @@ interface ChatMessage {
 }
 
 export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTerminalLog, showToast }: AgentStudioPageProps) {
-  // Tabs: "agents" (Agent Forge & chats) or "creative" (Media Generator)
-  const [activeTab, setActiveTab] = useState<"agents" | "creative">("agents");
+  // Tabs: "agents" (Agent Forge & chats), "history" (Interaction History), or "creative" (Media Generator)
+  const [activeTab, setActiveTab] = useState<"agents" | "history" | "creative">("agents");
 
   // Forge Sub-Tab: "configure" or "preview"
   const [forgeMode, setForgeMode] = useState<"configure" | "preview">("configure");
@@ -507,6 +508,25 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
         } else {
           clearInterval(interval);
           setChatLoading(false);
+
+          // Save completed chat session back to agent record
+          if (activeChatAgent) {
+            setChatMessages(finalMsgs => {
+              const updatedAgent: AIAgent = {
+                ...activeChatAgent,
+                queryCount: (activeChatAgent.queryCount || 0) + 1,
+                chatHistory: finalMsgs.map(m => ({
+                  role: m.role,
+                  content: m.content,
+                  image: m.image,
+                  groundingMetadata: m.groundingMetadata
+                }))
+              };
+              AgunnayaDatabase.saveAgent(updatedAgent);
+              onRefreshAgents();
+              return finalMsgs;
+            });
+          }
         }
       }, 15);
 
@@ -518,6 +538,33 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
       }]);
       setChatLoading(false);
     }
+  };
+
+  // Clear interaction history for a specific agent
+  const handleClearAgentHistory = (agentId: string) => {
+    const target = agents.find(a => a.id === agentId);
+    if (target) {
+      const updatedAgent: AIAgent = {
+        ...target,
+        chatHistory: [
+          { role: "assistant", content: `${target.name} subroutines re-initialized. Interaction log cleared.` }
+        ]
+      };
+      AgunnayaDatabase.saveAgent(updatedAgent);
+      onRefreshAgents();
+      if (activeChatAgent?.id === agentId) {
+        setActiveChatAgent(updatedAgent);
+        setChatMessages(updatedAgent.chatHistory);
+      }
+    }
+  };
+
+  // Re-run or load previous prompt into active agent chat
+  const handleLoadPromptToChat = (agent: AIAgent, promptText: string) => {
+    setActiveTab("agents");
+    setActiveChatAgent(agent);
+    setChatMessages(agent.chatHistory || []);
+    setChatInput(promptText);
   };
 
   // Audio transcription voice recording
@@ -757,7 +804,7 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
         </div>
 
         {/* Tab Selection buttons */}
-        <div className="flex gap-2 bg-zinc-900/60 p-1 rounded-xl border border-white/5">
+        <div className="flex flex-wrap gap-2 bg-zinc-900/60 p-1 rounded-xl border border-white/5">
           <button
             id="tab-agents"
             onClick={() => setActiveTab("agents")}
@@ -768,6 +815,18 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
             }`}
           >
             Agent Forge & Chats
+          </button>
+          <button
+            id="tab-history"
+            onClick={() => setActiveTab("history")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "history"
+                ? "bg-brand-purple text-white shadow-lg shadow-brand-purple/10"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Terminal className="w-3.5 h-3.5 text-purple-300" />
+            <span>Interaction History</span>
           </button>
           <button
             id="tab-creative"
@@ -1581,24 +1640,36 @@ CORE DIRECTIVES:
                         </div>
                       </div>
 
-                      {/* Action Buttons: Preview Directives & Prompt Agent */}
-                      <div className="grid grid-cols-2 gap-2">
+                      {/* Action Buttons: Preview Directives, Prompt Agent & History Log */}
+                      <div className="grid grid-cols-3 gap-1.5">
                         <button
                           id={`preview-agent-trigger-${agent.id}`}
                           onClick={() => handlePreviewAgentDirectives(agent)}
-                          className="py-2 px-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          className="py-2 px-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
                         >
-                          <Eye className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Live Preview</span>
+                          <Eye className="w-3 h-3 text-purple-400" />
+                          <span>Preview</span>
                         </button>
 
                         <button
                           id={`chat-agent-trigger-${agent.id}`}
                           onClick={() => handleStartChat(agent)}
-                          className="py-2 px-2 bg-brand-purple/20 hover:bg-brand-purple text-brand-purple hover:text-white border border-brand-purple/30 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          className="py-2 px-1 bg-brand-purple/20 hover:bg-brand-purple text-brand-purple hover:text-white border border-brand-purple/30 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
                         >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>Prompt Agent</span>
+                          <MessageSquare className="w-3 h-3" />
+                          <span>Prompt</span>
+                        </button>
+
+                        <button
+                          id={`history-agent-trigger-${agent.id}`}
+                          onClick={() => {
+                            setActiveChatAgent(agent);
+                            setActiveTab("history");
+                          }}
+                          className="py-2 px-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Terminal className="w-3 h-3 text-brand-purple" />
+                          <span>History</span>
                         </button>
                       </div>
                     </div>
@@ -1606,6 +1677,41 @@ CORE DIRECTIVES:
                 </div>
               )}
             </div>
+
+            {/* Embedded Interaction History Log below agents grid */}
+            <div className="lg:col-span-3 pt-4">
+              <AgentInteractionHistory
+                agents={agents}
+                activeAgentId={activeChatAgent?.id}
+                onSelectAgent={(agent) => {
+                  setActiveChatAgent(agent);
+                  setChatMessages(agent.chatHistory || []);
+                }}
+                onLoadPromptToChat={handleLoadPromptToChat}
+                onClearHistory={handleClearAgentHistory}
+                showToast={showToast}
+              />
+            </div>
+          </motion.div>
+        ) : activeTab === "history" ? (
+          <motion.div
+            key="history-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <AgentInteractionHistory
+              agents={agents}
+              activeAgentId={activeChatAgent?.id}
+              onSelectAgent={(agent) => {
+                setActiveChatAgent(agent);
+                setChatMessages(agent.chatHistory || []);
+              }}
+              onLoadPromptToChat={handleLoadPromptToChat}
+              onClearHistory={handleClearAgentHistory}
+              showToast={showToast}
+            />
           </motion.div>
         ) : (
           <motion.div 
