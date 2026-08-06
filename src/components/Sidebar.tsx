@@ -19,6 +19,7 @@ import {
   Flame,
   Gauge,
   Database,
+  Landmark,
   X
 } from "lucide-react";
 
@@ -79,6 +80,8 @@ export default function Sidebar({
     { id: "gamefi", label: "GameFi Arena", icon: Gamepad2, category: "Assets & Creation" },
     { id: "ai-agents", label: "AI Agent Studio", icon: Bot, category: "Assets & Creation" },
     { id: "defi", label: "Staking & Swaps", icon: Coins, category: "DeFi Tools" },
+    { id: "staking-vault", label: "Automated Staking Vaults", icon: Landmark, category: "DeFi Tools", highlight: true },
+    { id: "token-burner", label: "ERC-20 Token Burner", icon: Flame, category: "DeFi Tools", highlight: true },
     { id: "agl-credits", label: "AGL Credits Burn", icon: Flame, category: "DeFi Tools", highlight: true },
     { id: "gas-dashboard", label: "Gas Sponsorship Pad", icon: Gauge, category: "DeFi Tools", highlight: true },
     { id: "analytics", label: "Base Analytics", icon: BarChart3, category: "DeFi Tools" },

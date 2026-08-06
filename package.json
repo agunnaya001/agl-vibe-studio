@@ -11,9 +11,11 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/infra": "^0.3.7",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "better-auth": "^1.6.26",
     "dotenv": "^17.2.3",
     "ethers": "^6.17.0",
     "express": "^4.21.2",

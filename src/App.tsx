@@ -28,6 +28,8 @@ import ReferralPage from "./pages/ReferralPage";
 import GoogleDrivePage from "./pages/GoogleDrivePage";
 import GmailPage from "./pages/GmailPage";
 import TokenFactoryPage from "./pages/TokenFactoryPage";
+import TokenBurnerPage from "./pages/TokenBurnerPage";
+import StakingVaultPage from "./pages/StakingVaultPage";
 
 // Database & Utilities
 import { AgunnayaDatabase } from "./lib/db";
@@ -663,6 +665,20 @@ export default function App() {
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
           url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=agl-credits"
         };
+      case "token-burner":
+        return {
+          title: "ERC-20 Token Burner & Deflation Engine | Agunnaya Labs Studio",
+          description: "Connect your Web3 wallet, select portfolio or custom ERC-20 tokens, and execute verifiable null-address burn transactions on Base L2.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=token-burner"
+        };
+      case "staking-vault":
+        return {
+          title: "Automated AGL Staking Vaults (Base Mainnet) | Agunnaya Labs Studio",
+          description: "Lock AGL tokens in automated smart contract vaults on Base Mainnet to earn high annual yield up to 72.5% APY with real-time compounding.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=staking-vault"
+        };
       case "gas-dashboard":
         return {
           title: "Paymaster Gas Sponsorship Pad | Agunnaya Labs Studio",
@@ -837,6 +853,27 @@ export default function App() {
             addTerminalLog={addTerminalLog}
             showToast={showToast}
             setWalletState={setWallet}
+          />
+        );
+      case "token-burner":
+        return (
+          <TokenBurnerPage
+            wallet={wallet}
+            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            onRefreshWallet={refreshAllData}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+            tokens={tokens}
+          />
+        );
+      case "staking-vault":
+        return (
+          <StakingVaultPage
+            wallet={wallet}
+            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            onRefreshWallet={refreshAllData}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
           />
         );
       case "gas-dashboard":

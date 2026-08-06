@@ -84,6 +84,16 @@ Agunnaya Labs Studio features a tailored **Immersive UI** design system built fo
 *   **Optimal Route Splitting**: Automatically computes multi-hop route split percentages (e.g., 65% Aerodrome + 35% Uniswap V3) to maximize output and minimize price impact for $AGL tokens.
 *   **Gas & Execution Optimization**: Highlights lowest-gas routes, price impact metrics, MEV protection shields, and execution latency.
 
+### 9. 🔥 ERC-20 Token Burner & Deflation Engine
+*   **Portfolio & Custom Token Burning**: Select tokens directly from portfolio ($AGL, $USDC, $AERO, $cbETH) or input any custom Base ERC-20 contract address to inspect supply and execute burning.
+*   **Dual Destination Mechanisms**: Send tokens to the standard unspendable EVM Dead Address (`0x000...dEaD`) to reduce total supply, or burn $AGL tokens to receive Agunnaya AI Studio Compute Credits.
+*   **Cryptographic Proof of Burn Certificates**: Interactive verification certificates detailing burner address, null target, block number, transaction hash, and BaseScan explorer links.
+
+### 10. 🏛️ Automated Smart Contract Staking Vaults & Live Yield Ticker
+*   **Multi-Tier Vault Lockups**: Choose between Flex Saver (12.5% APY, zero lock), 30-Day Velocity Vault (28.5% APY), 90-Day High-Yield Vault (48.0% APY), and 180-Day Diamond Vault (72.5% APY).
+*   **Real-Time Compounding Yield Ticker**: Live second-by-second yield accumulation ticker showing real-time earnings per position with 1-click Claim and Auto-Compound toggles.
+*   **Yield & Compound Projection Calculator**: Interactive slide controls to simulate deposit amounts, time horizons, and calculate estimated daily, monthly, and 1-year yield projections.
+
 ### 5. 🏦 DeFi Engine, AMM Swapping & Staking Vaults
 *   **Low-Slippage Swaps**: Instantly swap between ETH and native AGL utility tokens on Base Mainnet.
 *   **Staking Vaults & Auto-Compound Engine**: Stake AGL in high-yield vaults (Flex, 30-Day, 90-Day, 180-Day) with fixed APRs up to 64%. Toggle the **Auto-Compound Rewards** switch to automatically reinvest accrued yield every 30 seconds or trigger 1-click manual compounding for amplified APY.

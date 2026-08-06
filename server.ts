@@ -2,9 +2,14 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./src/lib/auth";
 
 const app = express();
 const PORT = 3000;
+
+// Better Auth API route handler for /api/auth and sub-paths
+app.all(["/api/auth", "/api/auth/*"], toNodeHandler(auth));
 
 app.use(express.json());
 
