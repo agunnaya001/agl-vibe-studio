@@ -3,6 +3,7 @@ import { AgunnayaDatabase } from "../lib/db";
 import ImageWithFallback from "../components/ImageWithFallback";
 import TransactionHistoryTable from "../components/TransactionHistoryTable";
 import { useState, useMemo } from "react";
+import TaskSummaryWidget from "../components/TaskSummaryWidget";
 import { 
   Briefcase, 
   Layers, 
@@ -467,6 +468,8 @@ export default function DashboardPage({
         activities={localActivities.length > 0 ? localActivities : initialActivities} 
         onRefresh={handleRefreshActivities}
       />
+
+      <TaskSummaryWidget onNavigateToTasks={() => onSelectTab("task-sync")} />
     </div>
   );
 }

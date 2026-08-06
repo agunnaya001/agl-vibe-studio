@@ -14,11 +14,12 @@ import {
 import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
 import InsufficientCreditsModal from "../components/InsufficientCreditsModal";
 import { AgentInteractionHistory } from "../components/AgentInteractionHistory";
+import { AgentServiceRegistry } from "../components/AgentServiceRegistry";
 import { 
   Bot, Send, BrainCircuit, X, MessageSquare, Plus, Zap, Award, Coins, 
   Sparkles, Cpu, Layers, ShieldCheck, Mic, MicOff, Image as ImageIcon, 
   MapPin, Eye, Film, Download, RefreshCw, Sliders, Play, Trash2, Loader2, Info,
-  Flame, TrendingUp, Check, Copy, ArrowRight, Lock, Code, Terminal
+  Flame, TrendingUp, Check, Copy, ArrowRight, Lock, Code, Terminal, Globe
 } from "lucide-react";
 
 interface AgentStudioPageProps {
@@ -37,8 +38,8 @@ interface ChatMessage {
 }
 
 export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTerminalLog, showToast }: AgentStudioPageProps) {
-  // Tabs: "agents" (Agent Forge & chats), "history" (Interaction History), or "creative" (Media Generator)
-  const [activeTab, setActiveTab] = useState<"agents" | "history" | "creative">("agents");
+  // Tabs: "agents" (Agent Forge & chats), "history" (Interaction History), "creative" (Media Generator) or "services" (Service Registry)
+  const [activeTab, setActiveTab] = useState<"agents" | "history" | "creative" | "services">("agents");
 
   // Forge Sub-Tab: "configure" or "preview"
   const [forgeMode, setForgeMode] = useState<"configure" | "preview">("configure");
@@ -48,6 +49,9 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
   const [symbol, setSymbol] = useState("");
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [tone, setTone] = useState<"professional" | "witty" | "concise" | "friendly" | "analytical">("professional");
+  const [responseLength, setResponseLength] = useState<"short" | "medium" | "long">("medium");
+  const [behaviors, setBehaviors] = useState<string[]>([]);
   const [subFee, setSubFee] = useState("0.001");
   const [loading, setLoading] = useState(false);
   const [deployPaymentMethod, setDeployPaymentMethod] = useState<"agl_credits" | "eth">("agl_credits");
@@ -159,6 +163,9 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
         lifetimeRevenueEth: 0,
         queryCount: 0,
         systemPrompt: currentSystemPrompt,
+        tone,
+        responseLength,
+        personalityBehaviors: behaviors,
         avatarUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=60",
         aglRewardDiscounts: true,
         chatHistory: [],
@@ -175,7 +182,10 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
           model: selectedModel,
           thinkingLevel: highThinking ? "HIGH" : "LOW",
           enableMapsGrounding,
-          location
+          location,
+          tone,
+          responseLength,
+          personalityBehaviors: behaviors
         }
       );
 
@@ -325,6 +335,9 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
         lifetimeRevenueEth: 0,
         avatarUrl: mockAvatar,
         systemPrompt: systemPrompt,
+        tone,
+        responseLength,
+        personalityBehaviors: behaviors,
         aglRewardDiscounts: true,
         backedByAglLiquidity: isAglDeploy,
         aglLiquidityBoosted: isAglDeploy ? 500 : 0,
@@ -387,6 +400,9 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
       setSymbol("");
       setDescription("");
       setSystemPrompt("");
+      setTone("professional");
+      setResponseLength("medium");
+      setBehaviors([]);
       setForgeMode("configure");
     }, 2000);
   };
@@ -406,6 +422,9 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
     setSymbol(agent.symbol);
     setDescription(agent.description);
     setSystemPrompt(agent.systemPrompt || agent.description);
+    setTone(agent.tone || "professional");
+    setResponseLength(agent.responseLength || "medium");
+    setBehaviors(agent.personalityBehaviors || []);
     setSubFee(String(agent.usageFeeEth || 0.001));
     setForgeMode("preview");
     setActiveTab("agents");
@@ -414,15 +433,20 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
   };
 
   // Send message in advanced chat
-  const handleSendChatMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() && !attachedImage || chatLoading || !activeChatAgent) return;
+  const handleSendChatMessage = async (e?: React.FormEvent, overridePrompt?: string, overrideAgent?: AIAgent) => {
+    if (e) e.preventDefault();
+    
+    const agent = overrideAgent || activeChatAgent;
+    if (!agent) return;
+
+    const userText = overridePrompt !== undefined ? overridePrompt.trim() : chatInput.trim();
+    if (!userText && !attachedImage || chatLoading) return;
 
     const creditResult = validateAndConsumeCredits({
       wallet,
       onRefreshWallet: onRefreshAgents,
       requiredCredits: CREDIT_COSTS.AGENT_HARNESS_CHAT,
-      featureName: `Agent Query (${activeChatAgent.name})`,
+      featureName: `Agent Query (${agent.name})`,
       showToast,
       addTerminalLog,
       onRequestCreditsModal: (featureName, required, available) => {
@@ -432,30 +456,31 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
     });
 
     if (!creditResult.success) {
-      if (wallet.isConnected && wallet.balanceEth >= activeChatAgent.usageFeeEth) {
+      if (wallet.isConnected && wallet.balanceEth >= agent.usageFeeEth) {
         // Fallback to ETH payment if available
         const updatedWallet: WalletState = { 
           ...wallet, 
-          balanceEth: Math.max(0, wallet.balanceEth - activeChatAgent.usageFeeEth) 
+          balanceEth: Math.max(0, wallet.balanceEth - agent.usageFeeEth) 
         };
         AgunnayaDatabase.saveWallet(updatedWallet);
         onRefreshAgents();
-        showToast(`Paid subscription fee: ${activeChatAgent.usageFeeEth} ETH`, "info");
-        addTerminalLog("system", `AGENT HARNESS: Debited ${activeChatAgent.usageFeeEth} ETH fee for ${activeChatAgent.name}.`);
+        showToast(`Paid subscription fee: ${agent.usageFeeEth} ETH`, "info");
+        addTerminalLog("system", `AGENT HARNESS: Debited ${agent.usageFeeEth} ETH fee for ${agent.name}.`);
       } else {
         setChatMessages(prev => [...prev, {
           role: "assistant",
-          content: `⚠️ AGENT KERNEL BLOCKED: Insufficient computational credits! 10 AGL Credits or ${activeChatAgent.usageFeeEth} ETH required to query ${activeChatAgent.name}.\n\nPlease top up credits on the AGL Credits page.`
+          content: `⚠️ AGENT KERNEL BLOCKED: Insufficient computational credits! 10 AGL Credits or ${agent.usageFeeEth} ETH required to query ${agent.name}.\n\nPlease top up credits on the AGL Credits page.`
         }]);
         return;
       }
     }
 
-    const userText = chatInput.trim();
     const currentAttachedImage = attachedImage;
     
-    setChatInput("");
-    setAttachedImage(null);
+    if (overridePrompt === undefined) {
+      setChatInput("");
+      setAttachedImage(null);
+    }
     
     const userMsg: ChatMessage = { 
       role: "user", 
@@ -467,18 +492,21 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
     setChatLoading(true);
 
     try {
-      const apiMessages = chatMessages.map(m => ({ role: m.role, content: m.content }));
+      const apiMessages = overrideAgent ? (overrideAgent.chatHistory || []).map(m => ({ role: m.role, content: m.content })) : chatMessages.map(m => ({ role: m.role, content: m.content }));
       apiMessages.push({ role: "user", content: userText });
 
       const result = await chatWithAgentAdvancedAI(
         apiMessages,
-        activeChatAgent,
+        agent,
         {
           model: selectedModel,
           thinkingLevel: highThinking ? "HIGH" : "LOW",
           image: currentAttachedImage,
           enableMapsGrounding,
-          location
+          location,
+          tone: agent.tone,
+          responseLength: agent.responseLength,
+          personalityBehaviors: agent.personalityBehaviors
         }
       );
 
@@ -565,6 +593,15 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
     setActiveChatAgent(agent);
     setChatMessages(agent.chatHistory || []);
     setChatInput(promptText);
+  };
+
+  const handleReRunPrompt = async (agent: AIAgent, promptText: string) => {
+    setActiveTab("agents");
+    setActiveChatAgent(agent);
+    setChatMessages(agent.chatHistory || []);
+    
+    // Call send message immediately with the agent and prompt
+    handleSendChatMessage(undefined, promptText, agent);
   };
 
   // Audio transcription voice recording
@@ -839,6 +876,18 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
           >
             Creative Media Studio
           </button>
+          <button
+            id="tab-services"
+            onClick={() => setActiveTab("services")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "services"
+                ? "bg-brand-purple text-white shadow-lg shadow-brand-purple/10"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5 text-blue-300" />
+            <span>Service Registry</span>
+          </button>
         </div>
       </div>
 
@@ -1034,6 +1083,9 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
                             setSymbol("OMNI");
                             setDescription("Unified autonomous AI Agent providing contract auditing, yield arbitrage, DAO governance, and sentiment analytics.");
                             setSubFee("0.0015");
+                            setTone("analytical");
+                            setResponseLength("long");
+                            setBehaviors(["Self-Correcting", "Objective", "Explanatory", "Strictly Technical"]);
                             const masterDirective = `You are the Agunnaya Omniscient Sentinel Core, an all-in-one autonomous AI Agent operating on Base Mainnet.
 
 CORE DIRECTIVES:
@@ -1058,7 +1110,10 @@ CORE DIRECTIVES:
                             symbol: "AUDIT",
                             desc: "Autonomous smart contract auditor scanning Solidity code for vulnerabilities.",
                             fee: "0.001",
-                            prompt: "You are an expert Web3 security auditor. Scan submitted Solidity code for reentrancy, integer overflows, unhandled calls, and access control issues on Base."
+                            prompt: "You are an expert Web3 security auditor. Scan submitted Solidity code for reentrancy, integer overflows, unhandled calls, and access control issues on Base.",
+                            tone: "analytical",
+                            length: "long",
+                            behaviors: ["Skeptical", "Objective", "Strictly Technical"]
                           },
                           {
                             label: "📈 DeFi Yield Arbitrage Bot",
@@ -1066,7 +1121,10 @@ CORE DIRECTIVES:
                             symbol: "YIELD",
                             desc: "Real-time liquidity and APY aggregator scanning Base pools.",
                             fee: "0.0005",
-                            prompt: "You are a DeFi yield optimization agent on Base. Analyze pool APYs, gas overheads, and impermanent loss risk to recommend maximum returns."
+                            prompt: "You are a DeFi yield optimization agent on Base. Analyze pool APYs, gas overheads, and impermanent loss risk to recommend maximum returns.",
+                            tone: "professional",
+                            length: "medium",
+                            behaviors: ["Self-Correcting", "Objective", "Explanatory"]
                           },
                           {
                             label: "🏛️ DAO Governance Strategist",
@@ -1074,7 +1132,10 @@ CORE DIRECTIVES:
                             symbol: "GOV",
                             desc: "Treasury and proposal strategy generator for decentralized organizations.",
                             fee: "0.0008",
-                            prompt: "You are an autonomous DAO strategist. Help users structure governance proposals, calculate quorum thresholds, and audit treasury allocations."
+                            prompt: "You are an autonomous DAO strategist. Help users structure governance proposals, calculate quorum thresholds, and audit treasury allocations.",
+                            tone: "professional",
+                            length: "long",
+                            behaviors: ["Encouraging", "Explanatory"]
                           },
                           {
                             label: "📊 Web3 Market Sentiment Sentinel",
@@ -1082,7 +1143,10 @@ CORE DIRECTIVES:
                             symbol: "SENT",
                             desc: "On-chain DEX liquidity & whale tracking AI agent.",
                             fee: "0.0006",
-                            prompt: "You are an autonomous Web3 sentiment analyst. Track DEX trading volumes, wallet accumulation trends, and liquidity depth on Base."
+                            prompt: "You are an autonomous Web3 sentiment analyst. Track DEX trading volumes, wallet accumulation trends, and liquidity depth on Base.",
+                            tone: "witty",
+                            length: "short",
+                            behaviors: ["Skeptical", "Minimalist"]
                           }
                         ].map((sug, idx) => (
                           <button
@@ -1095,6 +1159,9 @@ CORE DIRECTIVES:
                               setDescription(sug.desc);
                               setSubFee(sug.fee);
                               setSystemPrompt(sug.prompt);
+                              setTone(sug.tone as any);
+                              setResponseLength(sug.length as any);
+                              setBehaviors(sug.behaviors);
                               showToast(`Loaded AI Agent preset: ${sug.label}`, "info");
                             }}
                             className="text-[10px] px-2 py-1 rounded-lg bg-zinc-950 border border-white/10 hover:border-brand-purple/40 hover:bg-brand-purple/10 text-zinc-400 hover:text-white transition-all font-mono cursor-pointer"
@@ -1114,6 +1181,97 @@ CORE DIRECTIVES:
                       required
                       className="w-full bg-zinc-950 border border-white/10 rounded-xl p-3.5 text-xs text-white focus:outline-none focus:border-brand-purple/40"
                     />
+                  </div>
+
+                  {/* Personality & Persona Configuration Panel */}
+                  <div className="bg-zinc-950/40 border border-white/5 rounded-2xl p-5 space-y-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="p-1.5 rounded-lg bg-brand-purple/20 text-brand-purple border border-brand-purple/30">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white font-display">Personality & Persona</h3>
+                        <p className="text-[10px] text-zinc-500 font-mono">Fine-tune the cognitive tone and response depth of your agent.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500">Response Tone</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(["professional", "witty", "concise", "friendly", "analytical"] as const).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setTone(t)}
+                              className={`py-2 px-1 rounded-xl border text-[10px] font-bold capitalize transition-all ${
+                                tone === t 
+                                  ? "bg-brand-purple/20 border-brand-purple text-white" 
+                                  : "bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10"
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500">Response Length</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(["short", "medium", "long"] as const).map((l) => (
+                            <button
+                              key={l}
+                              type="button"
+                              onClick={() => setResponseLength(l)}
+                              className={`py-2 px-1 rounded-xl border text-[10px] font-bold capitalize transition-all ${
+                                responseLength === l 
+                                  ? "bg-brand-purple/20 border-brand-purple text-white" 
+                                  : "bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10"
+                              }`}
+                            >
+                              {l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500">Personality Behaviors</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          "Self-Correcting", 
+                          "Skeptical", 
+                          "Enthusiastic", 
+                          "Objective", 
+                          "Strictly Technical",
+                          "Encouraging",
+                          "Minimalist",
+                          "Explanatory"
+                        ].map((b) => (
+                          <button
+                            key={b}
+                            type="button"
+                            onClick={() => {
+                              if (behaviors.includes(b)) {
+                                setBehaviors(behaviors.filter(x => x !== b));
+                              } else {
+                                setBehaviors([...behaviors, b]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-full border text-[10px] font-bold transition-all flex items-center gap-1.5 ${
+                              behaviors.includes(b)
+                                ? "bg-brand-purple/20 border-brand-purple text-white"
+                                : "bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10"
+                            }`}
+                          >
+                            {behaviors.includes(b) ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                            {b}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Payment Method Selector (AGL Credits vs ETH) */}
@@ -1688,6 +1846,7 @@ CORE DIRECTIVES:
                   setChatMessages(agent.chatHistory || []);
                 }}
                 onLoadPromptToChat={handleLoadPromptToChat}
+                onReRunPrompt={handleReRunPrompt}
                 onClearHistory={handleClearAgentHistory}
                 showToast={showToast}
               />
@@ -1709,8 +1868,22 @@ CORE DIRECTIVES:
                 setChatMessages(agent.chatHistory || []);
               }}
               onLoadPromptToChat={handleLoadPromptToChat}
+              onReRunPrompt={handleReRunPrompt}
               onClearHistory={handleClearAgentHistory}
               showToast={showToast}
+            />
+          </motion.div>
+        ) : activeTab === "services" ? (
+          <motion.div
+            key="services-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <AgentServiceRegistry
+              showToast={showToast}
+              onRefresh={onRefreshAgents}
             />
           </motion.div>
         ) : (

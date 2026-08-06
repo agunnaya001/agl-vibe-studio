@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import agunnayaLogo from "../assets/images/agunnaya_logo_1782747905258.jpg";
 import { 
   LayoutDashboard, 
@@ -20,6 +20,7 @@ import {
   Gauge,
   Database,
   Landmark,
+  Clock,
   X
 } from "lucide-react";
 
@@ -70,6 +71,7 @@ export default function Sidebar({
   const menuItems = [
     { id: "landing", label: "Studio Home", icon: Sparkles, category: "Welcome" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace" },
+    { id: "task-sync", label: "TaskSync", icon: Clock, category: "Workspace" },
     { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", highlight: true },
     { id: "gdrive", label: "Google Drive Cloud", icon: HardDrive, category: "Workspace" },
     { id: "gmail", label: "Gmail Automation", icon: Mail, category: "Workspace" },

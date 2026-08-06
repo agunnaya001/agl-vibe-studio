@@ -45,6 +45,7 @@ interface AgentInteractionHistoryProps {
   activeAgentId?: string | null;
   onSelectAgent?: (agent: AIAgent) => void;
   onLoadPromptToChat?: (agent: AIAgent, promptText: string) => void;
+  onReRunPrompt?: (agent: AIAgent, promptText: string) => void;
   onClearHistory?: (agentId: string) => void;
   showToast?: (message: string, type?: "success" | "error" | "info" | "warning") => void;
 }
@@ -54,6 +55,7 @@ export const AgentInteractionHistory: React.FC<AgentInteractionHistoryProps> = (
   activeAgentId,
   onSelectAgent,
   onLoadPromptToChat,
+  onReRunPrompt,
   onClearHistory,
   showToast
 }) => {
@@ -385,19 +387,38 @@ export const AgentInteractionHistory: React.FC<AgentInteractionHistoryProps> = (
                       </span>
                     )}
 
-                    {targetAgent && onLoadPromptToChat && (
-                      <button
-                        id={`btn-rerun-prompt-${pair.id}`}
-                        onClick={() => {
-                          onLoadPromptToChat(targetAgent, pair.prompt);
-                          if (showToast) showToast(`Loaded prompt into ${targetAgent.name} chat!`, "info");
-                        }}
-                        className="px-2.5 py-1 rounded bg-brand-purple/20 hover:bg-brand-purple text-purple-300 hover:text-white border border-brand-purple/30 transition-all font-bold flex items-center gap-1 cursor-pointer"
-                        title="Load prompt into agent chat"
-                      >
-                        <Send className="w-3 h-3" />
-                        <span>Prompt Again</span>
-                      </button>
+                    {targetAgent && (onLoadPromptToChat || onReRunPrompt) && (
+                      <div className="flex items-center gap-1.5">
+                        {onLoadPromptToChat && (
+                          <button
+                            id={`btn-load-prompt-${pair.id}`}
+                            onClick={() => {
+                              onLoadPromptToChat(targetAgent, pair.prompt);
+                              if (showToast) showToast(`Loaded prompt into ${targetAgent.name} chat!`, "info");
+                            }}
+                            className="px-2 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/10 transition-all font-bold flex items-center gap-1 cursor-pointer"
+                            title="Load prompt into chat input"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span className="hidden sm:inline">Load</span>
+                          </button>
+                        )}
+                        
+                        {onReRunPrompt && (
+                          <button
+                            id={`btn-rerun-prompt-${pair.id}`}
+                            onClick={() => {
+                              onReRunPrompt(targetAgent, pair.prompt);
+                              if (showToast) showToast(`Re-running prompt with ${targetAgent.name}...`, "success");
+                            }}
+                            className="px-2.5 py-1 rounded bg-brand-purple/20 hover:bg-brand-purple text-purple-300 hover:text-white border border-brand-purple/30 transition-all font-bold flex items-center gap-1 cursor-pointer"
+                            title="Instantly re-execute this prompt"
+                          >
+                            <Zap className="w-3 h-3" />
+                            <span>Re-run</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

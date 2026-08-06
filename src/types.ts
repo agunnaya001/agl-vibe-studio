@@ -138,6 +138,9 @@ export interface AIAgent {
   lifetimeRevenueEth: number;
   queryCount: number;
   systemPrompt: string;
+  tone?: "professional" | "witty" | "concise" | "friendly" | "analytical";
+  responseLength?: "short" | "medium" | "long";
+  personalityBehaviors?: string[];
   avatarUrl: string;
   aglRewardDiscounts: boolean;
   backedByAglLiquidity?: boolean;
@@ -224,5 +227,29 @@ export interface PriceAlert {
   status: "active" | "triggered";
   createdAt: number;
   triggeredAt: number | null;
+}
+
+export interface AgentServiceConnection {
+  id: string;
+  providerName: string;
+  issuer: string;
+  description: string;
+  connectedAt: number;
+  capabilities: Array<{
+    name: string;
+    description: string;
+    approvalStrength: "session" | "webauthn" | "always";
+  }>;
+  status: "active" | "revoked";
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: "pending" | "completed" | "in-progress";
+  priority: "low" | "medium" | "high";
+  dueDate: number;
+  createdAt: number;
 }
 

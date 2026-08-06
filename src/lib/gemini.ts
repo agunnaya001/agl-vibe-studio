@@ -60,11 +60,14 @@ export interface ChatAdvancedOptions {
   image?: { data: string; mimeType: string } | null;
   enableMapsGrounding?: boolean;
   location?: { latitude: number; longitude: number } | null;
+  tone?: string;
+  responseLength?: string;
+  personalityBehaviors?: string[];
 }
 
 export async function chatWithAgentAdvancedAI(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
-  agentProfile: { name: string; symbol: string; description: string; contractAddress: string },
+  agentProfile: any,
   options: ChatAdvancedOptions
 ): Promise<{ content: string; groundingMetadata?: any }> {
   const response = await fetch("/api/ai/agent-chat", {

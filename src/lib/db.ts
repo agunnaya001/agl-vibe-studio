@@ -1,4 +1,4 @@
-import { Token, NFTCollection, DAO, GameFiProject, AIAgent, WalletState, Activity, StakingPool, ReferralRecord, ReferralPayout, PriceAlert, SubAccount } from "../types";
+import { Token, NFTCollection, DAO, GameFiProject, AIAgent, WalletState, Activity, StakingPool, ReferralRecord, ReferralPayout, PriceAlert, SubAccount, AgentServiceConnection, Task } from "../types";
 import { doc, setDoc, getDocs, collection, deleteDoc } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, auth } from "./firebase";
 
@@ -573,6 +573,28 @@ export class AgunnayaDatabase {
     this.saveAgents(agents);
   }
 
+  static getServiceConnections(): AgentServiceConnection[] {
+    return this.safeParse<AgentServiceConnection[]>("agl_service_connections", []);
+  }
+
+  static saveServiceConnections(connections: AgentServiceConnection[]) {
+    localStorage.setItem("agl_service_connections", JSON.stringify(connections));
+    connections.forEach(c => {
+      this.saveToFirestore("service_connections", c.id, c);
+    });
+  }
+
+  static saveServiceConnection(connection: AgentServiceConnection) {
+    const connections = this.getServiceConnections();
+    const idx = connections.findIndex(c => c.id === connection.id);
+    if (idx !== -1) {
+      connections[idx] = connection;
+    } else {
+      connections.push(connection);
+    }
+    this.saveServiceConnections(connections);
+  }
+
   static getStaking(): StakingPool[] {
     return this.safeParse<StakingPool[]>("agl_staking", SEED_STAKING);
   }
@@ -1079,7 +1101,70 @@ export class AgunnayaDatabase {
     }
   }
 
+  static getTasks(): Task[] {
+    const data = localStorage.getItem("agl_tasks");
+    if (!data) {
+      // Default tasks if none exist
+      const defaults: Task[] = [
+        {
+          id: "task_1",
+          title: "Audit Smart Contract",
+          description: "Review the new bonding curve implementation for vulnerabilities.",
+          status: "pending",
+          priority: "high",
+          dueDate: Date.now() + 86400000 * 2,
+          createdAt: Date.now()
+        },
+        {
+          id: "task_2",
+          title: "Launch Token",
+          description: "Finalize parameters and deploy to Base Mainnet.",
+          status: "pending",
+          priority: "medium",
+          dueDate: Date.now() + 86400000 * 5,
+          createdAt: Date.now()
+        },
+        {
+          id: "task_3",
+          title: "Update DAO Proposals",
+          description: "Draft the new treasury allocation proposal.",
+          status: "in-progress",
+          priority: "low",
+          dueDate: Date.now() + 86400000 * 7,
+          createdAt: Date.now()
+        }
+      ];
+      localStorage.setItem("agl_tasks", JSON.stringify(defaults));
+      return defaults;
+    }
+    try {
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  static saveTasks(tasks: Task[]) {
+    localStorage.setItem("agl_tasks", JSON.stringify(tasks));
+    tasks.forEach(t => {
+      this.saveToFirestore("tasks", t.id, t);
+    });
+  }
+
+  static addTask(task: Omit<Task, "id" | "createdAt">): Task {
+    const tasks = this.getTasks();
+    const newTask: Task = {
+      ...task,
+      id: "task_" + Math.random().toString(36).substring(2, 11),
+      createdAt: Date.now()
+    };
+    tasks.unshift(newTask);
+    this.saveTasks(tasks);
+    return newTask;
+  }
+
   static resetDatabase() {
+    localStorage.removeItem("agl_tasks");
     localStorage.removeItem("agl_tokens");
     localStorage.removeItem("agl_nfts");
     localStorage.removeItem("agl_daos");

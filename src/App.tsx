@@ -30,6 +30,7 @@ import GmailPage from "./pages/GmailPage";
 import TokenFactoryPage from "./pages/TokenFactoryPage";
 import TokenBurnerPage from "./pages/TokenBurnerPage";
 import StakingVaultPage from "./pages/StakingVaultPage";
+import TaskSyncPage from "./pages/TaskSyncPage";
 
 // Database & Utilities
 import { AgunnayaDatabase } from "./lib/db";
@@ -882,6 +883,13 @@ export default function App() {
             wallet={wallet}
             onRefreshWallet={refreshAllData}
             addTerminalLog={addTerminalLog}
+            showToast={showToast}
+          />
+        );
+      case "task-sync":
+        return (
+          <TaskSyncPage
+            wallet={wallet}
             showToast={showToast}
           />
         );
