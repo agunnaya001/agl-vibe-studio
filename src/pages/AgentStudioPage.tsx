@@ -627,16 +627,18 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
   };
 
   // Re-run or load previous prompt into active agent chat
-  const handleLoadPromptToChat = (agent: AIAgent, promptText: string) => {
+  const handleLoadPromptToChat = (agent: AIAgent, promptText: string, model?: string) => {
     setActiveTab("agents");
     setActiveChatAgent(agent);
+    if (model) setSelectedModel(model);
     setChatMessages(agent.chatHistory || []);
     setChatInput(promptText);
   };
 
-  const handleReRunPrompt = async (agent: AIAgent, promptText: string) => {
+  const handleReRunPrompt = async (agent: AIAgent, promptText: string, model?: string) => {
     setActiveTab("agents");
     setActiveChatAgent(agent);
+    if (model) setSelectedModel(model);
     setChatMessages(agent.chatHistory || []);
     
     // Call send message immediately with the agent and prompt
@@ -1880,6 +1882,8 @@ CORE DIRECTIVES:
               <AgentInteractionHistory
                 agents={agents}
                 activeAgentId={activeChatAgent?.id}
+                selectedModel={selectedModel}
+                onSelectModel={setSelectedModel}
                 onSelectAgent={(agent) => {
                   setActiveChatAgent(agent);
                   setChatMessages(agent.chatHistory || []);
@@ -1902,6 +1906,8 @@ CORE DIRECTIVES:
             <AgentInteractionHistory
               agents={agents}
               activeAgentId={activeChatAgent?.id}
+              selectedModel={selectedModel}
+              onSelectModel={setSelectedModel}
               onSelectAgent={(agent) => {
                 setActiveChatAgent(agent);
                 setChatMessages(agent.chatHistory || []);

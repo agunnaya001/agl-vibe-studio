@@ -1,4 +1,4 @@
-import { Token, NFTCollection, DAO, GameFiProject, AIAgent, WalletState, Activity, StakingPool, ReferralRecord, ReferralPayout, PriceAlert, SubAccount, AgentServiceConnection, Task } from "../types";
+import { Token, NFTCollection, DAO, GameFiProject, AIAgent, WalletState, Activity, StakingPool, ReferralRecord, ReferralPayout, PriceAlert, SubAccount, AgentServiceConnection, Task, MCPServer, AGLLiquidityPair, AGLPoll } from "../types";
 import { doc, setDoc, getDocs, collection, deleteDoc } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, auth } from "./firebase";
 
@@ -275,9 +275,13 @@ const SEED_AGENTS: AIAgent[] = [
 ];
 
 const SEED_STAKING: StakingPool[] = [
-  { id: "s-1", tokenName: "Agunnaya Labs Token", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 38.5, tvlEth: 12.8, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 7 },
-  { id: "s-2", tokenName: "Meme Pad Chad", tokenSymbol: "CHAD", tokenAddress: "0x89ab...bcde", apr: 82.0, tvlEth: 4.15, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 0 },
-  { id: "s-3", tokenName: "Base AI Core", tokenSymbol: "BAIC", tokenAddress: "0x3456...ef01", apr: 48.0, tvlEth: 6.42, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 14 }
+  { id: "s-agl-flex", tokenName: "AGL Flexible Earn Vault", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 18.5, tvlEth: 28.5, stakedBalance: 0, earnedRewards: 12.5, lockPeriodDays: 0 },
+  { id: "s-agl-30d", tokenName: "AGL 30-Day Boosted Vault (1.5x Multiplier)", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 45.0, tvlEth: 64.2, stakedBalance: 0, earnedRewards: 48.0, lockPeriodDays: 30 },
+  { id: "s-agl-90d", tokenName: "AGL 90-Day Diamond Vault (2.5x Multiplier)", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 85.0, tvlEth: 112.0, stakedBalance: 0, earnedRewards: 115.2, lockPeriodDays: 90 },
+  { id: "s-lp-agl-eth", tokenName: "AGL / ETH LP Staking Vault", tokenSymbol: "AGL-ETH-LP", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", apr: 120.5, tvlEth: 85.4, stakedBalance: 0, earnedRewards: 320.0, lockPeriodDays: 14 },
+  { id: "s-lp-agl-usdc", tokenName: "AGL / USDC LP Staking Vault", tokenSymbol: "AGL-USDC-LP", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", apr: 95.2, tvlEth: 42.1, stakedBalance: 0, earnedRewards: 185.0, lockPeriodDays: 14 },
+  { id: "s-2", tokenName: "Meme Pad Chad Pool", tokenSymbol: "CHAD", tokenAddress: "0x89ab...bcde", apr: 82.0, tvlEth: 4.15, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 0 },
+  { id: "s-3", tokenName: "Base AI Core Pool", tokenSymbol: "BAIC", tokenAddress: "0x3456...ef01", apr: 48.0, tvlEth: 6.42, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 14 }
 ];
 
 const SEED_ACTIVITIES: Activity[] = [
@@ -604,11 +608,19 @@ export class AgunnayaDatabase {
     return this.safeParse<StakingPool[]>("agl_staking", SEED_STAKING);
   }
 
+  static getStakingPools(): StakingPool[] {
+    return this.getStaking();
+  }
+
   static saveStaking(pools: StakingPool[]) {
     localStorage.setItem("agl_staking", JSON.stringify(pools));
     pools.forEach(p => {
       this.saveToFirestore("staking", p.id, p);
     });
+  }
+
+  static saveStakingPools(pools: StakingPool[]) {
+    this.saveStaking(pools);
   }
 
   static getWallet(): WalletState {
@@ -1174,7 +1186,527 @@ export class AgunnayaDatabase {
     return newTask;
   }
 
+  // --- MODEL CONTEXT PROTOCOL (MCP) SERVERS ---
+  static getMCPServers(): MCPServer[] {
+    if (typeof window === "undefined" || !window.localStorage) return [];
+    try {
+      const data = localStorage.getItem("agl_mcp_servers");
+      if (!data) {
+        const defaults: MCPServer[] = [
+          {
+            id: "mcp_brave_search",
+            name: "Brave Search MCP Server",
+            type: "stdio",
+            endpoint: "npx -y @modelcontextprotocol/server-brave-search",
+            status: "connected",
+            latencyMs: 42,
+            description: "Provides real-time web, crypto news, and domain indexing search tools to AI Agents.",
+            category: "search",
+            capabilities: ["web_search", "local_search", "news_filter"],
+            tools: [
+              { name: "mcp_brave_web_search", description: "Performs real-time web search with domain ranking.", inputSchema: { query: "string" } },
+              { name: "mcp_brave_local_search", description: "Finds geo-location services and node locations.", inputSchema: { location: "string" } }
+            ],
+            connectedAt: Date.now() - 86400000 * 5,
+            version: "v1.2.0"
+          },
+          {
+            id: "mcp_base_l2_rpc",
+            name: "Base L2 RPC & Contract MCP",
+            type: "http",
+            endpoint: "https://mcp.base.org/v1/rpc",
+            status: "connected",
+            latencyMs: 18,
+            description: "Direct Base L2 RPC connector for balance checks, contract verification, gas estimates & raw tx broadcasts.",
+            category: "crypto",
+            capabilities: ["rpc_query", "tx_broadcast", "gas_oracle"],
+            tools: [
+              { name: "mcp_base_get_balance", description: "Query native ETH & ERC20 token balances on Base.", inputSchema: { address: "string" } },
+              { name: "mcp_base_estimate_gas", description: "Simulate EIP-1559 gas costs in Gwei.", inputSchema: { to: "string", data: "string" } },
+              { name: "mcp_base_broadcast_tx", description: "Broadcast signed raw transaction to Base RPC.", inputSchema: { rawTx: "string" } }
+            ],
+            connectedAt: Date.now() - 86400000 * 10,
+            version: "v2.0.4"
+          },
+          {
+            id: "mcp_sqlite_firestore",
+            name: "Database & Storage MCP Connector",
+            type: "sse",
+            endpoint: "https://db-mcp.agunnaya.io/sse",
+            status: "connected",
+            latencyMs: 25,
+            description: "Provides zero-trust SQL & Document store queries for agent persistent memory.",
+            category: "database",
+            capabilities: ["sql_query", "document_crud", "vector_embeddings"],
+            tools: [
+              { name: "mcp_db_query_table", description: "Execute read-only SQL queries on application database.", inputSchema: { query: "string" } },
+              { name: "mcp_db_insert_record", description: "Insert structured JSON records into collection.", inputSchema: { collection: "string", document: "object" } }
+            ],
+            connectedAt: Date.now() - 86400000 * 3,
+            version: "v1.5.1"
+          },
+          {
+            id: "mcp_agunnaya_dex",
+            name: "Agunnaya Bonding Curve & LP MCP",
+            type: "http",
+            endpoint: "https://api.agunnaya.io/mcp/dex",
+            status: "connected",
+            latencyMs: 12,
+            description: "Official MCP tool server for AGL liquidity depth, automated arbitrage & swap quotes.",
+            category: "crypto",
+            capabilities: ["bonding_curve_quote", "lp_reserve_check", "auto_swap"],
+            tools: [
+              { name: "mcp_agl_get_reserves", description: "Get live reserves for AGL liquidity pools.", inputSchema: { pairSymbol: "string" } },
+              { name: "mcp_agl_calculate_swap", description: "Simulate exact swap outputs & slippage.", inputSchema: { fromToken: "string", toToken: "string", amount: "number" } }
+            ],
+            connectedAt: Date.now() - 86400000 * 1,
+            version: "v3.1.0"
+          }
+        ];
+        try {
+          localStorage.setItem("agl_mcp_servers", JSON.stringify(defaults));
+        } catch {}
+        return defaults;
+      }
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  static saveMCPServers(servers: MCPServer[]) {
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        localStorage.setItem("agl_mcp_servers", JSON.stringify(servers));
+      } catch {}
+    }
+    servers.forEach(s => {
+      this.saveToFirestore("mcp_servers", s.id, s);
+    });
+  }
+
+  static addMCPServer(server: Omit<MCPServer, "id" | "connectedAt">): MCPServer {
+    const servers = this.getMCPServers();
+    const newServer: MCPServer = {
+      ...server,
+      id: "mcp_" + Math.random().toString(36).substring(2, 11),
+      connectedAt: Date.now()
+    };
+    servers.unshift(newServer);
+    this.saveMCPServers(servers);
+    return newServer;
+  }
+
+  // --- REAL AGL LIQUIDITY PAIRS ---
+  static getLiquidityPairs(): AGLLiquidityPair[] {
+    if (typeof window === "undefined" || !window.localStorage) return [];
+    try {
+      const data = localStorage.getItem("agl_liquidity_pairs");
+      if (!data) {
+        const defaults: AGLLiquidityPair[] = [
+          {
+            id: "pair_agl_eth",
+            pairSymbol: "AGL / ETH",
+            tokenA: { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", logoUrl: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80" },
+            tokenB: { symbol: "ETH", name: "Ethereum", address: "0x0000000000000000000000000000000000000000", logoUrl: "https://assets.coingecko.com/coins/images/279/large/ethereum.png" },
+            reserveA: 2500000,
+            reserveB: 125,
+            totalSupplyLP: 17677,
+            volume24hUsd: 812500,
+            apr: 120.5,
+            fee03PctCollectedEth: 2.4375,
+            isVerified: true,
+            createdAt: Date.now() - 86400000 * 30
+          },
+          {
+            id: "pair_agl_usdc",
+            pairSymbol: "AGL / USDC",
+            tokenA: { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", logoUrl: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80" },
+            tokenB: { symbol: "USDC", name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", logoUrl: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png" },
+            reserveA: 1800000,
+            reserveB: 292500,
+            totalSupplyLP: 22945,
+            volume24hUsd: 585000,
+            apr: 95.2,
+            fee03PctCollectedEth: 1.755,
+            isVerified: true,
+            createdAt: Date.now() - 86400000 * 20
+          },
+          {
+            id: "pair_agl_cbeth",
+            pairSymbol: "AGL / cbETH",
+            tokenA: { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", logoUrl: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80" },
+            tokenB: { symbol: "cbETH", name: "Coinbase Staked ETH", address: "0x2Ae3F1Ec7F1F5012A27a5d3f112702170bA3b400", logoUrl: "https://assets.coingecko.com/coins/images/27008/large/cbeth.png" },
+            reserveA: 950000,
+            reserveB: 44,
+            totalSupplyLP: 6465,
+            volume24hUsd: 308750,
+            apr: 110.8,
+            fee03PctCollectedEth: 0.926,
+            isVerified: true,
+            createdAt: Date.now() - 86400000 * 14
+          },
+          {
+            id: "pair_agl_aero",
+            pairSymbol: "AGL / AERO",
+            tokenA: { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", logoUrl: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80" },
+            tokenB: { symbol: "AERO", name: "Aerodrome Token", address: "0x940181a94A35A4569E4529A3CDfB74e38FD98631", logoUrl: "https://assets.coingecko.com/coins/images/31745/large/aerodrome.png" },
+            reserveA: 1200000,
+            reserveB: 156000,
+            totalSupplyLP: 13693,
+            volume24hUsd: 390000,
+            apr: 145.0,
+            fee03PctCollectedEth: 1.17,
+            isVerified: true,
+            createdAt: Date.now() - 86400000 * 10
+          }
+        ];
+        try {
+          localStorage.setItem("agl_liquidity_pairs", JSON.stringify(defaults));
+        } catch {}
+        return defaults;
+      }
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  static saveLiquidityPairs(pairs: AGLLiquidityPair[]) {
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        localStorage.setItem("agl_liquidity_pairs", JSON.stringify(pairs));
+      } catch {}
+    }
+    pairs.forEach(p => {
+      this.saveToFirestore("liquidity_pairs", p.id, p);
+    });
+  }
+
+  static addLiquidityToPair(pairId: string, amountA: number, amountB: number): { lpMinted: number; newPair: AGLLiquidityPair } {
+    const pairs = this.getLiquidityPairs();
+    const idx = pairs.findIndex(p => p.id === pairId);
+    if (idx === -1) throw new Error("Liquidity pair not found");
+
+    const pair = pairs[idx];
+    // Constant product LP mint ratio = sqrt(amountA * amountB) or proportional
+    const lpMinted = Math.sqrt(amountA * amountB);
+
+    pair.reserveA += amountA;
+    pair.reserveB += amountB;
+    pair.totalSupplyLP += lpMinted;
+    pair.volume24hUsd += (amountA * 0.1625) + (amountB * 3250);
+
+    pairs[idx] = pair;
+    this.saveLiquidityPairs(pairs);
+
+    // Update wallet balance: deposit AGL, receive LP tokens
+    const wallet = this.getWallet();
+    wallet.aglTokenBalance = Math.max(0, wallet.aglTokenBalance - amountA);
+    if (pair.tokenB.symbol === "ETH") {
+      wallet.balanceEth = Math.max(0, wallet.balanceEth - amountB);
+    }
+    wallet.aglLiquidityStaked = (wallet.aglLiquidityStaked || 0) + lpMinted;
+    this.saveWallet(wallet);
+
+    // Log Activity
+    this.addActivity({
+      type: "stake",
+      tokenSymbol: pair.pairSymbol,
+      tokenAddress: pair.tokenA.address,
+      user: wallet.address,
+      amount: lpMinted,
+      ethValue: amountB,
+      details: `Added Liquidity: ${amountA.toLocaleString()} ${pair.tokenA.symbol} + ${amountB} ${pair.tokenB.symbol} (Minted ${lpMinted.toFixed(2)} LP tokens)`
+    });
+
+    return { lpMinted, newPair: pair };
+  }
+
+  static removeLiquidityFromPair(pairId: string, lpAmount: number): { amountA: number; amountB: number; newPair: AGLLiquidityPair } {
+    const pairs = this.getLiquidityPairs();
+    const idx = pairs.findIndex(p => p.id === pairId);
+    if (idx === -1) throw new Error("Liquidity pair not found");
+
+    const pair = pairs[idx];
+    const share = Math.min(1, lpAmount / pair.totalSupplyLP);
+    const amountA = pair.reserveA * share;
+    const amountB = pair.reserveB * share;
+
+    pair.reserveA -= amountA;
+    pair.reserveB -= amountB;
+    pair.totalSupplyLP -= lpAmount;
+
+    pairs[idx] = pair;
+    this.saveLiquidityPairs(pairs);
+
+    // Update wallet
+    const wallet = this.getWallet();
+    wallet.aglTokenBalance += amountA;
+    if (pair.tokenB.symbol === "ETH") {
+      wallet.balanceEth += amountB;
+    }
+    wallet.aglLiquidityStaked = Math.max(0, (wallet.aglLiquidityStaked || 0) - lpAmount);
+    this.saveWallet(wallet);
+
+    // Log Activity
+    this.addActivity({
+      type: "stake",
+      tokenSymbol: pair.pairSymbol,
+      tokenAddress: pair.tokenA.address,
+      user: wallet.address,
+      amount: lpAmount,
+      ethValue: amountB,
+      details: `Removed Liquidity: Reclaimed ${amountA.toFixed(2)} ${pair.tokenA.symbol} + ${amountB.toFixed(4)} ${pair.tokenB.symbol}`
+    });
+
+    return { amountA, amountB, newPair: pair };
+  }
+
+  // --- AGL POLLS & PAIR GOVERNANCE ---
+  static getAGLPolls(): AGLPoll[] {
+    if (typeof window === "undefined" || !window.localStorage) return [];
+    try {
+      const data = localStorage.getItem("agl_polls");
+      if (!data) {
+        const defaults: AGLPoll[] = [
+          {
+            id: "poll_pair_boost",
+            title: "AGL Liquidity Pair Boost: Which coin pairs with AGL for 2x Staking APY?",
+            description: "Vote on the next high-volume coin to receive official $AGL liquidity pairing and double yield multipliers on Base L2.",
+            category: "pair",
+            pairSymbol: "AGL / USDC",
+            options: [
+              { id: "opt_usdc", label: "AGL / USDC (Stable Liquidity Depth)", votes: 1425000, voters: ["0x4795...", "0x89ab..."] },
+              { id: "opt_aero", label: "AGL / AERO (Aerodrome Yield Synergy)", votes: 980000, voters: ["0x3456..."] },
+              { id: "opt_sol", label: "AGL / SOL (Cross-chain Bridge Pair)", votes: 620000, voters: [] },
+              { id: "opt_uni", label: "AGL / UNI (Uniswap V3 Concentrated Pool)", votes: 310000, voters: [] }
+            ],
+            totalVotes: 3335000,
+            status: "active",
+            endTime: Date.now() + 86400000 * 6,
+            creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+            createdAt: Date.now() - 86400000 * 2
+          },
+          {
+            id: "poll_fee_split",
+            title: "AGL Protocol Fee Distribution: 0.3% DEX Swap Fee Allocation",
+            description: "Determine how collected DEX swap fees across all AGL liquidity pools should be split between LP Providers, AGL Buyback/Burn, and Treasury.",
+            category: "fee",
+            options: [
+              { id: "opt_100_lp", label: "100% to Liquidity Providers (Max LP Yield)", votes: 2100000, voters: ["0x4795..."] },
+              { id: "opt_80_20", label: "80% LPs / 20% Automated AGL Token Burn", votes: 3450000, voters: ["0x3456...", "0x89ab..."] },
+              { id: "opt_70_30", label: "70% LPs / 30% AI Developer Grants Treasury", votes: 890000, voters: [] }
+            ],
+            totalVotes: 6440000,
+            status: "active",
+            endTime: Date.now() + 86400000 * 4,
+            creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+            createdAt: Date.now() - 86400000 * 4
+          },
+          {
+            id: "poll_agent_grant",
+            title: "Approve 50,000 $AGL Grant for Autonomous Arbitrage Agent #04",
+            description: "Proposal to fund Agent #04 with 50,000 $AGL from treasury to execute cross-DEX liquidity rebalancing automatically.",
+            category: "grant",
+            options: [
+              { id: "opt_approve", label: "Approve 50k $AGL Grant", votes: 4200000, voters: ["0x4795...", "0x3456..."] },
+              { id: "opt_reject", label: "Reject Grant Request", votes: 150000, voters: [] }
+            ],
+            totalVotes: 4350000,
+            status: "active",
+            endTime: Date.now() + 86400000 * 8,
+            creator: "0x3456...ef01",
+            createdAt: Date.now() - 86400000 * 1
+          }
+        ];
+        try {
+          localStorage.setItem("agl_polls", JSON.stringify(defaults));
+        } catch {}
+        return defaults;
+      }
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  static saveAGLPolls(polls: AGLPoll[]) {
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        localStorage.setItem("agl_polls", JSON.stringify(polls));
+      } catch {}
+    }
+    polls.forEach(p => {
+      this.saveToFirestore("polls", p.id, p);
+    });
+  }
+
+  static voteOnAGLPoll(pollId: string, optionId: string, voteWeight: number): { updatedPoll: AGLPoll } {
+    const polls = this.getAGLPolls();
+    const idx = polls.findIndex(p => p.id === pollId);
+    if (idx === -1) throw new Error("AGL Poll not found");
+
+    const poll = polls[idx];
+    const wallet = this.getWallet();
+
+    const optIdx = poll.options.findIndex(o => o.id === optionId);
+    if (optIdx === -1) throw new Error("Poll option not found");
+
+    poll.options[optIdx].votes += voteWeight;
+    if (!poll.options[optIdx].voters.includes(wallet.address)) {
+      poll.options[optIdx].voters.push(wallet.address);
+    }
+    poll.totalVotes += voteWeight;
+
+    polls[idx] = poll;
+    this.saveAGLPolls(polls);
+
+    // Log Activity
+    this.addActivity({
+      type: "vote",
+      tokenSymbol: "AGL",
+      tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698",
+      user: wallet.address,
+      amount: voteWeight,
+      ethValue: (voteWeight * 0.1625) / 3250,
+      details: `Voted ${voteWeight.toLocaleString()} $AGL in Poll: "${poll.title}" -> ${poll.options[optIdx].label}`
+    });
+
+    return { updatedPoll: poll };
+  }
+
+  static addAGLPoll(poll: Omit<AGLPoll, "id" | "totalVotes" | "createdAt" | "creator">): AGLPoll {
+    const polls = this.getAGLPolls();
+    const wallet = this.getWallet();
+
+    const newPoll: AGLPoll = {
+      ...poll,
+      id: "poll_" + Math.random().toString(36).substring(2, 11),
+      totalVotes: 0,
+      creator: wallet.address,
+      createdAt: Date.now()
+    };
+
+    polls.unshift(newPoll);
+    this.saveAGLPolls(polls);
+
+    // Log Activity
+    this.addActivity({
+      type: "create",
+      tokenSymbol: "AGL",
+      tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698",
+      user: wallet.address,
+      amount: 0,
+      ethValue: 0,
+      details: `Created new AGL Governance Poll: "${poll.title}"`
+    });
+
+    return newPoll;
+  }
+
+  // --- REAL STAKING & COMPOUNDING ENGINE ---
+  static stakeTokens(poolId: string, amount: number): { success: boolean; newStakedBalance: number } {
+    const wallet = this.getWallet();
+    if (wallet.aglTokenBalance < amount) {
+      throw new Error("Insufficient AGL token balance to stake");
+    }
+
+    const pools = this.getStakingPools();
+    const idx = pools.findIndex(p => p.id === poolId);
+    const pool = idx !== -1 ? pools[idx] : pools[0];
+
+    // Deduct AGL from wallet
+    wallet.aglTokenBalance -= amount;
+    wallet.aglLiquidityStaked = (wallet.aglLiquidityStaked || 0) + amount;
+    this.saveWallet(wallet);
+
+    // Update pool
+    pool.stakedBalance += amount;
+    pool.tvlEth += (amount * 0.1625) / 3250;
+    pools[idx] = pool;
+    this.saveStakingPools(pools);
+
+    // Log Activity
+    this.addActivity({
+      type: "stake",
+      tokenSymbol: pool.tokenSymbol,
+      tokenAddress: pool.tokenAddress,
+      user: wallet.address,
+      amount: amount,
+      ethValue: (amount * 0.1625) / 3250,
+      details: `Staked ${amount.toLocaleString()} ${pool.tokenSymbol} into ${pool.tokenName} (${pool.apr}% APY)`
+    });
+
+    return { success: true, newStakedBalance: pool.stakedBalance };
+  }
+
+  static claimStakingRewards(poolId: string): { success: boolean; claimedRewards: number } {
+    const pools = this.getStakingPools();
+    const idx = pools.findIndex(p => p.id === poolId);
+    if (idx === -1) throw new Error("Staking pool not found");
+
+    const pool = pools[idx];
+    const rewards = pool.earnedRewards;
+    if (rewards <= 0) return { success: false, claimedRewards: 0 };
+
+    pool.earnedRewards = 0;
+    pools[idx] = pool;
+    this.saveStakingPools(pools);
+
+    // Add rewards to user wallet
+    const wallet = this.getWallet();
+    wallet.aglTokenBalance += rewards;
+    this.saveWallet(wallet);
+
+    // Log Activity
+    this.addActivity({
+      type: "stake",
+      tokenSymbol: "AGL",
+      tokenAddress: pool.tokenAddress,
+      user: wallet.address,
+      amount: rewards,
+      ethValue: (rewards * 0.1625) / 3250,
+      details: `Claimed +${rewards.toFixed(2)} AGL Staking Yield Rewards`
+    });
+
+    return { success: true, claimedRewards: rewards };
+  }
+
+  static unstakeTokens(poolId: string, amount: number): { success: boolean; remainingStaked: number } {
+    const pools = this.getStakingPools();
+    const idx = pools.findIndex(p => p.id === poolId);
+    if (idx === -1) throw new Error("Staking pool not found");
+
+    const pool = pools[idx];
+    if (pool.stakedBalance < amount) throw new Error("Cannot unstake more than currently staked balance");
+
+    pool.stakedBalance -= amount;
+    pools[idx] = pool;
+    this.saveStakingPools(pools);
+
+    // Refund wallet
+    const wallet = this.getWallet();
+    wallet.aglTokenBalance += amount;
+    wallet.aglLiquidityStaked = Math.max(0, (wallet.aglLiquidityStaked || 0) - amount);
+    this.saveWallet(wallet);
+
+    // Log Activity
+    this.addActivity({
+      type: "stake",
+      tokenSymbol: pool.tokenSymbol,
+      tokenAddress: pool.tokenAddress,
+      user: wallet.address,
+      amount: amount,
+      ethValue: (amount * 0.1625) / 3250,
+      details: `Unstaked ${amount.toLocaleString()} ${pool.tokenSymbol} back to wallet`
+    });
+
+    return { success: true, remainingStaked: pool.stakedBalance };
+  }
+
   static resetDatabase() {
+
     localStorage.removeItem("agl_tasks");
     localStorage.removeItem("agl_tokens");
     localStorage.removeItem("agl_nfts");

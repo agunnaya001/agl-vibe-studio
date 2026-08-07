@@ -17,10 +17,12 @@ import {
   RefreshCw,
   X,
   CreditCard,
-  Cloud
+  Cloud,
+  Server
 } from "lucide-react";
 import { AgentServiceConnection } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import MCPServerRegistryComponent from "./MCPServerRegistryComponent";
 
 interface AgentServiceRegistryProps {
   showToast: (message: string, type: "success" | "error" | "info") => void;
@@ -39,6 +41,7 @@ interface ProviderConfig {
 }
 
 export const AgentServiceRegistry: React.FC<AgentServiceRegistryProps> = ({ showToast, onRefresh }) => {
+  const [activeSubTab, setActiveSubTab] = useState<"mcp" | "connectors">("mcp");
   const [connections, setConnections] = useState<AgentServiceConnection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchUrl, setSearchUrl] = useState("");
@@ -124,8 +127,52 @@ export const AgentServiceRegistry: React.FC<AgentServiceRegistryProps> = ({ show
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* HEADER SECTION */}
-      <div className="bg-zinc-950/40 border border-white/10 rounded-3xl p-6 md:p-8 relative overflow-hidden">
+      {/* Sub-Tab Navigation Switcher */}
+      <div className="flex items-center justify-between p-2 bg-zinc-950/80 border border-white/10 rounded-2xl">
+        <div className="flex items-center gap-2 font-mono text-xs font-bold">
+          <button
+            id="btn-subtab-mcp"
+            onClick={() => setActiveSubTab("mcp")}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+              activeSubTab === "mcp"
+                ? "bg-brand-purple text-white shadow-lg shadow-brand-purple/20"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Cpu className="w-4 h-4 text-purple-300" />
+            <span>MCP Servers & Connectors</span>
+            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[9px] font-bold">
+              RPC 2.0
+            </span>
+          </button>
+
+          <button
+            id="btn-subtab-connectors"
+            onClick={() => setActiveSubTab("connectors")}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+              activeSubTab === "connectors"
+                ? "bg-brand-purple text-white shadow-lg shadow-brand-purple/20"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Globe className="w-4 h-4 text-blue-300" />
+            <span>Service Auth & OAuth Links</span>
+            <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 text-[9px] font-bold">
+              {connections.filter(c => c.status === "active").length} Active
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {activeSubTab === "mcp" ? (
+        <MCPServerRegistryComponent
+          showToast={showToast}
+          onRefresh={onRefresh}
+        />
+      ) : (
+        <>
+          {/* HEADER SECTION */}
+          <div className="bg-zinc-950/40 border border-white/10 rounded-3xl p-6 md:p-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-brand-purple/10 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -364,6 +411,8 @@ export const AgentServiceRegistry: React.FC<AgentServiceRegistryProps> = ({ show
           </div>
         </div>
       </div>
+    </>
+  )}
     </div>
   );
 };

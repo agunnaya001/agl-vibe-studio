@@ -20,6 +20,7 @@ import {
   Bot
 } from "lucide-react";
 import { WalletState, Token } from "../types";
+import { AgunnayaDatabase } from "../lib/db";
 import ImageWithFallback from "./ImageWithFallback";
 
 interface DexAggregatorComponentProps {
@@ -192,16 +193,52 @@ export default function DexAggregatorComponent({
 
     if (!activeQuote) return;
 
+    // Check balance
+    if (fromToken.symbol === "ETH" && wallet.balanceEth < amt) {
+      showToast(`Insufficient ETH balance (${wallet.balanceEth.toFixed(4)} available)`, "error");
+      return;
+    }
+    if (fromToken.symbol === "AGL" && wallet.aglTokenBalance < amt) {
+      showToast(`Insufficient AGL balance (${wallet.aglTokenBalance.toLocaleString()} available)`, "error");
+      return;
+    }
+
     setIsExecuting(true);
     addTerminalLog("info", `Initiating Aggregated DEX Swap via ${activeQuote.dexName} on Base L2...`);
 
     setTimeout(() => {
       setIsExecuting(false);
+
+      // Perform real balance updates in AgunnayaDatabase
+      const updatedWallet = { ...wallet };
+      if (fromToken.symbol === "ETH") {
+        updatedWallet.balanceEth -= amt;
+      } else if (fromToken.symbol === "AGL") {
+        updatedWallet.aglTokenBalance -= amt;
+      }
+
+      if (toToken.symbol === "ETH") {
+        updatedWallet.balanceEth += activeQuote.outputAmount;
+      } else if (toToken.symbol === "AGL") {
+        updatedWallet.aglTokenBalance += activeQuote.outputAmount;
+      }
+
+      AgunnayaDatabase.saveWallet(updatedWallet);
+      AgunnayaDatabase.addActivity({
+        type: "buy",
+        tokenSymbol: toToken.symbol,
+        tokenAddress: toToken.address,
+        user: wallet.address || "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+        amount: activeQuote.outputAmount,
+        ethValue: fromToken.symbol === "ETH" ? amt : 0,
+        details: `Swapped ${amt} ${fromToken.symbol} for ${activeQuote.outputAmount.toFixed(2)} ${toToken.symbol} via ${activeQuote.dexName}`
+      });
+
       addTerminalLog("success", `DEX Swap Executed! ${amt} ${fromToken.symbol} -> ${activeQuote.outputAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${toToken.symbol} via ${activeQuote.dexName}`);
       showToast(`Swapped ${amt} ${fromToken.symbol} for ${activeQuote.outputAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${toToken.symbol} on ${activeQuote.dexName}!`, "success");
       onRefreshWallet();
       setInputAmount("");
-    }, 1500);
+    }, 1200);
   };
 
   return (

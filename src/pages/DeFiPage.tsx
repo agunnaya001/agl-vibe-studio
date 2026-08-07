@@ -7,6 +7,8 @@ import AirdropSweepTracker from "../components/AirdropSweepTracker";
 import LiFiBridgeComponent from "../components/LiFiBridgeComponent";
 import AIPortfolioRebalancer from "../components/AIPortfolioRebalancer";
 import DexAggregatorComponent from "../components/DexAggregatorComponent";
+import AGLLiquidityPoolsComponent from "../components/AGLLiquidityPoolsComponent";
+import AGLPollsGovernanceComponent from "../components/AGLPollsGovernanceComponent";
 import { 
   ArrowLeftRight, 
   Landmark, 
@@ -24,7 +26,9 @@ import {
   ShieldAlert,
   Zap,
   Globe,
-  PieChart
+  PieChart,
+  Droplets,
+  Vote
 } from "lucide-react";
 
 interface DeFiPageProps {
@@ -98,7 +102,7 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
   const [stakingLoading, setStakingLoading] = useState(false);
   const [selectedTierId, setSelectedTierId] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"stake" | "positions">("stake");
-  const [defiHubTab, setDefiHubTab] = useState<"dex-aggregator" | "portfolio-rebalancer" | "airdrop-sweep" | "swaps-staking" | "lifi-bridge">("dex-aggregator");
+  const [defiHubTab, setDefiHubTab] = useState<"dex-aggregator" | "agl-liquidity" | "agl-polls" | "portfolio-rebalancer" | "airdrop-sweep" | "swaps-staking" | "lifi-bridge">("dex-aggregator");
   const [currentTimeSec, setCurrentTimeSec] = useState<number>(Math.floor(Date.now() / 1000));
 
   // Web3 Status
@@ -688,6 +692,40 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
           </button>
 
           <button
+            id="tab-btn-agl-liquidity"
+            type="button"
+            onClick={() => setDefiHubTab("agl-liquidity")}
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              defiHubTab === "agl-liquidity"
+                ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white shadow-lg shadow-purple-500/20"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Droplets className="w-4 h-4 text-emerald-400" />
+            <span>AGL Liquidity Pairs</span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
+              0.3% Fee
+            </span>
+          </button>
+
+          <button
+            id="tab-btn-agl-polls"
+            type="button"
+            onClick={() => setDefiHubTab("agl-polls")}
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              defiHubTab === "agl-polls"
+                ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white shadow-lg shadow-purple-500/20"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Vote className="w-4 h-4 text-brand-purple" />
+            <span>AGL Governance Polls</span>
+            <span className="px-2 py-0.5 rounded-full bg-brand-purple/20 text-purple-300 text-[9px] font-bold">
+              DAO
+            </span>
+          </button>
+
+          <button
             id="tab-btn-portfolio-rebalancer"
             type="button"
             onClick={() => setDefiHubTab("portfolio-rebalancer")}
@@ -766,6 +804,26 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
           onRefreshWallet={onRefreshWallet}
           addTerminalLog={addTerminalLog}
           showToast={showToast}
+        />
+      )}
+
+      {/* TAB CONTENT 0B: AGL LIQUIDITY PAIRS */}
+      {defiHubTab === "agl-liquidity" && (
+        <AGLLiquidityPoolsComponent
+          wallet={wallet}
+          onRefreshWallet={onRefreshWallet}
+          showToast={showToast}
+          addTerminalLog={addTerminalLog}
+        />
+      )}
+
+      {/* TAB CONTENT 0C: AGL GOVERNANCE POLLS */}
+      {defiHubTab === "agl-polls" && (
+        <AGLPollsGovernanceComponent
+          wallet={wallet}
+          onRefreshWallet={onRefreshWallet}
+          showToast={showToast}
+          addTerminalLog={addTerminalLog}
         />
       )}
 

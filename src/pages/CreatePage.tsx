@@ -6,6 +6,7 @@ import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
 import { AgunnayaDatabase, BASE_PRICE, SLOPE } from "../lib/db";
 import { Token, WalletState } from "../types";
 import IPFSUploader from "../components/IPFSUploader";
+import SmartContractTemplateLibrary from "../components/SmartContractTemplateLibrary";
 import { analyzeSolidityCode } from "../lib/security";
 import { db, auth } from "../lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -56,7 +57,7 @@ interface CreatePageProps {
 }
 
 export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, addTerminalLog, showToast }: CreatePageProps) {
-  const [activeSubMode, setActiveSubMode] = useState<"launchpad" | "ai-architect">("ai-architect");
+  const [activeSubMode, setActiveSubMode] = useState<"launchpad" | "ai-architect" | "templates">("ai-architect");
 
   // AI Architect State
   const [aiPrompt, setAiPrompt] = useState("");
@@ -594,68 +595,123 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
     }, 2000);
   };
 
+  const handleLoadTemplateIntoAIArchitect = (code: string, name: string, symbol: string) => {
+    setActiveSubMode("ai-architect");
+    setAiPrompt(`Customize pre-audited boilerplate for ${name} ($${symbol})`);
+    setAiResult({
+      name,
+      symbol,
+      description: `Pre-audited boilerplate contract for ${name} ($${symbol})`,
+      solidityCode: code,
+      parameters: {
+        initialSupply: "1,000,000",
+        mintPrice: "0.015 ETH",
+        additionalConfig: "OpenZeppelin v5.0 Standard certified template"
+      },
+      securityAudit: "CertiK / OpenZeppelin v5.0 pre-audited template code",
+      uiTheme: { primaryColor: "purple-500", glowColor: "purple-500/20" },
+      launchChecklist: [
+        "OpenZeppelin v5.0 contract structure verified",
+        "ReentrancyGuard & SafeMath compliant",
+        "Gas optimized Solc 0.8.20 execution",
+        "Ready for Base Mainnet / Sepolia deployment"
+      ]
+    });
+    showToast(`Loaded ${name} template into AI Architect!`, "success");
+    addTerminalLog("system", `TEMPLATE ENGINE: Transferred ${name} template code into AI Architect session.`);
+  };
+
   return (
-    <div id="creator-workspace-root" className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
-      {/* Creation Mode Tabs & Active input panels */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* AI Deployment Wizard Hero Callout */}
-        <div className="relative group overflow-hidden rounded-2xl bg-gradient-to-r from-brand-blue/20 via-brand-purple/20 to-purple-600/20 border border-brand-purple/40 p-4 shadow-xl">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-blue to-brand-purple flex items-center justify-center text-white shadow-lg shadow-brand-purple/30">
-                <Wand2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white font-display flex items-center gap-2">
-                  AI Token Deployment Wizard
-                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-purple text-white font-mono uppercase tracking-wider font-bold">
-                    Guided Launch
-                  </span>
-                </h3>
-                <p className="text-[11px] text-zinc-300 font-mono">
-                  Input plain text requirements & let Gemini AI propose bonding curve slopes, contract parameters & launch rules automatically!
-                </p>
+    <div id="creator-workspace-root" className="space-y-6 animate-fade-in">
+      {/* Creation Submode Tabs Bar */}
+      <div className="flex bg-zinc-900/80 border border-white/5 p-1 rounded-xl">
+        <button
+          id="submode-tab-ai"
+          onClick={() => { setActiveSubMode("ai-architect"); setAiResult(null); }}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold font-display transition-all cursor-pointer ${
+            activeSubMode === "ai-architect"
+              ? "bg-brand-purple text-white shadow-md font-bold"
+              : "text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          <BrainCircuit className="w-4 h-4" />
+          <span>AI Smart Contract Architect</span>
+        </button>
+        <button
+          id="submode-tab-templates"
+          onClick={() => setActiveSubMode("templates")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold font-display transition-all cursor-pointer ${
+            activeSubMode === "templates"
+              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md font-bold"
+              : "text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <span>Template Library</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold">
+            Audited
+          </span>
+        </button>
+        <button
+          id="submode-tab-launchpad"
+          onClick={() => setActiveSubMode("launchpad")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold font-display transition-all cursor-pointer ${
+            activeSubMode === "launchpad"
+              ? "bg-brand-blue text-white shadow-md font-bold"
+              : "text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          <Rocket className="w-4 h-4" />
+          <span>Bonding Curve Launcher</span>
+        </button>
+      </div>
+
+      {/* TEMPLATES SUBMODE VIEW */}
+      {activeSubMode === "templates" && (
+        <SmartContractTemplateLibrary
+          wallet={wallet}
+          onRefreshWallet={onRefreshWallet}
+          onLaunchSuccess={onLaunchSuccess}
+          showToast={showToast}
+          addTerminalLog={addTerminalLog}
+          onLoadIntoAIArchitect={handleLoadTemplateIntoAIArchitect}
+        />
+      )}
+
+      {activeSubMode !== "templates" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Creation Mode Tabs & Active input panels */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* AI Deployment Wizard Hero Callout */}
+            <div className="relative group overflow-hidden rounded-2xl bg-gradient-to-r from-brand-blue/20 via-brand-purple/20 to-purple-600/20 border border-brand-purple/40 p-4 shadow-xl">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-blue to-brand-purple flex items-center justify-center text-white shadow-lg shadow-brand-purple/30">
+                    <Wand2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white font-display flex items-center gap-2">
+                      AI Token Deployment Wizard
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-purple text-white font-mono uppercase tracking-wider font-bold">
+                        Guided Launch
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-zinc-300 font-mono">
+                      Input plain text requirements & let Gemini AI propose bonding curve slopes, contract parameters & launch rules automatically!
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  id="open-ai-deployment-wizard-btn"
+                  onClick={() => setIsWizardOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-blue to-brand-purple text-white font-mono font-bold text-xs hover:opacity-95 shadow-lg shadow-brand-purple/20 transition-all flex items-center gap-1.5 shrink-0"
+                >
+                  <Wand2 className="w-3.5 h-3.5" /> Launch AI Wizard
+                </button>
               </div>
             </div>
-
-            <button
-              type="button"
-              id="open-ai-deployment-wizard-btn"
-              onClick={() => setIsWizardOpen(true)}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-blue to-brand-purple text-white font-mono font-bold text-xs hover:opacity-95 shadow-lg shadow-brand-purple/20 transition-all flex items-center gap-1.5 shrink-0"
-            >
-              <Wand2 className="w-3.5 h-3.5" /> Launch AI Wizard
-            </button>
-          </div>
-        </div>
-
-        {/* Toggle between Launchpad and AI Architect */}
-        <div className="flex bg-zinc-900/80 border border-white/5 p-1 rounded-xl">
-          <button
-            id="submode-tab-ai"
-            onClick={() => { setActiveSubMode("ai-architect"); setAiResult(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold font-display transition-all ${
-              activeSubMode === "ai-architect"
-                ? "bg-brand-purple text-white shadow-md font-bold"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <BrainCircuit className="w-4 h-4" />
-            <span>AI Smart Contract Architect</span>
-          </button>
-          <button
-            id="submode-tab-launchpad"
-            onClick={() => setActiveSubMode("launchpad")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold font-display transition-all ${
-              activeSubMode === "launchpad"
-                ? "bg-brand-blue text-white shadow-md font-bold"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <Rocket className="w-4 h-4" />
-            <span>Bonding Curve Launcher</span>
-          </button>
-        </div>
 
         {/* AI ARCHITECT UI */}
         {activeSubMode === "ai-architect" && (
@@ -1208,6 +1264,8 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
           </div>
         </div>
       </div>
+      </div>
+      )}
 
       {/* STEP-BY-STEP DEPLOYMENT PROGRESS MODAL */}
       {deployStep !== "idle" && (

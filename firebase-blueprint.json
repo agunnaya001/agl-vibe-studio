@@ -166,6 +166,35 @@
         "triggeredAt": { "type": "number" }
       },
       "required": ["id", "userId", "tokenAddress", "tokenSymbol", "targetPrice", "condition", "status", "createdAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Developer task tracking in TaskSync",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "in-progress"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "dueDate": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "title", "description", "status", "priority", "createdAt"]
+    },
+    "AgentServiceConnection": {
+      "title": "AgentServiceConnection",
+      "description": "Service connections for AI agents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "providerName": { "type": "string" },
+        "issuer": { "type": "string" },
+        "description": { "type": "string" },
+        "connectedAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "revoked"] }
+      },
+      "required": ["id", "providerName", "connectedAt", "status"]
     }
   },
   "firestore": {
@@ -218,6 +247,14 @@
         "required": ["id", "prompt", "projectType", "updatedAt"]
       },
       "description": "Real-time backed developer session history for AI Builder state recovery"
+    },
+    "/tasks/{id}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Developer task collection"
+    },
+    "/service_connections/{id}": {
+      "schema": { "$ref": "#/entities/AgentServiceConnection" },
+      "description": "Agent service connections registry"
     }
   }
 }

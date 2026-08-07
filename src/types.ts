@@ -266,3 +266,62 @@ export interface Task {
   createdAt: number;
 }
 
+export interface MCPTool {
+  name: string;
+  description: string;
+  inputSchema?: Record<string, any>;
+  mcpServerId?: string;
+}
+
+export interface MCPServer {
+  id: string;
+  name: string;
+  type: "stdio" | "sse" | "http";
+  endpoint: string;
+  status: "connected" | "disconnected" | "testing";
+  latencyMs: number;
+  description: string;
+  category: "search" | "crypto" | "database" | "developer" | "ai" | "workspace";
+  capabilities: string[];
+  tools: MCPTool[];
+  connectedAt: number;
+  icon?: string;
+  version?: string;
+}
+
+export interface AGLLiquidityPair {
+  id: string;
+  pairSymbol: string; // e.g. "AGL/ETH", "AGL/USDC"
+  tokenA: { symbol: string; name: string; address: string; logoUrl?: string };
+  tokenB: { symbol: string; name: string; address: string; logoUrl?: string };
+  reserveA: number; // Reserve of Token A (AGL)
+  reserveB: number; // Reserve of Token B
+  totalSupplyLP: number;
+  volume24hUsd: number;
+  apr: number; // % yield APY
+  fee03PctCollectedEth: number;
+  isVerified: boolean;
+  createdAt: number;
+}
+
+export interface AGLPollOption {
+  id: string;
+  label: string;
+  votes: number;
+  voters: string[];
+}
+
+export interface AGLPoll {
+  id: string;
+  title: string;
+  description: string;
+  category: "pair" | "fee" | "grant" | "param";
+  pairSymbol?: string;
+  options: AGLPollOption[];
+  totalVotes: number;
+  status: "active" | "passed" | "expired";
+  endTime: number;
+  creator: string;
+  createdAt: number;
+}
+

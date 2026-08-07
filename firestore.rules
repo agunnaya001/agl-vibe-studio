@@ -129,6 +129,24 @@ service cloud.firestore {
         && data.createdAt is number;
     }
 
+    function isValidTask(data) {
+      return data.keys().hasAll(['id', 'title', 'description', 'status', 'priority', 'createdAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 200
+        && data.description is string
+        && data.status is string && (data.status == 'pending' || data.status == 'completed' || data.status == 'in-progress')
+        && data.priority is string && (data.priority == 'low' || data.priority == 'medium' || data.priority == 'high')
+        && data.createdAt is number;
+    }
+
+    function isValidAgentServiceConnection(data) {
+      return data.keys().hasAll(['id', 'providerName', 'connectedAt', 'status'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 100
+        && data.connectedAt is number
+        && data.status is string && (data.status == 'active' || data.status == 'revoked');
+    }
+
     // 4. Secure Collections Match Blocks
     
     // TOKENS COLLECTION
@@ -237,6 +255,20 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isSignedIn() && isValidId(id);
       allow delete: if isSignedIn() && (isAdmin() || request.auth.uid == id);
+    }
+
+    // TASKS COLLECTION
+    match /tasks/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidTask(incoming());
+      allow delete: if isSignedIn() && (isAdmin() || isValidId(id));
+    }
+
+    // SERVICE CONNECTIONS COLLECTION
+    match /service_connections/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidAgentServiceConnection(incoming());
+      allow delete: if isSignedIn() && (isAdmin() || isValidId(id));
     }
 
     // TEST COLLECTION
