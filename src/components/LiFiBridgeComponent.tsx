@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 import { WalletState } from "../types";
+import ImageWithFallback from "./ImageWithFallback";
 import { 
   ArrowLeftRight, 
   Sparkles, 
@@ -646,7 +647,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
               <div className="p-3.5 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   {quoteData.toolDetails?.logoURI ? (
-                    <img src={quoteData.toolDetails.logoURI} alt="Bridge Logo" className="w-6 h-6 rounded-full" />
+                    <ImageWithFallback src={quoteData.toolDetails.logoURI} alt="Bridge Logo" fallbackText="BRIDGE" className="w-6 h-6 rounded-full object-cover" />
                   ) : (
                     <ShieldCheck className="w-5 h-5 text-purple-400" />
                   )}

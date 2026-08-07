@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Token } from "../types";
 import { analyzeSolidityCode, SecurityAuditResult } from "../lib/security";
+import { AgunnayaDatabase } from "../lib/db";
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -25,7 +26,8 @@ import {
   Terminal,
   ChevronDown,
   ChevronUp,
-  Download
+  Download,
+  Plus
 } from "lucide-react";
 
 export interface TokenAuditCheck {
@@ -417,6 +419,25 @@ Summary: ${report.summary}
                     <span>Copy Audit Summary</span>
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  AgunnayaDatabase.addTask({
+                    title: `Audit Fix: ${token ? token.name : report.contractAddress.slice(0, 10)}`,
+                    description: `Address: ${report.contractAddress} | Score: ${report.score}/100 (${report.riskLevel}). Summary: ${report.summary}`,
+                    status: "pending",
+                    priority: report.score < 70 ? "high" : "medium",
+                    dueDate: Date.now() + 86400000 * 3
+                  });
+                  window.dispatchEvent(new Event("task_updated"));
+                  if (showToast) showToast("Audit remediation task dispatched to TaskSync!", "success");
+                }}
+                className="px-3.5 py-2 rounded-xl bg-brand-purple/20 hover:bg-brand-purple/30 border border-brand-purple/40 text-purple-200 font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-brand-purple" />
+                <span>Sync to TaskSync</span>
               </button>
             </div>
           </div>

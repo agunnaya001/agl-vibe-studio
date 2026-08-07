@@ -27,8 +27,14 @@ export default function TaskSyncPage({ wallet, showToast }: TaskSyncPageProps) {
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
   const [filter, setFilter] = useState<"all" | "pending" | "completed" | "in-progress">("all");
 
-  useEffect(() => {
+  const loadTasksFromDb = () => {
     setTasks(AgunnayaDatabase.getTasks());
+  };
+
+  useEffect(() => {
+    loadTasksFromDb();
+    window.addEventListener("task_updated", loadTasksFromDb);
+    return () => window.removeEventListener("task_updated", loadTasksFromDb);
   }, []);
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -47,6 +53,7 @@ export default function TaskSyncPage({ wallet, showToast }: TaskSyncPageProps) {
     setNewTaskTitle("");
     setNewTaskDesc("");
     setIsAddingTask(false);
+    window.dispatchEvent(new Event("task_updated"));
     showToast("Task added to synchronizer.", "success");
   };
 
@@ -60,12 +67,14 @@ export default function TaskSyncPage({ wallet, showToast }: TaskSyncPageProps) {
     });
     setTasks(updatedTasks);
     AgunnayaDatabase.saveTasks(updatedTasks);
+    window.dispatchEvent(new Event("task_updated"));
   };
 
   const handleDeleteTask = (taskId: string) => {
     const updatedTasks = tasks.filter(t => t.id !== taskId);
     setTasks(updatedTasks);
     AgunnayaDatabase.saveTasks(updatedTasks);
+    window.dispatchEvent(new Event("task_updated"));
     showToast("Task removed.", "info");
   };
 

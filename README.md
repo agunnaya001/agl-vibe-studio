@@ -107,6 +107,13 @@ Agunnaya Labs Studio features a tailored **Immersive UI** design system built fo
 *   **Real-Time Compounding Yield Ticker**: Live second-by-second yield accumulation ticker showing real-time earnings per position with 1-click Claim and Auto-Compound toggles.
 *   **Yield & Compound Projection Calculator**: Interactive slide controls to simulate deposit amounts, time horizons, and calculate estimated daily, monthly, and 1-year yield projections.
 
+### 11. 🚀 Batch Multi-Send & Token Distribution Engine
+*   **Multi-Receiver ERC-20 Transfers**: Distribute ERC-20 tokens (AGL, USDC, AERO, cbETH) to dozens or hundreds of addresses in a single, gas-optimized transaction sequence on Base.
+*   **Dual Input Modes**: Supports both an interactive row-based form view and raw CSV / text bulk pasting (`0xAddress, Amount`) with instant validation.
+*   **Pre-Flight Inspection & Deduplication**: Real-time checking for invalid addresses, total balance sufficiency, gas estimation, and a 1-click duplicate address merger.
+*   **Equal Split Calculator**: Automatically divides a specified total lump sum equally across all listed recipient addresses.
+*   **Dry-Run Simulation & Receipts**: Perform zero-cost simulation checks before execution, track live progress per recipient, and export CSV batch transfer receipts.
+
 ### 5. 🏦 DeFi Engine, AMM Swapping & Staking Vaults
 *   **Low-Slippage Swaps**: Instantly swap between ETH and native AGL utility tokens on Base Mainnet.
 *   **Staking Vaults & Auto-Compound Engine**: Stake AGL in high-yield vaults (Flex, 30-Day, 90-Day, 180-Day) with fixed APRs up to 64%. Toggle the **Auto-Compound Rewards** switch to automatically reinvest accrued yield every 30 seconds or trigger 1-click manual compounding for amplified APY.

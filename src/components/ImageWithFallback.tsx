@@ -26,8 +26,12 @@ export default function ImageWithFallback({
 
   // Sync state if src changes
   useEffect(() => {
-    setImgSrc(src);
-    setHasError(false);
+    if (!src) {
+      handleError();
+    } else {
+      setImgSrc(src);
+      setHasError(false);
+    }
   }, [src]);
 
   const handleError = () => {
@@ -80,7 +84,7 @@ export default function ImageWithFallback({
       alt={alt}
       className={`${className} ${hasError ? "bg-zinc-950" : ""}`}
       onError={handleError}
-      referrerPolicy={referrerPolicy}
+      referrerPolicy={referrerPolicy || "no-referrer"}
       {...props}
     />
   );

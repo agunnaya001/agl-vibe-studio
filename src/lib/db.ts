@@ -1102,42 +1102,44 @@ export class AgunnayaDatabase {
   }
 
   static getTasks(): Task[] {
-    const data = localStorage.getItem("agl_tasks");
-    if (!data) {
-      // Default tasks if none exist
-      const defaults: Task[] = [
-        {
-          id: "task_1",
-          title: "Audit Smart Contract",
-          description: "Review the new bonding curve implementation for vulnerabilities.",
-          status: "pending",
-          priority: "high",
-          dueDate: Date.now() + 86400000 * 2,
-          createdAt: Date.now()
-        },
-        {
-          id: "task_2",
-          title: "Launch Token",
-          description: "Finalize parameters and deploy to Base Mainnet.",
-          status: "pending",
-          priority: "medium",
-          dueDate: Date.now() + 86400000 * 5,
-          createdAt: Date.now()
-        },
-        {
-          id: "task_3",
-          title: "Update DAO Proposals",
-          description: "Draft the new treasury allocation proposal.",
-          status: "in-progress",
-          priority: "low",
-          dueDate: Date.now() + 86400000 * 7,
-          createdAt: Date.now()
-        }
-      ];
-      localStorage.setItem("agl_tasks", JSON.stringify(defaults));
-      return defaults;
-    }
+    if (typeof window === "undefined" || !window.localStorage) return [];
     try {
+      const data = localStorage.getItem("agl_tasks");
+      if (!data) {
+        const defaults: Task[] = [
+          {
+            id: "task_1",
+            title: "Audit Smart Contract",
+            description: "Review the new bonding curve implementation for vulnerabilities.",
+            status: "pending",
+            priority: "high",
+            dueDate: Date.now() + 86400000 * 2,
+            createdAt: Date.now()
+          },
+          {
+            id: "task_2",
+            title: "Launch Token",
+            description: "Finalize parameters and deploy to Base Mainnet.",
+            status: "pending",
+            priority: "medium",
+            dueDate: Date.now() + 86400000 * 5,
+            createdAt: Date.now()
+          },
+          {
+            id: "task_3",
+            title: "Update DAO Proposals",
+            description: "Draft the new treasury allocation proposal.",
+            status: "in-progress",
+            priority: "low",
+            dueDate: Date.now() + 86400000 * 7,
+            createdAt: Date.now()
+          }
+        ];
+        try {
+          localStorage.setItem("agl_tasks", JSON.stringify(defaults));
+        } catch {}
+        return defaults;
+      }
       return JSON.parse(data);
     } catch {
       return [];
@@ -1145,7 +1147,11 @@ export class AgunnayaDatabase {
   }
 
   static saveTasks(tasks: Task[]) {
-    localStorage.setItem("agl_tasks", JSON.stringify(tasks));
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        localStorage.setItem("agl_tasks", JSON.stringify(tasks));
+      } catch {}
+    }
     tasks.forEach(t => {
       this.saveToFirestore("tasks", t.id, t);
     });

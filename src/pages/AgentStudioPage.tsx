@@ -1636,7 +1636,7 @@ CORE DIRECTIVES:
                           )}
 
                           {m.image && (
-                            <img src={m.image} alt="Chat attachment" className="max-w-[200px] max-h-[150px] rounded-lg object-cover mb-2 border border-white/10" />
+                            <ImageWithFallback src={m.image} alt="Chat attachment" fallbackText="IMG" className="max-w-[200px] max-h-[150px] rounded-lg object-cover mb-2 border border-white/10" />
                           )}
 
                           <p className="whitespace-pre-line text-zinc-200 font-sans">{m.content}</p>
@@ -2000,9 +2000,10 @@ CORE DIRECTIVES:
                   </div>
                 ) : generatedImageUrl ? (
                   <div className="w-full text-center space-y-4">
-                    <img 
+                    <ImageWithFallback 
                       src={generatedImageUrl} 
                       alt="Synthesized AI Asset" 
+                      fallbackText="AI"
                       className="max-h-[300px] mx-auto rounded-xl border border-white/10 shadow-2xl object-contain bg-zinc-950" 
                     />
                     <a

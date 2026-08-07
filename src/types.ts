@@ -243,6 +243,19 @@ export interface AgentServiceConnection {
   status: "active" | "revoked";
 }
 
+export interface BatchTransferRecord {
+  id: string;
+  txHash: string;
+  tokenSymbol: string;
+  tokenAddress: string;
+  totalAmount: number;
+  recipientCount: number;
+  recipients: Array<{ address: string; amount: number; txHash?: string }>;
+  senderAddress: string;
+  timestamp: number;
+  status: "completed" | "failed" | "partial";
+}
+
 export interface Task {
   id: string;
   title: string;

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import ImageWithFallback from "./ImageWithFallback";
 import { 
   Bot, 
   User, 
@@ -22,7 +23,6 @@ import {
   Terminal
 } from "lucide-react";
 import { AIAgent } from "../types";
-import ImageWithFallback from "./ImageWithFallback";
 
 export interface InteractionPair {
   id: string;
@@ -443,9 +443,10 @@ export const AgentInteractionHistory: React.FC<AgentInteractionHistoryProps> = (
                     </div>
 
                     {pair.image && (
-                      <img 
+                      <ImageWithFallback 
                         src={pair.image.startsWith("data:") ? pair.image : `data:image/png;base64,${pair.image}`} 
                         alt="Attached image" 
+                        fallbackText="IMG"
                         className="max-w-[150px] max-h-[100px] object-cover rounded border border-white/10 my-1" 
                       />
                     )}

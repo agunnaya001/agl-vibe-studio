@@ -29,6 +29,7 @@ import GoogleDrivePage from "./pages/GoogleDrivePage";
 import GmailPage from "./pages/GmailPage";
 import TokenFactoryPage from "./pages/TokenFactoryPage";
 import TokenBurnerPage from "./pages/TokenBurnerPage";
+import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
 import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
 
@@ -36,6 +37,7 @@ import TaskSyncPage from "./pages/TaskSyncPage";
 import { AgunnayaDatabase } from "./lib/db";
 import { WalletState, Token, NFTCollection, DAO, GameFiProject, AIAgent, Activity, PriceAlert } from "./types";
 import TerminalLog, { TerminalLine } from "./components/TerminalLog";
+import ImageWithFallback from "./components/ImageWithFallback";
 import { getBaseProvider } from "./lib/tokenFactory";
 import { BrainCircuit, Copy, Check, QrCode, X, ShieldCheck, Rocket, BarChart3, Terminal, Zap, ChevronRight, Pin, PinOff } from "lucide-react";
 
@@ -867,6 +869,17 @@ export default function App() {
             tokens={tokens}
           />
         );
+      case "batch-transfer":
+        return (
+          <BatchTokenTransferPage
+            wallet={wallet}
+            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            onRefreshWallet={refreshAllData}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+            tokens={tokens}
+          />
+        );
       case "staking-vault":
         return (
           <StakingVaultPage
@@ -1243,9 +1256,10 @@ export default function App() {
 
                 {/* QR Code Container */}
                 <div className="my-3 flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-900 border border-white/10">
-                  <img
+                  <ImageWithFallback
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(wallet.address)}&color=ffffff&bgcolor=18181b&margin=6`}
                     alt="Wallet Address QR Code"
+                    fallbackText="QR"
                     className="w-40 h-40 rounded-lg shadow-inner object-contain"
                   />
                   <span className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1">
