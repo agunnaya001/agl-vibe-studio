@@ -62,6 +62,7 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
   // AI Architect State
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiProjectType, setAiProjectType] = useState("ERC-20 Token");
+  const [aiAccessControl, setAiAccessControl] = useState("Ownable");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any | null>(null);
   const [deployingAI, setDeployingAI] = useState(false);
@@ -302,6 +303,21 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
   const [referral, setReferral] = useState<number>(0);
   const [seedBuy, setSeedBuy] = useState<string>("0");
   const [launchingToken, setLaunchingToken] = useState(false);
+  const [launchpadDeployStep, setLaunchpadDeployStep] = useState<"idle" | "compiling" | "verifying" | "deploying" | "finalizing" | "completed">("idle");
+  const [autoVerify, setAutoVerify] = useState<boolean>(true);
+  const [gasEstimate, setGasEstimate] = useState<string>("0.0000");
+
+  useEffect(() => {
+    if (tokenName || tokenSymbol || tokenDesc || seedBuy) {
+      // Mock gas estimation based on standard deployment costs on Base
+      const baseGas = 0.0015;
+      const complexityGas = tokenDesc.length * 0.000001;
+      const seedBuyGas = parseFloat(seedBuy || "0") > 0 ? 0.0008 : 0;
+      setGasEstimate((baseGas + complexityGas + seedBuyGas).toFixed(4));
+    } else {
+      setGasEstimate("0.0000");
+    }
+  }, [tokenName, tokenSymbol, tokenDesc, seedBuy]);
 
   // Handles AI Contract Generation
   const handleAIGenerate = async (e: React.FormEvent) => {
@@ -331,7 +347,7 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
     setDeploySuccessAI(false);
 
     try {
-      const data = await generateProjectAI(aiPrompt, aiProjectType);
+      const data = await generateProjectAI(aiPrompt, aiProjectType, aiAccessControl);
       setAiResult(data);
       addTerminalLog("system", `Generated smart contract architecture for ${data.name} (${data.symbol})`);
     } catch (err: any) {
@@ -517,82 +533,132 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
       return;
     }
     if (!tokenName || !tokenSymbol || !tokenDesc || launchingToken) return;
-    setLaunchingToken(true);
 
-    const buyEthVal = parseFloat(seedBuy) || 0;
-    if (buyEthVal > wallet.balanceEth) {
-      showToast("Insufficient ETH balance for seed purchase.", "error");
-      setLaunchingToken(false);
+    // Contract Validations
+    if (tokenName.length < 3) {
+      showToast("Token name must be at least 3 characters.", "error");
       return;
     }
-
+    if (tokenSymbol.length < 2 || tokenSymbol.length > 5) {
+      showToast("Token symbol must be 2-5 characters.", "error");
+      return;
+    }
+    
+    const buyEthVal = parseFloat(seedBuy) || 0;
+    if (buyEthVal < 0) {
+      showToast("Seed buy cannot be negative.", "error");
+      return;
+    }
+    if (referral < 0 || referral > 5) {
+      showToast("Referral must be between 0 and 5%.", "error");
+      return;
+    }
+    if (vesting < 0) {
+      showToast("Vesting weeks cannot be negative.", "error");
+      return;
+    }
+    if (buyEthVal > wallet.balanceEth) {
+      showToast("Insufficient ETH balance for seed purchase.", "error");
+      return;
+    }
+    
+    setLaunchingToken(true);
+    setLaunchpadDeployStep("compiling");
     addTerminalLog("info", `Assembling BondingCurveToken contract metadata for ${tokenName}...`);
 
     setTimeout(() => {
-      const generatedAddress = "0x" + Math.random().toString(16).substr(2, 40);
-      const mockLogoUrl = tokenLogo.trim() || "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=128&auto=format&fit=crop&q=60";
+      setLaunchpadDeployStep("verifying");
+      setTimeout(() => {
+        setLaunchpadDeployStep("deploying");
+        setTimeout(() => {
+          setLaunchpadDeployStep("finalizing");
+          setTimeout(() => {
+            const generatedAddress = "0x" + Math.random().toString(16).substr(2, 40);
+            const mockLogoUrl = tokenLogo.trim() || "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=128&auto=format&fit=crop&q=60";
+            
+            const newToken: Token = {
+              address: generatedAddress,
+              name: tokenName,
+              symbol: tokenSymbol.toUpperCase(),
+              description: tokenDesc,
+              creator: wallet.address,
+              creatorFeesEarned: 0,
+              currentPrice: BASE_PRICE,
+              supply: 0,
+              maxSupply: 1000000000, // standard launchpad cap
+              marketCap: 0,
+              reserveEth: 0,
+              volume24h: buyEthVal,
+              category: tokenCategory,
+              logoUrl: mockLogoUrl,
+              socials: { website: "https://base.org" },
+              isVerified: false,
+              vestingWeeks: vesting,
+              referralRewardsPct: referral,
+              createdAt: Date.now(),
+              implementation: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" // Default standard bonding curve implementation
+            };
       
-      const newToken: Token = {
-        address: generatedAddress,
-        name: tokenName,
-        symbol: tokenSymbol.toUpperCase(),
-        description: tokenDesc,
-        creator: wallet.address,
-        creatorFeesEarned: 0,
-        currentPrice: BASE_PRICE,
-        supply: 0,
-        maxSupply: 1000000000, // standard launchpad cap
-        marketCap: 0,
-        reserveEth: 0,
-        volume24h: buyEthVal,
-        category: tokenCategory,
-        logoUrl: mockLogoUrl,
-        socials: { website: "https://base.org" },
-        isVerified: false,
-        vestingWeeks: vesting,
-        referralRewardsPct: referral,
-        createdAt: Date.now(),
-        implementation: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" // Default standard bonding curve implementation
-      };
-
-      // Register new token
-      const tokensList = AgunnayaDatabase.getTokens();
-      tokensList.push(newToken);
-      AgunnayaDatabase.saveTokens(tokensList);
-
-      // Perform seed buy if value > 0
-      if (buyEthVal > 0) {
-        // Simple direct simulation of seed buy
-        const calculatedTokens = buyEthVal / BASE_PRICE; // simple seed rate
-        newToken.supply = calculatedTokens;
-        newToken.reserveEth = buyEthVal * 0.99;
-        newToken.currentPrice = BASE_PRICE + SLOPE * calculatedTokens;
-        newToken.marketCap = newToken.currentPrice * calculatedTokens;
-        newToken.creatorFeesEarned = buyEthVal * 0.01;
-
-        // Dedect from wallet balance
-        const updatedWallet = { ...wallet, balanceEth: wallet.balanceEth - buyEthVal };
-        AgunnayaDatabase.saveWallet(updatedWallet);
-        onRefreshWallet();
-
-        addTerminalLog("buy", `Executed initial seed buy of ${calculatedTokens.toLocaleString()} ${newToken.symbol} for ${buyEthVal} ETH`);
-      }
-
-      // Add activity
-      AgunnayaDatabase.addActivity({
-        type: "create",
-        tokenSymbol: newToken.symbol,
-        tokenAddress: newToken.address,
-        user: wallet.address,
-        amount: newToken.supply,
-        ethValue: buyEthVal,
-        details: `Created new linear bonding curve token: ${newToken.name} (${newToken.symbol}) with ${buyEthVal} ETH seed buy`
-      });
-
-      addTerminalLog("success", `Bonding curve token registered at registry: ${newToken.address}`);
-      setLaunchingToken(false);
-      onLaunchSuccess(newToken);
-    }, 2000);
+            // Register new token
+            const tokensList = AgunnayaDatabase.getTokens();
+            tokensList.push(newToken);
+            AgunnayaDatabase.saveTokens(tokensList);
+      
+            // Perform seed buy if value > 0
+            if (buyEthVal > 0) {
+              // Simple direct simulation of seed buy
+              const calculatedTokens = buyEthVal / BASE_PRICE; // simple seed rate
+              newToken.supply = calculatedTokens;
+              newToken.reserveEth = buyEthVal * 0.99;
+              newToken.currentPrice = BASE_PRICE + SLOPE * calculatedTokens;
+              newToken.marketCap = newToken.currentPrice * calculatedTokens;
+              newToken.creatorFeesEarned = buyEthVal * 0.01;
+      
+              // Dedect from wallet balance
+              const updatedWallet = { ...wallet, balanceEth: wallet.balanceEth - buyEthVal };
+              AgunnayaDatabase.saveWallet(updatedWallet);
+              onRefreshWallet();
+      
+              addTerminalLog("buy", `Executed initial seed buy of ${calculatedTokens.toLocaleString()} ${newToken.symbol} for ${buyEthVal} ETH`);
+            }
+      
+            // Add activity
+            AgunnayaDatabase.addActivity({
+              type: "create",
+              tokenSymbol: newToken.symbol,
+              tokenAddress: newToken.address,
+              user: wallet.address,
+              amount: newToken.supply,
+              ethValue: buyEthVal,
+              details: `Created new linear bonding curve token: ${newToken.name} (${newToken.symbol}) with ${buyEthVal} ETH seed buy`
+            });
+      
+            addTerminalLog("success", `Bonding curve token registered at registry: ${newToken.address}`);
+            
+            if (autoVerify) {
+              addTerminalLog("info", `Auto-verifying contract source code on BaseScan using ETHERSCAN_API_KEY...`);
+              setTimeout(() => {
+                addTerminalLog("success", `Contract source verified successfully on BaseScan!`);
+                newToken.isVerified = true;
+                
+                // Update in local DB since we modified isVerified
+                const updatedList = AgunnayaDatabase.getTokens().map(t => 
+                  t.address === newToken.address ? newToken : t
+                );
+                AgunnayaDatabase.saveTokens(updatedList);
+              }, 1500);
+            }
+            
+            setLaunchpadDeployStep("completed");
+            setTimeout(() => {
+              setLaunchingToken(false);
+              setLaunchpadDeployStep("idle");
+              onLaunchSuccess(newToken);
+            }, autoVerify ? 2500 : 1000);
+          }, 1000);
+        }, 1000);
+      }, 1000);
+    }, 1000);
   };
 
   const handleLoadTemplateIntoAIArchitect = (code: string, name: string, symbol: string) => {
@@ -727,7 +793,7 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
             </div>
 
             <form onSubmit={handleAIGenerate} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-1.5">Contract Target Standard</label>
                   <select
@@ -743,9 +809,21 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                     <option value="AI Agent Core">Autonomous AI Agent Trigger Core</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-1.5">Access Control</label>
+                  <select
+                    id="ai-access-control-select"
+                    value={aiAccessControl}
+                    onChange={(e) => setAiAccessControl(e.target.value)}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl p-3 text-xs text-zinc-300 focus:outline-none focus:border-brand-purple/40 font-mono"
+                  >
+                    <option value="Ownable">Ownable (Single Owner)</option>
+                    <option value="AccessControl">AccessControl (RBAC / Multiple Roles)</option>
+                  </select>
+                </div>
                 <div className="flex items-end">
                   <div className="bg-brand-purple/10 border border-brand-purple/20 p-3 rounded-xl flex items-center gap-2 text-[10px] text-brand-purple font-mono w-full leading-normal">
-                    <Zap className="w-4 h-4" />
+                    <Zap className="w-4 h-4 shrink-0" />
                     <span>Free Sandbox sponsored gas covered automatically</span>
                   </div>
                 </div>
@@ -1004,6 +1082,73 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                   />
                 </div>
               </div>
+
+              {/* CONTRACT VISUAL PREVIEW */}
+              {(tokenName || tokenSymbol) && (
+                <div className="bg-zinc-950 border border-brand-blue/20 rounded-xl p-4 mt-4 space-y-3 shadow-inner">
+                  <h3 className="text-[10px] font-bold text-brand-blue uppercase tracking-wider flex items-center gap-1.5">
+                    <FileCheck className="w-3.5 h-3.5" />
+                    Contract Preview
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs font-mono">
+                    <div className="bg-zinc-900 rounded-lg p-2 border border-white/5">
+                      <span className="block text-[9px] text-zinc-500 mb-0.5">Name</span>
+                      <span className="text-zinc-200 font-bold truncate block">{tokenName || "-"}</span>
+                    </div>
+                    <div className="bg-zinc-900 rounded-lg p-2 border border-white/5">
+                      <span className="block text-[9px] text-zinc-500 mb-0.5">Symbol</span>
+                      <span className="text-zinc-200 font-bold truncate block">{tokenSymbol ? `$${tokenSymbol.toUpperCase()}` : "-"}</span>
+                    </div>
+                    <div className="bg-zinc-900 rounded-lg p-2 border border-white/5">
+                      <span className="block text-[9px] text-zinc-500 mb-0.5">Total Supply</span>
+                      <span className="text-zinc-200 font-bold block">1,000,000,000</span>
+                    </div>
+                    <div className="bg-zinc-900 rounded-lg p-2 border border-white/5">
+                      <span className="block text-[9px] text-zinc-500 mb-0.5">Owner</span>
+                      <span className="text-zinc-200 font-bold truncate block" title={wallet.address || "Not connected"}>
+                        {wallet.address ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : "Not connected"}
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900 rounded-lg p-2 border border-white/5">
+                      <span className="block text-[9px] text-zinc-500 mb-0.5">Mint Fee</span>
+                      <span className="text-zinc-200 font-bold block">0.002 ETH</span>
+                    </div>
+                    <div className="bg-zinc-900 rounded-lg p-2 border border-white/5">
+                      <span className="block text-[9px] text-zinc-500 mb-0.5">Initial Buy</span>
+                      <span className="text-zinc-200 font-bold block">{seedBuy || "0"} ETH</span>
+                    </div>
+                    <div className="bg-zinc-900 rounded-lg p-2 border border-white/5 md:col-span-3 flex justify-between items-center">
+                       <div>
+                         <span className="block text-[9px] text-zinc-500 mb-0.5">Est. Gas (Base)</span>
+                         <span className="text-emerald-400 font-bold block">~{gasEstimate} ETH</span>
+                       </div>
+                       <div className="text-right">
+                         <span className="block text-[9px] text-zinc-500 mb-0.5">Total Cost</span>
+                         <span className="text-zinc-200 font-bold block">{(parseFloat(seedBuy || "0") + 0.002 + parseFloat(gasEstimate)).toFixed(4)} ETH</span>
+                       </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-white/5">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input 
+                          type="checkbox"
+                          checked={autoVerify}
+                          onChange={(e) => setAutoVerify(e.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <div className="w-4 h-4 rounded border border-white/20 bg-zinc-900 peer-checked:bg-brand-blue peer-checked:border-brand-blue transition-colors flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                      <span className="text-xs text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                        Auto-Verify on BaseScan (Uses <code className="text-[10px] bg-zinc-800 px-1 py-0.5 rounded text-brand-blue">ETHERSCAN_API_KEY</code>)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <button
                 id="launchpad-submit-btn"
@@ -1265,6 +1410,158 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
         </div>
       </div>
       </div>
+      )}
+
+      {/* LAUNCHPAD DEPLOYMENT PROGRESS MODAL */}
+      {launchpadDeployStep !== "idle" && (
+        <div id="launchpad-progress-modal" className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-zinc-950 border border-white/10 max-w-md w-full rounded-2xl p-6 space-y-6 shadow-2xl shadow-brand-blue/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-brand-blue/5 blur-3xl pointer-events-none"></div>
+            
+            {/* Header */}
+            <div className="text-center space-y-1.5 border-b border-white/5 pb-4">
+              <span className="text-[9px] uppercase font-bold tracking-widest text-brand-blue font-mono flex items-center justify-center gap-1">
+                <Rocket className="w-3.5 h-3.5 animate-pulse" /> Token Factory Deployment
+              </span>
+              <h3 className="text-lg font-display font-bold text-white">Deploying {tokenName || "Token"}</h3>
+              <p className="text-[11px] text-zinc-400 font-mono">
+                Launching <span className="text-zinc-200 font-bold">{tokenSymbol}</span> onto Base L2 Network
+              </p>
+            </div>
+
+            {/* Steps Timeline */}
+            <div className="space-y-4 font-mono text-xs">
+              {/* Step 1: Compiling */}
+              <div className={`flex items-start gap-3 p-3 rounded-xl transition-all border ${
+                launchpadDeployStep === "compiling" 
+                  ? "bg-brand-blue/5 border-brand-blue/30 text-white font-semibold" 
+                  : launchpadDeployStep !== "idle" && launchpadDeployStep !== "compiling"
+                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
+                    : "bg-zinc-900/50 border-white/5 text-zinc-500"
+              }`}>
+                <div className="mt-0.5">
+                  {launchpadDeployStep === "compiling" ? (
+                    <Loader2 className="w-4 h-4 text-brand-blue animate-spin" />
+                  ) : launchpadDeployStep !== "idle" && launchpadDeployStep !== "compiling" ? (
+                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border border-current opacity-50"></div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span>1. Assembling Metadata</span>
+                    {launchpadDeployStep === "compiling" && <span className="text-[9px] bg-brand-blue/20 text-brand-blue px-1.5 py-0.2 rounded animate-pulse">ACTIVE</span>}
+                  </div>
+                  {launchpadDeployStep === "compiling" && <div className="text-[10px] text-zinc-400 mt-1 font-normal animate-pulse">Preparing factory parameters...</div>}
+                </div>
+              </div>
+
+              {/* Step 2: Verifying */}
+              <div className={`flex items-start gap-3 p-3 rounded-xl transition-all border ${
+                launchpadDeployStep === "verifying" 
+                  ? "bg-brand-blue/5 border-brand-blue/30 text-white font-semibold" 
+                  : (launchpadDeployStep === "deploying" || launchpadDeployStep === "finalizing" || launchpadDeployStep === "completed")
+                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
+                    : "bg-zinc-900/50 border-white/5 text-zinc-500"
+              }`}>
+                <div className="mt-0.5">
+                  {launchpadDeployStep === "verifying" ? (
+                    <Loader2 className="w-4 h-4 text-brand-blue animate-spin" />
+                  ) : (launchpadDeployStep === "deploying" || launchpadDeployStep === "finalizing" || launchpadDeployStep === "completed") ? (
+                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border border-current opacity-50"></div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span>2. Validating Configuration</span>
+                    {launchpadDeployStep === "verifying" && <span className="text-[9px] bg-brand-blue/20 text-brand-blue px-1.5 py-0.2 rounded animate-pulse">ACTIVE</span>}
+                  </div>
+                  {launchpadDeployStep === "verifying" && <div className="text-[10px] text-zinc-400 mt-1 font-normal animate-pulse">Checking limits and owner signature...</div>}
+                </div>
+              </div>
+
+              {/* Step 3: Deploying */}
+              <div className={`flex items-start gap-3 p-3 rounded-xl transition-all border ${
+                launchpadDeployStep === "deploying" 
+                  ? "bg-brand-blue/5 border-brand-blue/30 text-white font-semibold" 
+                  : (launchpadDeployStep === "finalizing" || launchpadDeployStep === "completed")
+                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
+                    : "bg-zinc-900/50 border-white/5 text-zinc-500"
+              }`}>
+                <div className="mt-0.5">
+                  {launchpadDeployStep === "deploying" ? (
+                    <Loader2 className="w-4 h-4 text-brand-blue animate-spin" />
+                  ) : (launchpadDeployStep === "finalizing" || launchpadDeployStep === "completed") ? (
+                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border border-current opacity-50"></div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span>3. Factory Creation</span>
+                    {launchpadDeployStep === "deploying" && <span className="text-[9px] bg-brand-blue/20 text-brand-blue px-1.5 py-0.2 rounded animate-pulse">ACTIVE</span>}
+                  </div>
+                  {launchpadDeployStep === "deploying" && <div className="text-[10px] text-zinc-400 mt-1 font-normal animate-pulse">Executing createToken() on-chain...</div>}
+                </div>
+              </div>
+
+              {/* Step 4: Finalizing */}
+              <div className={`flex items-start gap-3 p-3 rounded-xl transition-all border ${
+                launchpadDeployStep === "finalizing" 
+                  ? "bg-brand-blue/5 border-brand-blue/30 text-white font-semibold" 
+                  : launchpadDeployStep === "completed"
+                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
+                    : "bg-zinc-900/50 border-white/5 text-zinc-500"
+              }`}>
+                <div className="mt-0.5">
+                  {launchpadDeployStep === "finalizing" ? (
+                    <Loader2 className="w-4 h-4 text-brand-blue animate-spin" />
+                  ) : launchpadDeployStep === "completed" ? (
+                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border border-current opacity-50"></div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span>4. Finalizing & Seed Buy</span>
+                    {launchpadDeployStep === "finalizing" && <span className="text-[9px] bg-brand-blue/20 text-brand-blue px-1.5 py-0.2 rounded animate-pulse">ACTIVE</span>}
+                  </div>
+                  {launchpadDeployStep === "finalizing" && <div className="text-[10px] text-zinc-400 mt-1 font-normal animate-pulse">Executing seed buy and writing to registry...</div>}
+                </div>
+              </div>
+            </div>
+
+            {/* Overall Progress Bar */}
+            <div className="pt-2">
+              <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-brand-blue transition-all duration-500 ease-out rounded-full"
+                  style={{ 
+                    width: 
+                      launchpadDeployStep === "compiling" ? "25%" : 
+                      launchpadDeployStep === "verifying" ? "50%" : 
+                      launchpadDeployStep === "deploying" ? "75%" : 
+                      launchpadDeployStep === "finalizing" ? "90%" : 
+                      launchpadDeployStep === "completed" ? "100%" : "0%" 
+                  }}
+                ></div>
+              </div>
+            </div>
+
+            {launchpadDeployStep === "completed" && (
+              <div className="space-y-4 pt-2 border-t border-white/5 animate-fade-in">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl text-center text-xs font-semibold text-emerald-400 flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4" /> Successfully Deployed
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* STEP-BY-STEP DEPLOYMENT PROGRESS MODAL */}

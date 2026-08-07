@@ -16,13 +16,13 @@ export interface AIProjectResult {
   launchChecklist: string[];
 }
 
-export async function generateProjectAI(prompt: string, type: string): Promise<AIProjectResult> {
+export async function generateProjectAI(prompt: string, type: string, accessControl: string = "Ownable"): Promise<AIProjectResult> {
   const response = await fetch("/api/ai/build", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ prompt, type }),
+    body: JSON.stringify({ prompt, type, accessControl }),
   });
 
   if (!response.ok) {

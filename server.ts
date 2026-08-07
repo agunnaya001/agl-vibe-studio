@@ -37,7 +37,7 @@ function getAIClient(): GoogleGenAI {
 // AI Builder endpoint
 app.post("/api/ai/build", async (req, res) => {
   try {
-    const { prompt, type } = req.body;
+    const { prompt, type, accessControl } = req.body;
     if (!prompt) {
        res.status(400).json({ error: "Prompt is required" });
        return;
@@ -60,7 +60,7 @@ Format the output strictly as JSON.`;
 
     const response = await client.models.generateContent({
       model: "gemini-3.6-flash",
-      contents: `Build a project of type "${type || 'ERC-20 Token'}" based on this prompt: "${prompt}"`,
+      contents: `Build a project of type "${type || 'ERC-20 Token'}" with ${accessControl || 'Ownable'} access control, based on this prompt: "${prompt}"`,
       config: {
         systemInstruction,
         responseMimeType: "application/json",
