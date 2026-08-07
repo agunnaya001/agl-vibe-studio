@@ -118,6 +118,25 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
   // Optimize System directive prompt
   const handleOptimizePrompt = async () => {
     if (!systemPrompt.trim() || optimizingPrompt) return;
+
+    const creditResult = validateAndConsumeCredits({
+      wallet,
+      onRefreshWallet: onRefreshAgents,
+      requiredCredits: CREDIT_COSTS.AI_ADVISOR_CHAT,
+      featureName: "AI Prompt Optimization",
+      showToast,
+      addTerminalLog,
+      onRequestCreditsModal: (featureName, required, available) => {
+        setCreditsModalData({ featureName, required, available });
+        setInsufficientCreditsModalOpen(true);
+      }
+    });
+
+    if (!creditResult.success) {
+      setOptimizingPrompt(false);
+      return;
+    }
+
     setOptimizingPrompt(true);
     addTerminalLog("system", "AI Agent Optimizer: Initializing cognitive tuning pipeline via Gemini...");
     try {
@@ -127,6 +146,7 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
       addTerminalLog("success", "AI Agent Optimizer: Compiled detailed autonomous directive schema successfully.");
     } catch (err: any) {
       console.error(err);
+      creditResult.refund();
       showToast("Optimization failed: " + (err.message || "Network issue"), "error");
       addTerminalLog("error", "AI Agent Optimizer: Fine-tuning pipeline rejected. Verify API configurations.");
     } finally {
@@ -139,6 +159,24 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
     if (e) e.preventDefault();
     const queryText = customPromptText || previewInput.trim();
     if (!queryText || previewLoading) return;
+
+    const creditResult = validateAndConsumeCredits({
+      wallet,
+      onRefreshWallet: onRefreshAgents,
+      requiredCredits: CREDIT_COSTS.AI_ADVISOR_CHAT,
+      featureName: "Agent Sandbox Preview",
+      showToast,
+      addTerminalLog,
+      onRequestCreditsModal: (featureName, required, available) => {
+        setCreditsModalData({ featureName, required, available });
+        setInsufficientCreditsModalOpen(true);
+      }
+    });
+
+    if (!creditResult.success) {
+      setPreviewLoading(false);
+      return;
+    }
 
     const currentSystemPrompt = systemPrompt.trim() || "You are an autonomous AI Agent assistant deployed on Base Mainnet. Respond professionally.";
     const agentName = name.trim() || "Draft AI Agent";
@@ -206,6 +244,7 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
 
       addTerminalLog("info", `AGENT PREVIEW: Evaluated directives for [${agentName}] (${estTokens} tokens, ${latency}ms latency).`);
     } catch (err: any) {
+      if (creditResult && creditResult.success) creditResult.refund();
       setPreviewMessages(prev => [...prev, {
         role: "assistant",
         content: `Preview Sandbox Error: ${err.message || "Failed to execute prompt directives."}`

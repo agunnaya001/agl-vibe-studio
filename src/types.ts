@@ -189,7 +189,7 @@ export interface WalletState {
 
 export interface Activity {
   id: string;
-  type: "buy" | "sell" | "create" | "mint" | "vote" | "stake" | "achievement" | "deployment" | "referral";
+  type: "buy" | "sell" | "create" | "mint" | "vote" | "stake" | "achievement" | "deployment" | "referral" | "burn";
   tokenSymbol: string;
   tokenAddress: string;
   user: string;

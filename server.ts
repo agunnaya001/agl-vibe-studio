@@ -795,17 +795,21 @@ app.get("/api/lifi/status", async (req, res) => {
   }
 });
 
-// BaseScan API Proxy - Check Contract Verification Status
+// BaseScan & Etherscan API V2 Proxy - Check Contract Verification Status
 app.get("/api/basescan/check-verified", async (req, res) => {
   try {
     const address = req.query.address as string;
+    const chainId = (req.query.chainId as string) || "8453"; // Default 8453 for Base Mainnet
     if (!address) {
       res.status(400).json({ error: "Contract address is required" });
       return;
     }
 
-    const apiKey = process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY || "YourApiKeyToken";
-    const url = `https://api.basescan.org/api?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
+    const apiKey = process.env.ETHERSCAN_API_KEY || process.env.BASESCAN_API_KEY || "YourApiKeyToken";
+    let url = `https://api.basescan.org/api?module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
+    if (process.env.ETHERSCAN_API_KEY) {
+      url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
+    }
 
     const response = await fetch(url);
     const data = await response.json();
@@ -826,12 +830,12 @@ app.get("/api/basescan/check-verified", async (req, res) => {
 
     res.json({ isVerified: false });
   } catch (error: any) {
-    console.error("BaseScan Check Verified Error:", error);
+    console.error("Contract Check Verified Error:", error);
     res.status(500).json({ isVerified: false, error: error.message });
   }
 });
 
-// BaseScan API Proxy - Submit Contract Verification Request
+// BaseScan & Etherscan API V2 Proxy - Submit Contract Verification Request
 app.post("/api/basescan/verify", async (req, res) => {
   try {
     const {
@@ -841,7 +845,8 @@ app.post("/api/basescan/verify", async (req, res) => {
       compilerVersion,
       optimizationUsed,
       runs,
-      constructorArguments
+      constructorArguments,
+      chainId = "8453"
     } = req.body;
 
     if (!contractAddress || !sourceCode) {
@@ -849,7 +854,7 @@ app.post("/api/basescan/verify", async (req, res) => {
       return;
     }
 
-    const apiKey = process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY || "YourApiKeyToken";
+    const apiKey = process.env.ETHERSCAN_API_KEY || process.env.BASESCAN_API_KEY || "YourApiKeyToken";
     const params = new URLSearchParams();
     params.append("module", "contract");
     params.append("action", "verifysourcecode");
@@ -866,7 +871,12 @@ app.post("/api/basescan/verify", async (req, res) => {
     }
     params.append("evmversion", "paris");
 
-    const response = await fetch("https://api.basescan.org/api", {
+    let verifyUrl = "https://api.basescan.org/api";
+    if (process.env.ETHERSCAN_API_KEY) {
+      verifyUrl = `https://api.etherscan.io/v2/api?chainid=${chainId}`;
+    }
+
+    const response = await fetch(verifyUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
@@ -876,7 +886,7 @@ app.post("/api/basescan/verify", async (req, res) => {
 
     const data = await response.json();
 
-    // Check if BaseScan reported already verified
+    // Check if explorer reported already verified
     if (data.status === "0" && typeof data.result === "string" && data.result.toLowerCase().includes("already verified")) {
       res.json({
         status: "1",
@@ -889,28 +899,32 @@ app.post("/api/basescan/verify", async (req, res) => {
 
     res.json(data);
   } catch (error: any) {
-    console.error("BaseScan Verify Source Error:", error);
-    res.status(500).json({ status: "0", error: error.message || "Failed to submit contract verification to BaseScan" });
+    console.error("Contract Verify Source Error:", error);
+    res.status(500).json({ status: "0", error: error.message || "Failed to submit contract verification" });
   }
 });
 
-// BaseScan API Proxy - Poll Verification Status GUID
+// BaseScan & Etherscan API V2 Proxy - Poll Verification Status GUID
 app.get("/api/basescan/status", async (req, res) => {
   try {
     const guid = req.query.guid as string;
+    const chainId = (req.query.chainId as string) || "8453";
     if (!guid) {
       res.status(400).json({ error: "GUID is required" });
       return;
     }
 
-    const apiKey = process.env.BASESCAN_API_KEY || process.env.ETHERSCAN_API_KEY || "YourApiKeyToken";
-    const url = `https://api.basescan.org/api?module=contract&action=checkverifystatus&guid=${guid}&apikey=${apiKey}`;
+    const apiKey = process.env.ETHERSCAN_API_KEY || process.env.BASESCAN_API_KEY || "YourApiKeyToken";
+    let url = `https://api.basescan.org/api?module=contract&action=checkverifystatus&guid=${guid}&apikey=${apiKey}`;
+    if (process.env.ETHERSCAN_API_KEY) {
+      url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=checkverifystatus&guid=${guid}&apikey=${apiKey}`;
+    }
 
     const response = await fetch(url);
     const data = await response.json();
     res.json(data);
   } catch (error: any) {
-    console.error("BaseScan Check Status Error:", error);
+    console.error("Contract Check Status Error:", error);
     res.status(500).json({ status: "0", error: error.message });
   }
 });

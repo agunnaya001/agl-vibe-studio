@@ -281,10 +281,15 @@ const SEED_STAKING: StakingPool[] = [
 ];
 
 const SEED_ACTIVITIES: Activity[] = [
-  { id: "a-1", type: "create", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 1000000000, ethValue: 0, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000, details: "Platform genesis launch of Agunnaya Labs Utility Token" },
+  { id: "a-1", type: "create", tokenSymbol: "AGL", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 1000000000, ethValue: 0, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000, details: "Platform genesis launch of Agunnaya Labs Utility Token" },
   { id: "a-2", type: "buy", tokenSymbol: "CHAD", tokenAddress: "0x89ab...bcde", user: "0x9821...5523", amount: 12000, ethValue: 0.015, timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000, details: "Bought 12,000 CHAD tokens on the bonding curve" },
   { id: "a-3", type: "mint", tokenSymbol: "AGK", tokenAddress: "0x7890...cdef", user: "0x9821...5523", amount: 1, ethValue: 0.05, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000, details: "Minted Agunnaya Genesis Key #1 access NFT" },
-  { id: "a-4", type: "vote", tokenSymbol: "BBG", tokenAddress: "0xdad1...eade", user: "0x4795...4D5B", amount: 50000, ethValue: 0, timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000, details: "Voted FOR Proposal #2 'AA integration' with 50,000 voting weight" }
+  { id: "a-4", type: "vote", tokenSymbol: "BBG", tokenAddress: "0xdad1...eade", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 50000, ethValue: 0, timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000, details: "Voted FOR Proposal #2 'AA integration' with 50,000 voting weight" },
+  { id: "a-burn-1", type: "burn", tokenSymbol: "AGL", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 50000, ethValue: 2.5, timestamp: Date.now() - 2 * 3600000, details: "Burned 50,000 AGL tokens to Null Address 0x000...dEaD" },
+  { id: "a-burn-2", type: "burn", tokenSymbol: "USDC", tokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", user: "0x7890123456789012345678901234567890123456", amount: 2500, ethValue: 0.77, timestamp: Date.now() - 5 * 3600000, details: "Burned 2,500 USDC for Agunnaya Studio Compute Credits" },
+  { id: "a-burn-3", type: "burn", tokenSymbol: "AERO", tokenAddress: "0x9940181a94A35A4569E4529A3CDfB74e38FD98631", user: "0x98219483A12b059e93847aB19d72e73110555523", amount: 15000, ethValue: 5.8, timestamp: Date.now() - 18 * 3600000, details: "Deflated 15,000 AERO tokens via null destination" },
+  { id: "a-burn-4", type: "burn", tokenSymbol: "AGL", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", user: "0x334455667788990011223344556677889900aabb", amount: 12000, ethValue: 0.6, timestamp: Date.now() - 36 * 3600000, details: "Burned 12,000 AGL tokens on Base L2" },
+  { id: "a-burn-5", type: "burn", tokenSymbol: "cbETH", tokenAddress: "0x2Ae3F1Ec7F1F5012A27a5d3f112702170bA3b400", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 1.5, ethValue: 1.62, timestamp: Date.now() - 48 * 3600000, details: "Burned 1.5 cbETH for protocol yield boost" }
 ];
 
 const DEFAULT_WALLET: WalletState = {

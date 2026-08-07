@@ -27,6 +27,7 @@ import {
 import { WalletState, Token } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
 import ImageWithFallback from "../components/ImageWithFallback";
+import BurnLeaderboard from "../components/BurnLeaderboard";
 
 interface TokenBurnerPageProps {
   wallet: WalletState;
@@ -327,6 +328,21 @@ export default function TokenBurnerPage({
             };
             AgunnayaDatabase.saveWallet(updatedWallet);
             onRefreshWallet();
+          }
+
+          // Record activity in Firestore/Database
+          try {
+            AgunnayaDatabase.addActivity({
+              type: "burn",
+              tokenSymbol: activeToken.symbol,
+              tokenAddress: activeToken.address,
+              user: wallet.address || "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+              amount: amt,
+              ethValue: (amt * activeToken.priceUsd) / 3250,
+              details: `Burned ${amt} ${activeToken.symbol} (${burnMode} mode) on Base Mainnet`
+            });
+          } catch (err) {
+            console.warn("Failed to record burn activity to database:", err);
           }
 
           setBurnHistory(prev => [createdTx, ...prev]);
@@ -829,6 +845,13 @@ export default function TokenBurnerPage({
           </div>
         </div>
       </div>
+
+      {/* Firestore-backed Burn Leaderboard Component */}
+      <BurnLeaderboard
+        wallet={wallet}
+        showToast={showToast}
+        onOpenConnectWallet={onOpenConnectWallet}
+      />
 
       {/* Burn Step Execution Loader Modal */}
       {isBurning && (
