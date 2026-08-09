@@ -1,3 +1,11 @@
+export interface PreFlightCheckItem {
+  id: string;
+  label: string;
+  category: "Identity" | "Liquidity & Gas" | "Wallet" | "Security & Parameters";
+  status: "pass" | "warn" | "fail";
+  message: string;
+}
+
 export interface SocialLinks {
   website?: string;
   twitter?: string;

@@ -4,9 +4,10 @@ import AIDeploymentWizardModal from "../components/AIDeploymentWizardModal";
 import InsufficientCreditsModal from "../components/InsufficientCreditsModal";
 import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
 import { AgunnayaDatabase, BASE_PRICE, SLOPE } from "../lib/db";
-import { Token, WalletState } from "../types";
+import { Token, WalletState, PreFlightCheckItem } from "../types";
 import IPFSUploader from "../components/IPFSUploader";
 import SmartContractTemplateLibrary from "../components/SmartContractTemplateLibrary";
+import VisualArchitecturePreview from "../components/VisualArchitecturePreview";
 import { analyzeSolidityCode } from "../lib/security";
 import { db, auth } from "../lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -24,6 +25,9 @@ import {
   Code, 
   ShieldCheck, 
   CheckCircle, 
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
   Settings, 
   FileCheck, 
   Layers, 
@@ -45,7 +49,8 @@ import {
   Terminal,
   ChevronDown,
   ChevronUp,
-  Wand2
+  Wand2,
+  Plane
 } from "lucide-react";
 
 interface CreatePageProps {
@@ -319,6 +324,313 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
     }
   }, [tokenName, tokenSymbol, tokenDesc, seedBuy]);
 
+  // Pre-Flight Check utility for Launchpad Parameters
+  const getPreFlightChecks = (): PreFlightCheckItem[] => {
+    const checks: PreFlightCheckItem[] = [];
+
+    // 1. Wallet Connection
+    if (!wallet.isConnected) {
+      checks.push({
+        id: "wallet-conn",
+        label: "Wallet Connectivity",
+        category: "Wallet",
+        status: "fail",
+        message: "Wallet is disconnected. Connect wallet to execute deployment."
+      });
+    } else {
+      checks.push({
+        id: "wallet-conn",
+        label: "Wallet Connectivity",
+        category: "Wallet",
+        status: "pass",
+        message: `Connected: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+      });
+    }
+
+    // 2. Token Name
+    const nameTrim = tokenName.trim();
+    if (!nameTrim) {
+      checks.push({
+        id: "token-name",
+        label: "Token Name Integrity",
+        category: "Identity",
+        status: "fail",
+        message: "Token name is required."
+      });
+    } else if (nameTrim.length < 3) {
+      checks.push({
+        id: "token-name",
+        label: "Token Name Integrity",
+        category: "Identity",
+        status: "fail",
+        message: "Token name must be at least 3 characters long."
+      });
+    } else if (nameTrim.length > 32) {
+      checks.push({
+        id: "token-name",
+        label: "Token Name Integrity",
+        category: "Identity",
+        status: "warn",
+        message: "Name > 32 chars may truncate on block explorers and DEXes."
+      });
+    } else {
+      checks.push({
+        id: "token-name",
+        label: "Token Name Integrity",
+        category: "Identity",
+        status: "pass",
+        message: `Valid name: "${nameTrim}"`
+      });
+    }
+
+    // 3. Ticker Symbol
+    const symTrim = tokenSymbol.trim().toUpperCase();
+    if (!symTrim) {
+      checks.push({
+        id: "token-symbol",
+        label: "Ticker Symbol Format",
+        category: "Identity",
+        status: "fail",
+        message: "Ticker symbol is required."
+      });
+    } else if (symTrim.length < 2 || symTrim.length > 5) {
+      checks.push({
+        id: "token-symbol",
+        label: "Ticker Symbol Format",
+        category: "Identity",
+        status: "fail",
+        message: "Ticker symbol must be 2-5 characters long (e.g. $AGNN)."
+      });
+    } else if (/[^A-Z0-9]/.test(symTrim)) {
+      checks.push({
+        id: "token-symbol",
+        label: "Ticker Symbol Format",
+        category: "Identity",
+        status: "fail",
+        message: "Symbol must contain uppercase letters and numbers only."
+      });
+    } else {
+      checks.push({
+        id: "token-symbol",
+        label: "Ticker Symbol Format",
+        category: "Identity",
+        status: "pass",
+        message: `Valid ticker symbol: $${symTrim}`
+      });
+    }
+
+    // 4. Description
+    const descTrim = tokenDesc.trim();
+    if (!descTrim) {
+      checks.push({
+        id: "token-desc",
+        label: "Metadata & Description",
+        category: "Identity",
+        status: "fail",
+        message: "Token description is required for bonding curve deployment."
+      });
+    } else if (descTrim.length < 15) {
+      checks.push({
+        id: "token-desc",
+        label: "Metadata & Description",
+        category: "Identity",
+        status: "warn",
+        message: "Short description (<15 chars). Consider elaborating project goals."
+      });
+    } else {
+      checks.push({
+        id: "token-desc",
+        label: "Metadata & Description",
+        category: "Identity",
+        status: "pass",
+        message: "Project description metadata verified."
+      });
+    }
+
+    // 5. Initial Supply Liquidity Seed
+    const seedVal = parseFloat(seedBuy || "0");
+    if (isNaN(seedVal) || seedVal < 0) {
+      checks.push({
+        id: "seed-buy",
+        label: "Initial Supply Liquidity",
+        category: "Liquidity & Gas",
+        status: "fail",
+        message: "Seed buy amount cannot be negative or invalid."
+      });
+    } else if (seedVal === 0) {
+      checks.push({
+        id: "seed-buy",
+        label: "Initial Supply Liquidity",
+        category: "Liquidity & Gas",
+        status: "warn",
+        message: "Zero initial supply seed buy: curve launches with 0 liquidity backing."
+      });
+    } else if (seedVal < 0.005) {
+      checks.push({
+        id: "seed-buy",
+        label: "Initial Supply Liquidity",
+        category: "Liquidity & Gas",
+        status: "warn",
+        message: `Low initial seed buy (${seedVal} ETH < 0.005 ETH): early traders may face high price impact.`
+      });
+    } else {
+      checks.push({
+        id: "seed-buy",
+        label: "Initial Supply Liquidity",
+        category: "Liquidity & Gas",
+        status: "pass",
+        message: `${seedVal} ETH initial seed buy liquidity allocated.`
+      });
+    }
+
+    // 6. Gas & Wallet Balance
+    const totalCost = (seedVal || 0) + 0.002 + parseFloat(gasEstimate || "0.0015");
+    if (wallet.isConnected && wallet.balanceEth < totalCost) {
+      checks.push({
+        id: "gas-balance",
+        label: "Gas & Cost Liquidity",
+        category: "Liquidity & Gas",
+        status: "fail",
+        message: `Required: ${totalCost.toFixed(4)} ETH. Available balance: ${wallet.balanceEth.toFixed(4)} ETH.`
+      });
+    } else if (wallet.isConnected) {
+      checks.push({
+        id: "gas-balance",
+        label: "Gas & Cost Liquidity",
+        category: "Liquidity & Gas",
+        status: "pass",
+        message: `Balance (${wallet.balanceEth.toFixed(4)} ETH) sufficient for ${totalCost.toFixed(4)} ETH total cost.`
+      });
+    }
+
+    // 7. Referral Rules
+    if (referral < 0 || referral > 5) {
+      checks.push({
+        id: "referral-rules",
+        label: "Referral Reward Cap",
+        category: "Security & Parameters",
+        status: "fail",
+        message: "Referral percentage must be between 0% and 5%."
+      });
+    } else if (referral > 3) {
+      checks.push({
+        id: "referral-rules",
+        label: "Referral Reward Cap",
+        category: "Security & Parameters",
+        status: "warn",
+        message: "Referral rate > 3% allocates higher volume share to referrers."
+      });
+    } else {
+      checks.push({
+        id: "referral-rules",
+        label: "Referral Reward Cap",
+        category: "Security & Parameters",
+        status: "pass",
+        message: `${referral}% referral reward within safe parameters.`
+      });
+    }
+
+    return checks;
+  };
+
+  const getAIPreFlightChecks = (): PreFlightCheckItem[] => {
+    if (!aiResult) return [];
+    const checks: PreFlightCheckItem[] = [];
+
+    if (!wallet.isConnected) {
+      checks.push({
+        id: "ai-wallet",
+        label: "Wallet Connection",
+        category: "Wallet",
+        status: "fail",
+        message: "Wallet is not connected."
+      });
+    } else {
+      checks.push({
+        id: "ai-wallet",
+        label: "Wallet Connection",
+        category: "Wallet",
+        status: "pass",
+        message: `Connected: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+      });
+    }
+
+    if (!aiResult.name) {
+      checks.push({
+        id: "ai-name",
+        label: "Contract Name",
+        category: "Identity",
+        status: "fail",
+        message: "Contract name is missing."
+      });
+    } else {
+      checks.push({
+        id: "ai-name",
+        label: "Contract Name",
+        category: "Identity",
+        status: "pass",
+        message: `Name: "${aiResult.name}"`
+      });
+    }
+
+    if (!aiResult.symbol) {
+      checks.push({
+        id: "ai-symbol",
+        label: "Ticker Symbol",
+        category: "Identity",
+        status: "fail",
+        message: "Ticker symbol is missing."
+      });
+    } else {
+      checks.push({
+        id: "ai-symbol",
+        label: "Ticker Symbol",
+        category: "Identity",
+        status: "pass",
+        message: `Ticker: $${aiResult.symbol}`
+      });
+    }
+
+    if (!aiResult.solidityCode || aiResult.solidityCode.length < 50) {
+      checks.push({
+        id: "ai-code",
+        label: "Solidity Source Code",
+        category: "Security & Parameters",
+        status: "fail",
+        message: "Solidity source code is incomplete or missing."
+      });
+    } else {
+      checks.push({
+        id: "ai-code",
+        label: "Solidity Source Code",
+        category: "Security & Parameters",
+        status: "pass",
+        message: "Complete Solidity v0.8.20+ source code."
+      });
+    }
+
+    const totalCost = 0.002 + 0.0015;
+    if (wallet.isConnected && !wallet.isSmartAccount && wallet.balanceEth < totalCost) {
+      checks.push({
+        id: "ai-balance",
+        label: "Deploy Fee & Gas",
+        category: "Liquidity & Gas",
+        status: "fail",
+        message: `Requires ${totalCost} ETH. Wallet balance: ${wallet.balanceEth.toFixed(4)} ETH.`
+      });
+    } else if (wallet.isConnected) {
+      checks.push({
+        id: "ai-balance",
+        label: "Deploy Fee & Gas",
+        category: "Liquidity & Gas",
+        status: "pass",
+        message: wallet.isSmartAccount ? "Gas sponsored via AA Paymaster." : `${wallet.balanceEth.toFixed(4)} ETH available.`
+      });
+    }
+
+    return checks;
+  };
+
   // Handles AI Contract Generation
   const handleAIGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -366,6 +678,16 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
       return;
     }
     if (!aiResult || deployingAI) return;
+
+    // Enforce Pre-Flight Check Validation
+    const aiPreFlight = getAIPreFlightChecks();
+    const blockingAIFail = aiPreFlight.find(c => c.status === "fail");
+    if (blockingAIFail) {
+      showToast(`Pre-Flight Check Failed: ${blockingAIFail.message}`, "error");
+      addTerminalLog("error", `Pre-Flight Check BLOCKED AI deployment: [${blockingAIFail.label}] ${blockingAIFail.message}`);
+      return;
+    }
+
     setDeployingAI(true);
     setDeployStep("compiling");
     addTerminalLog("info", `Initiating contract deployment pipeline for ${aiResult.name}...`);
@@ -533,6 +855,15 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
       return;
     }
     if (!tokenName || !tokenSymbol || !tokenDesc || launchingToken) return;
+
+    // Enforce Pre-Flight Check Validation
+    const preFlight = getPreFlightChecks();
+    const blockingFail = preFlight.find(c => c.status === "fail");
+    if (blockingFail) {
+      showToast(`Pre-Flight Check Failed: ${blockingFail.message}`, "error");
+      addTerminalLog("error", `Pre-Flight Check BLOCKED launch: [${blockingFail.label}] ${blockingFail.message}`);
+      return;
+    }
 
     // Contract Validations
     if (tokenName.length < 3) {
@@ -950,6 +1281,14 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                 </div>
               </div>
 
+              {/* DYNAMIC VISUAL ARCHITECTURE PREVIEW */}
+              <VisualArchitecturePreview
+                projectType={aiProjectType}
+                accessControl={aiAccessControl}
+                promptText={aiPrompt}
+                aiResult={aiResult}
+              />
+
               <button
                 id="ai-generate-submit-btn"
                 type="submit"
@@ -1150,6 +1489,93 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                 </div>
               )}
 
+              {/* PRE-FLIGHT CHECK UTILITY WIDGET */}
+              {(tokenName || tokenSymbol || tokenDesc || parseFloat(seedBuy || "0") > 0) && (() => {
+                const checks = getPreFlightChecks();
+                const failCount = checks.filter(c => c.status === "fail").length;
+                const warnCount = checks.filter(c => c.status === "warn").length;
+                const passCount = checks.filter(c => c.status === "pass").length;
+
+                return (
+                  <div id="preflight-check-widget" className="bg-zinc-950 border border-brand-blue/30 rounded-xl p-4 mt-4 space-y-3 shadow-lg shadow-brand-blue/5 animate-fade-in">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-brand-blue/10 text-brand-blue">
+                          <Plane className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                            Pre-Flight Contract Diagnostic
+                          </h3>
+                          <p className="text-[10px] text-zinc-400 font-mono">Automated parameter & liquidity validation</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                        {failCount > 0 ? (
+                          <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 font-bold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> {failCount} BLOCKED
+                          </span>
+                        ) : warnCount > 0 ? (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" /> {warnCount} WARNING{warnCount > 1 ? "S" : ""}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> {passCount}/7 PASSED
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Diagnostic Items List */}
+                    <div className="space-y-2 font-mono text-xs">
+                      {checks.map((chk) => (
+                        <div
+                          key={chk.id}
+                          className={`p-2.5 rounded-lg border flex items-start gap-2.5 transition-all ${
+                            chk.status === "fail"
+                              ? "bg-red-500/5 border-red-500/30 text-red-300"
+                              : chk.status === "warn"
+                              ? "bg-amber-500/5 border-amber-500/30 text-amber-300"
+                              : "bg-zinc-900/60 border-white/5 text-zinc-300"
+                          }`}
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {chk.status === "fail" ? (
+                              <XCircle className="w-4 h-4 text-red-400" />
+                            ) : chk.status === "warn" ? (
+                              <AlertTriangle className="w-4 h-4 text-amber-400" />
+                            ) : (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-bold text-[11px] text-white flex items-center gap-1.5">
+                                {chk.label}
+                                <span className="text-[9px] font-normal text-zinc-500">({chk.category})</span>
+                              </span>
+                              <span
+                                className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded ${
+                                  chk.status === "fail"
+                                    ? "bg-red-500/20 text-red-400"
+                                    : chk.status === "warn"
+                                    ? "bg-amber-500/20 text-amber-400"
+                                    : "bg-emerald-500/20 text-emerald-400"
+                                }`}
+                              >
+                                {chk.status}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">{chk.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <button
                 id="launchpad-submit-btn"
                 type="submit"
@@ -1278,6 +1704,67 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                 ))}
               </div>
             </div>
+
+            {/* DYNAMIC VISUAL ARCHITECTURE & INHERITANCE MAP */}
+            <VisualArchitecturePreview
+              projectType={aiProjectType}
+              accessControl={aiAccessControl}
+              promptText={aiPrompt}
+              aiResult={aiResult}
+            />
+
+            {/* AI PRE-FLIGHT DIAGNOSTIC CHECK WIDGET */}
+            {(() => {
+              const aiChecks = getAIPreFlightChecks();
+              const failCount = aiChecks.filter(c => c.status === "fail").length;
+              const warnCount = aiChecks.filter(c => c.status === "warn").length;
+              const passCount = aiChecks.filter(c => c.status === "pass").length;
+
+              return (
+                <div id="ai-preflight-widget" className="bg-zinc-950 border border-brand-purple/30 rounded-xl p-4 space-y-3 font-mono animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-brand-purple flex items-center gap-1.5">
+                      <Plane className="w-3.5 h-3.5" /> AI Pre-Flight Deployment Diagnostic
+                    </span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                      failCount > 0 ? "bg-red-500/20 text-red-400 border border-red-500/30" :
+                      warnCount > 0 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" :
+                      "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    }`}>
+                      {failCount > 0 ? `${failCount} ISSUE(S) BLOCKED` : `${passCount}/${aiChecks.length} CHECKS PASSED`}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {aiChecks.map((chk) => (
+                      <div key={chk.id} className="flex items-start gap-2 text-xs bg-zinc-900/60 p-2 rounded-lg border border-white/5">
+                        <span className="mt-0.5 shrink-0">
+                          {chk.status === "fail" ? (
+                            <XCircle className="w-3.5 h-3.5 text-red-400" />
+                          ) : chk.status === "warn" ? (
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-white">{chk.label}</span>
+                            <span className={`text-[8px] uppercase font-bold px-1 rounded ${
+                              chk.status === "fail" ? "text-red-400 bg-red-500/10" :
+                              chk.status === "warn" ? "text-amber-400 bg-amber-500/10" :
+                              "text-emerald-400 bg-emerald-500/10"
+                            }`}>
+                              {chk.status}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">{chk.message}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Deploy Trigger Button */}
             {deploySuccessAI ? (
