@@ -4,6 +4,7 @@ import { HelmetProvider, Helmet } from "react-helmet-async";
 import { User, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { auth, db } from "./lib/firebase";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { Analytics } from "@vercel/analytics/react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import WalletModal from "./components/WalletModal";
@@ -1431,6 +1432,7 @@ export default function App() {
           </div>
         )}
       </div>
+      <Analytics />
     </HelmetProvider>
   );
 }
