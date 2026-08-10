@@ -894,6 +894,8 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
             details: `Successfully deployed custom Solidity contract: ${newToken.name} (${newToken.symbol}) via Token Factory ${TOKEN_FACTORY_ADDRESS}`
           });
 
+          AgunnayaDatabase.triggerMissionAction(wallet.address, "deploy");
+
           addTerminalLog("success", `CONTRACT DEPLOYED successfully at address ${newToken.address}`);
           setDeployingAI(false);
           setDeployStep("completed");

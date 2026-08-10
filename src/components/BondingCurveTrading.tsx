@@ -276,6 +276,8 @@ export default function BondingCurveTrading({
             details: `Bonding Curve Buy: +${tokensMinted.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${token.symbol} ${web3TxHash ? `(Tx: ${web3TxHash.slice(0, 8)}...)` : "via Base"}`
           });
 
+          AgunnayaDatabase.triggerMissionAction(wallet.address, "trade");
+
           addTerminalLog("buy", `SUCCESS: Minted +${tokensMinted.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${token.symbol} ${web3TxHash ? `[MetaMask Tx: ${web3TxHash}]` : "via Bonding Curve"}`);
           showToast(`Successfully bought +${tokensMinted.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${token.symbol}!`, "success");
 
@@ -381,6 +383,8 @@ export default function BondingCurveTrading({
             ethValue: net,
             details: `Bonding Curve Sell: -${num.toLocaleString()} ${token.symbol} ${web3TxHash ? `(Tx: ${web3TxHash.slice(0, 8)}...)` : "via Base"}`
           });
+
+          AgunnayaDatabase.triggerMissionAction(wallet.address, "trade");
 
           addTerminalLog("sell", `SUCCESS: Sold ${num.toLocaleString()} ${token.symbol} for +${net.toFixed(6)} ETH ${web3TxHash ? `[MetaMask Tx: ${web3TxHash}]` : "via Bonding Curve"}`);
           showToast(`Successfully sold ${num.toLocaleString()} ${token.symbol}!`, "success");

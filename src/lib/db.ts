@@ -1,6 +1,71 @@
-import { Token, NFTCollection, DAO, GameFiProject, AIAgent, WalletState, Activity, StakingPool, ReferralRecord, ReferralPayout, PriceAlert, SubAccount, AgentServiceConnection, Task, MCPServer, AGLLiquidityPair, AGLPoll } from "../types";
+import { Token, NFTCollection, DAO, GameFiProject, AIAgent, WalletState, Activity, StakingPool, ReferralRecord, ReferralPayout, PriceAlert, SubAccount, AgentServiceConnection, Task, MCPServer, AGLLiquidityPair, AGLPoll, DailyMission, UserProfile } from "../types";
 import { doc, setDoc, getDocs, collection, deleteDoc } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType, auth } from "./firebase";
+
+export function getDefaultDailyMissions(): DailyMission[] {
+  return [
+    {
+      id: "daily_checkin",
+      title: "Daily Web3 Check-In",
+      description: "Log in to Agunnaya Studio and visit the Dashboard today.",
+      category: "checkin",
+      creditReward: 50,
+      targetCount: 1,
+      currentProgress: 1,
+      completed: true,
+      claimed: false,
+      iconName: "CalendarCheck"
+    },
+    {
+      id: "trade_token",
+      title: "Execute a Bonding Curve Trade",
+      description: "Buy or sell any token on the Bonding Curve Launchpad.",
+      category: "trade",
+      creditReward: 100,
+      targetCount: 1,
+      currentProgress: 0,
+      completed: false,
+      claimed: false,
+      iconName: "TrendingUp"
+    },
+    {
+      id: "deploy_contract",
+      title: "Deploy Smart Contract",
+      description: "Generate or deploy a smart contract via the AI Builder.",
+      category: "deploy",
+      creditReward: 200,
+      targetCount: 1,
+      currentProgress: 0,
+      completed: false,
+      claimed: false,
+      iconName: "Code2"
+    },
+    {
+      id: "stake_vault",
+      title: "Stake in AGL Vault",
+      description: "Stake AGL utility tokens in any of our Staking Vaults.",
+      category: "stake",
+      creditReward: 150,
+      targetCount: 1,
+      currentProgress: 0,
+      completed: false,
+      claimed: false,
+      iconName: "ShieldCheck"
+    },
+    {
+      id: "form_submission",
+      title: "Create or Submit Form / Poll",
+      description: "Create or submit a Web3 Google Form or DAO Governance Poll.",
+      category: "form",
+      creditReward: 100,
+      targetCount: 1,
+      currentProgress: 0,
+      completed: false,
+      claimed: false,
+      iconName: "FileSpreadsheet"
+    }
+  ];
+}
 
 // EXACT BONDING CURVE MATH
 export const BASE_PRICE = 0.000001; // 1e-6 ETH per token
@@ -1758,6 +1823,146 @@ export class AgunnayaDatabase {
     });
 
     return { success: true, remainingStaked: pool.stakedBalance };
+  }
+
+  // USER PROFILE & DAILY MISSIONS ENGINE
+  static getTodayString(): string {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+
+  static getUserProfile(addressOrUid: string): UserProfile {
+    if (!addressOrUid) {
+      return {
+        userId: "guest",
+        totalCreditsEarned: 0,
+        streakDays: 1,
+        lastCheckinDate: this.getTodayString(),
+        dailyMissions: getDefaultDailyMissions(),
+        updatedAt: Date.now()
+      };
+    }
+
+    const key = `agl_user_profile_${addressOrUid.toLowerCase()}`;
+    const today = this.getTodayString();
+
+    const fallback: UserProfile = {
+      userId: addressOrUid,
+      address: addressOrUid.startsWith("0x") ? addressOrUid : undefined,
+      totalCreditsEarned: 50,
+      streakDays: 1,
+      lastCheckinDate: today,
+      dailyMissions: getDefaultDailyMissions(),
+      updatedAt: Date.now()
+    };
+
+    let profile = this.safeParse<UserProfile>(key, fallback);
+
+    // Ensure all default missions exist in profile even if updated
+    const defaultMissions = getDefaultDailyMissions();
+    const existingMissionIds = new Set(profile.dailyMissions.map(m => m.id));
+    let missionsChanged = false;
+
+    defaultMissions.forEach(dm => {
+      if (!existingMissionIds.has(dm.id)) {
+        profile.dailyMissions.push(dm);
+        missionsChanged = true;
+      }
+    });
+
+    // Reset daily missions if it's a new calendar day
+    if (profile.lastCheckinDate !== today) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+      const newStreak = profile.lastCheckinDate === yesterdayStr ? profile.streakDays + 1 : 1;
+
+      profile = {
+        ...profile,
+        lastCheckinDate: today,
+        streakDays: newStreak,
+        dailyMissions: getDefaultDailyMissions(),
+        updatedAt: Date.now()
+      };
+
+      this.saveUserProfile(profile);
+    } else if (missionsChanged) {
+      this.saveUserProfile(profile);
+    }
+
+    return profile;
+  }
+
+  static saveUserProfile(profile: UserProfile) {
+    if (!profile.userId) return;
+    const key = `agl_user_profile_${profile.userId.toLowerCase()}`;
+    localStorage.setItem(key, JSON.stringify(profile));
+    this.saveToFirestore("users", profile.userId, profile);
+  }
+
+  static claimMissionReward(addressOrUid: string, missionId: string): { success: boolean; creditReward: number; updatedProfile: UserProfile } {
+    const profile = this.getUserProfile(addressOrUid);
+    const mission = profile.dailyMissions.find(m => m.id === missionId);
+
+    if (!mission) {
+      throw new Error("Mission not found.");
+    }
+    if (!mission.completed) {
+      throw new Error("Mission is not completed yet.");
+    }
+    if (mission.claimed) {
+      throw new Error("Mission reward already claimed.");
+    }
+
+    mission.claimed = true;
+    profile.totalCreditsEarned += mission.creditReward;
+    profile.updatedAt = Date.now();
+
+    this.saveUserProfile(profile);
+
+    // Award AGL credits to wallet
+    const wallet = this.getWallet();
+    wallet.aglCredits += mission.creditReward;
+    this.saveWallet(wallet);
+
+    // Log Activity
+    this.addActivity({
+      type: "achievement",
+      tokenSymbol: "AGL",
+      tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698",
+      user: addressOrUid,
+      amount: mission.creditReward,
+      ethValue: 0,
+      details: `Claimed +${mission.creditReward} AGL Bonus Credits for completing mission: ${mission.title}`
+    });
+
+    return { success: true, creditReward: mission.creditReward, updatedProfile: profile };
+  }
+
+  static triggerMissionAction(addressOrUid: string, category: "trade" | "deploy" | "stake" | "social" | "checkin" | "form") {
+    if (!addressOrUid) return;
+    const profile = this.getUserProfile(addressOrUid);
+    let updated = false;
+
+    profile.dailyMissions = profile.dailyMissions.map(m => {
+      if (m.category === category && !m.completed) {
+        const newProgress = Math.min(m.targetCount, m.currentProgress + 1);
+        const isNowCompleted = newProgress >= m.targetCount;
+        updated = true;
+        return {
+          ...m,
+          currentProgress: newProgress,
+          completed: isNowCompleted
+        };
+      }
+      return m;
+    });
+
+    if (updated) {
+      profile.updatedAt = Date.now();
+      this.saveUserProfile(profile);
+    }
   }
 
   static resetDatabase() {

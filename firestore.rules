@@ -147,8 +147,21 @@ service cloud.firestore {
         && data.status is string && (data.status == 'active' || data.status == 'revoked');
     }
 
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'updatedAt'])
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.updatedAt is number;
+    }
+
     // 4. Secure Collections Match Blocks
     
+    // USERS COLLECTION
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == userId || resource.data.userId == request.auth.uid);
+      allow create, update: if isSignedIn() && isValidId(userId) && isValidUserProfile(incoming()) && (isAdmin() || request.auth.uid == userId || incoming().userId == request.auth.uid);
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
     // TOKENS COLLECTION
     match /tokens/{address} {
       allow read: if true;

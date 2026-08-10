@@ -333,3 +333,27 @@ export interface AGLPoll {
   createdAt: number;
 }
 
+export interface DailyMission {
+  id: string;
+  title: string;
+  description: string;
+  category: "trade" | "deploy" | "stake" | "social" | "checkin" | "form";
+  creditReward: number;
+  targetCount: number;
+  currentProgress: number;
+  completed: boolean;
+  claimed: boolean;
+  iconName: string;
+}
+
+export interface UserProfile {
+  userId: string;
+  email?: string;
+  address?: string;
+  totalCreditsEarned: number;
+  streakDays: number;
+  lastCheckinDate: string; // YYYY-MM-DD
+  dailyMissions: DailyMission[];
+  updatedAt: number;
+}
+

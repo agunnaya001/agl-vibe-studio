@@ -195,9 +195,29 @@
         "status": { "type": "string", "enum": ["active", "revoked"] }
       },
       "required": ["id", "providerName", "connectedAt", "status"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document tracking daily missions and bonus AGL credits",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "totalCreditsEarned": { "type": "number" },
+        "streakDays": { "type": "number" },
+        "lastCheckinDate": { "type": "string" },
+        "dailyMissions": { "type": "array" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "updatedAt"]
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document tracking daily missions and bonus AGL credits"
+    },
     "/tokens/{address}": {
       "schema": { "$ref": "#/entities/Token" },
       "description": "Database-backed registry for dynamic bonding curve tokens"

@@ -5,6 +5,7 @@ import TransactionHistoryTable from "../components/TransactionHistoryTable";
 import ActivityFeed from "../components/ActivityFeed";
 import { useState, useMemo } from "react";
 import TaskSummaryWidget from "../components/TaskSummaryWidget";
+import DailyMissionsWidget from "../components/DailyMissionsWidget";
 import { 
   Briefcase, 
   Layers, 
@@ -206,6 +207,13 @@ export default function DashboardPage({
           </div>
         </div>
       </div>
+
+      {/* Daily Missions & Bonus Credits Progress Tracker */}
+      <DailyMissionsWidget 
+        userAddress={wallet.address} 
+        onNavigateTab={onSelectTab}
+        onRewardClaimed={handleRefreshActivities}
+      />
 
       {/* Main split sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -293,6 +293,7 @@ export default function StakingVaultPage({
             aglTokenBalance: updatedBalance
           };
           AgunnayaDatabase.saveWallet(updatedWallet);
+          AgunnayaDatabase.triggerMissionAction(wallet.address, "stake");
           onRefreshWallet();
 
           setIsStaking(false);
