@@ -73,9 +73,9 @@ export class AgunnayaLabsSDK {
    * Generates viral engagement share payload & referral link for social growth
    */
   public generateViralReferralLink(userAddress: string, campaign: string = "agl_launch"): ViralShareConfig {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://agunnaya.studio";
+    const origin = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "https://agunnaya.studio";
     const refUrl = `${origin}?ref=${userAddress}&utm_campaign=${campaign}`;
-    const text = `🚀 I'm building and swapping on Base with Agunnaya Studio! Claim $AGL credits & automated yield staking. Join me here:`;
+    const text = `🚀 Building & trading $AGL on @Base with @agunnayalabs Studio! Created by @agunnaya001 👑 Earn 20% referral fee rewards! Join here:`;
     
     return {
       title: "Join Agunnaya Studio on Base L2",

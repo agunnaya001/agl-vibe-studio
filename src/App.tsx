@@ -28,6 +28,7 @@ import AdminPanelPage from "./pages/AdminPanelPage";
 import ReferralPage from "./pages/ReferralPage";
 import GoogleDrivePage from "./pages/GoogleDrivePage";
 import GmailPage from "./pages/GmailPage";
+import GoogleFormsPage from "./pages/GoogleFormsPage";
 import TokenFactoryPage from "./pages/TokenFactoryPage";
 import TokenBurnerPage from "./pages/TokenBurnerPage";
 import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
@@ -390,7 +391,10 @@ export default function App() {
     "https://www.googleapis.com/auth/gmail.compose",
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/gmail.labels"
+    "https://www.googleapis.com/auth/gmail.labels",
+    "https://www.googleapis.com/auth/forms.body",
+    "https://www.googleapis.com/auth/forms.body.readonly",
+    "https://www.googleapis.com/auth/forms.responses.readonly"
   ];
 
   const handleSignInWithGoogle = async () => {
@@ -1032,6 +1036,16 @@ export default function App() {
             showToast={showToast}
             wallet={wallet}
             onRefreshWallet={refreshAllData}
+          />
+        );
+      case "google-forms":
+        return (
+          <GoogleFormsPage
+            firebaseUser={firebaseUser}
+            driveAccessToken={driveAccessToken}
+            onAuthorizeForms={handleAuthorizeDrive}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
           />
         );
       default:

@@ -24,6 +24,7 @@ import {
   Send,
   Building2,
   Compass,
+  FileSpreadsheet,
   X
 } from "lucide-react";
 
@@ -80,6 +81,7 @@ export default function Sidebar({
     { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", highlight: true },
     { id: "gdrive", label: "Google Drive Cloud", icon: HardDrive, category: "Workspace" },
     { id: "gmail", label: "Gmail Automation", icon: Mail, category: "Workspace" },
+    { id: "google-forms", label: "Google Forms", icon: FileSpreadsheet, category: "Workspace" },
     { id: "explore", label: "Bonding Curve Pad", icon: Rocket, category: "Assets & Creation" },
     { id: "token-factory", label: "Token Factory (Base)", icon: Database, category: "Assets & Creation", highlight: true },
     { id: "nfts", label: "NFT Studio", icon: Disc, category: "Assets & Creation" },
@@ -94,7 +96,7 @@ export default function Sidebar({
     { id: "agl-credits", label: "AGL Credits Burn", icon: Flame, category: "DeFi Tools", highlight: true },
     { id: "gas-dashboard", label: "Gas Sponsorship Pad", icon: Gauge, category: "DeFi Tools", highlight: true },
     { id: "analytics", label: "Base Analytics", icon: BarChart3, category: "DeFi Tools" },
-    { id: "referrals", label: "Referral Rewards", icon: Gift, category: "DeFi Tools" },
+    { id: "referrals", label: "Referral & Viral Ads", icon: Gift, category: "DeFi Tools", highlight: true },
   ];
 
   if (isAdmin) {
