@@ -1,6 +1,17 @@
 import { ethers } from "ethers";
+import { 
+  TOKEN_FACTORY_ADDRESS as AGL_FACTORY_ADDR, 
+  TOKEN_FACTORY_ABI as AGL_FACTORY_ABI,
+  AGL_TOKEN_ADDRESS,
+  AGL_CREDITS_ADDRESS,
+  AGL_STAKING_ADDRESS,
+  AGL_TREASURY_ADDRESS,
+  AGL_MULTISIG_SAFE_ADDRESS
+} from "./aglContracts";
 
-export const TOKEN_FACTORY_ADDRESS = "0x6EF504b98b4369C0a1aF4fD1885D7acCf843dDf6";
+export const TOKEN_FACTORY_ADDRESS = AGL_FACTORY_ADDR;
+export const TOKEN_FACTORY_ABI = AGL_FACTORY_ABI;
+export { AGL_TOKEN_ADDRESS, AGL_CREDITS_ADDRESS, AGL_STAKING_ADDRESS, AGL_TREASURY_ADDRESS, AGL_MULTISIG_SAFE_ADDRESS };
 export const BASE_MAINNET_RPC = "https://mainnet.base.org";
 export const BASE_RPC_FALLBACKS = [
   "https://mainnet.base.org",
@@ -12,6 +23,126 @@ export const BASE_RPC_FALLBACKS = [
 
 export const BASE_NETWORK_CONFIG = { chainId: 8453, name: "base" };
 export const BASE_PROVIDER_OPTIONS = { staticNetwork: true };
+
+export interface ChainConfig {
+  chainIdHex: string;
+  chainIdDecimal: number;
+  chainName: string;
+  nativeCurrency: { name: string; symbol: string; decimals: number };
+  rpcUrls: string[];
+  blockExplorerUrls: string[];
+}
+
+export const BASE_MAINNET_CHAIN_CONFIG: ChainConfig = {
+  chainIdHex: "0x2105",
+  chainIdDecimal: 8453,
+  chainName: "Base",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: ["https://mainnet.base.org", "https://base.llamarpc.com"],
+  blockExplorerUrls: ["https://basescan.org"]
+};
+
+export const BASE_SEPOLIA_CHAIN_CONFIG: ChainConfig = {
+  chainIdHex: "0x14a34",
+  chainIdDecimal: 84532,
+  chainName: "Base Sepolia Testnet",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: ["https://sepolia.base.org"],
+  blockExplorerUrls: ["https://sepolia.basescan.org"]
+};
+
+export function getChainNameFromId(chainId: number): string {
+  switch (chainId) {
+    case 1: return "Ethereum Mainnet";
+    case 11155111: return "Ethereum Sepolia";
+    case 137: return "Polygon Mainnet";
+    case 42161: return "Arbitrum One";
+    case 10: return "Optimism";
+    case 56: return "BNB Smart Chain";
+    case 43114: return "Avalanche C-Chain";
+    case 8453: return "Base Mainnet";
+    case 84532: return "Base Sepolia";
+    default: return `Chain ID ${chainId}`;
+  }
+}
+
+/**
+ * Checks the connected Web3 wallet's active chain ID.
+ * If the user is on a different chain than the target (e.g. 8453 for Base Mainnet),
+ * it prompts the wallet (MetaMask, Coinbase Wallet) via wallet_switchEthereumChain or wallet_addEthereumChain.
+ */
+export async function ensureCorrectChain(
+  targetChainIdDecimal: number = 8453,
+  addTerminalLog?: (type: "info" | "success" | "error" | "buy" | "sell" | "system", message: string) => void,
+  showToast?: (message: string, type: "success" | "error" | "info") => void
+): Promise<boolean> {
+  if (typeof window === "undefined" || !(window as any).ethereum) {
+    return true; // No injected provider to switch
+  }
+
+  const ethereum = (window as any).ethereum;
+  const targetConfig = targetChainIdDecimal === 84532 ? BASE_SEPOLIA_CHAIN_CONFIG : BASE_MAINNET_CHAIN_CONFIG;
+
+  try {
+    const currentChainIdHex = await ethereum.request({ method: "eth_chainId" });
+    const currentChainId = parseInt(currentChainIdHex, 16);
+
+    if (currentChainId === targetChainIdDecimal) {
+      return true; // Already on target network
+    }
+
+    const wrongChainName = getChainNameFromId(currentChainId);
+    addTerminalLog?.("system", `NETWORK_CHECK: Wrong network detected (${wrongChainName} - Chain ID ${currentChainId}). Prompting wallet to switch to ${targetConfig.chainName} (${targetConfig.chainIdDecimal})...`);
+    showToast?.(`Switching wallet network to ${targetConfig.chainName}...`, "info");
+
+    try {
+      await ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: targetConfig.chainIdHex }],
+      });
+      addTerminalLog?.("success", `NETWORK_SWITCH: Wallet successfully switched to ${targetConfig.chainName}!`);
+      showToast?.(`Wallet switched to ${targetConfig.chainName}`, "success");
+      return true;
+    } catch (switchError: any) {
+      if (
+        switchError.code === 4902 ||
+        switchError?.message?.includes("Unrecognized chain ID") ||
+        switchError?.message?.includes("could not be found") ||
+        switchError?.data?.originalError?.code === 4902
+      ) {
+        addTerminalLog?.("info", `NETWORK_ADD: ${targetConfig.chainName} network not found in wallet. Requesting to add network...`);
+        await ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: targetConfig.chainIdHex,
+              chainName: targetConfig.chainName,
+              nativeCurrency: targetConfig.nativeCurrency,
+              rpcUrls: targetConfig.rpcUrls,
+              blockExplorerUrls: targetConfig.blockExplorerUrls
+            }
+          ],
+        });
+        addTerminalLog?.("success", `NETWORK_ADD: ${targetConfig.chainName} added and selected in wallet!`);
+        showToast?.(`${targetConfig.chainName} added to wallet!`, "success");
+        return true;
+      } else if (switchError.code === 4001) {
+        const errMsg = `User rejected switching wallet network to ${targetConfig.chainName}. Deployment cancelled.`;
+        addTerminalLog?.("error", `NETWORK_SWITCH_REJECTED: ${errMsg}`);
+        showToast?.(`Network switch rejected. Please switch to ${targetConfig.chainName} in your wallet to deploy on-chain.`, "error");
+        return false;
+      } else {
+        throw switchError;
+      }
+    }
+  } catch (err: any) {
+    console.error("Error during network switch:", err);
+    const errorMsg = err?.message || "Failed to switch wallet network";
+    addTerminalLog?.("error", `NETWORK_ERROR: ${errorMsg}`);
+    showToast?.(`Network Switch Failed: ${errorMsg}`, "error");
+    return false;
+  }
+}
 
 /**
  * Creates a static Base Mainnet JsonRpcProvider to bypass unnecessary network detection roundtrips.
@@ -40,81 +171,6 @@ export async function executeRpcCall<T>(
   }
   return fallbackValue;
 }
-
-export const TOKEN_FACTORY_ABI = [
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true, "internalType": "address", "name": "token", "type": "address" },
-      { "indexed": true, "internalType": "address", "name": "creator", "type": "address" },
-      { "indexed": false, "internalType": "string", "name": "name", "type": "string" },
-      { "indexed": false, "internalType": "string", "name": "symbol", "type": "string" }
-    ],
-    "name": "TokenCreated",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      { "internalType": "string", "name": "_name", "type": "string" },
-      { "internalType": "string", "name": "_symbol", "type": "string" }
-    ],
-    "name": "createToken",
-    "outputs": [
-      { "internalType": "address", "name": "token", "type": "address" }
-    ],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getTokenCount",
-    "outputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getTokens",
-    "outputs": [
-      { "internalType": "address[]", "name": "", "type": "address[]" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "", "type": "address" }
-    ],
-    "name": "tokenCreator",
-    "outputs": [
-      { "internalType": "address", "name": "", "type": "address" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "name": "tokens",
-    "outputs": [
-      { "internalType": "address", "name": "", "type": "address" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      { "internalType": "address", "name": "", "type": "address" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
 
 export async function fetchContractOwner(): Promise<string> {
   try {
@@ -160,10 +216,17 @@ export async function fetchOnChainTokens(): Promise<string[]> {
 export async function createTokenOnChain(
   name: string,
   symbol: string,
-  ethValue: string = "0"
+  ethValue: string = "0",
+  targetChainIdDecimal: number = 8453
 ): Promise<{ txHash: string; newTokenAddress: string }> {
   if (typeof window === "undefined" || !(window as any).ethereum) {
     throw new Error("No injected Web3 provider found. Please connect MetaMask or Coinbase Wallet on Base Mainnet.");
+  }
+
+  // Auto-prompt user to switch network if connected to wrong chain
+  const isRightChain = await ensureCorrectChain(targetChainIdDecimal);
+  if (!isRightChain) {
+    throw new Error("Deployment cancelled: Wallet is not on the required Base network.");
   }
 
   const browserProvider = new ethers.BrowserProvider((window as any).ethereum);

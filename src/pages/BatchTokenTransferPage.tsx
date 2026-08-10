@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { WalletState, Token, BatchTransferRecord } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
 import ImageWithFallback from "../components/ImageWithFallback";
 
 interface BatchTokenTransferPageProps {
@@ -106,7 +107,7 @@ const SAMPLE_RECIPIENTS: RecipientRow[] = [
   },
   {
     id: "sample_3",
-    address: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    address: AGL_TREASURY_ADDRESS,
     amount: "75",
     note: "Validator Stipend",
     isValidAddress: true,
@@ -838,7 +839,7 @@ export default function BatchTokenTransferPage({
                   rows={8}
                   value={rawCsvText}
                   onChange={(e) => handleParseCsv(e.target.value)}
-                  placeholder={`0x71C7656EC7ab88b098defB751B7401B5f6d8976F, 100\n0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B, 250\n0x479596943e70316A0d893De1876EBeA1Ea8E4D5B, 75`}
+                  placeholder={`0x71C7656EC7ab88b098defB751B7401B5f6d8976F, 100\n0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B, 250\n${AGL_TREASURY_ADDRESS}, 75`}
                   className="w-full bg-black/60 border border-white/10 focus:border-brand-purple rounded-xl p-3 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none resize-none"
                 />
 

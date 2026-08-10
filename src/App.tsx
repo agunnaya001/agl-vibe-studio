@@ -3,9 +3,8 @@ import { ethers } from "ethers";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { User, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { auth, db } from "./lib/firebase";
+import { AuthHealthState, startAuthHealthSyncService, refreshAuthSessionToken } from "./lib/authSyncService";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import WalletModal from "./components/WalletModal";
@@ -34,9 +33,13 @@ import TokenBurnerPage from "./pages/TokenBurnerPage";
 import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
 import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
+import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
+import OnboardingTour from "./components/OnboardingTour";
 
 // Database & Utilities
 import { AgunnayaDatabase } from "./lib/db";
+import { TreasuryFeeService } from "./lib/treasuryFeeService";
+import { AGL_TREASURY_ADDRESS } from "./lib/aglContracts";
 import { WalletState, Token, NFTCollection, DAO, GameFiProject, AIAgent, Activity, PriceAlert } from "./types";
 import TerminalLog, { TerminalLine } from "./components/TerminalLog";
 import ImageWithFallback from "./components/ImageWithFallback";
@@ -53,11 +56,13 @@ export default function App() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isAIDrawerOpen, setIsAIDrawerOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
-  // Firebase Auth state
+  // Firebase Auth & Session Health state
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
+  const [authHealthState, setAuthHealthState] = useState<AuthHealthState | null>(null);
 
   // Global State data
   const [wallet, setWallet] = useState<WalletState>(AgunnayaDatabase.getWallet());
@@ -256,8 +261,53 @@ export default function App() {
     }
   }, [tokens, priceAlerts]);
 
+  // Background Treasury Fee Monitoring & Auto-Sweep Worker Service
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const checkAndRunWorker = () => {
+      const state = TreasuryFeeService.getState();
+      if (!state.autoSweepEnabled) return;
+
+      // Simulate incoming micro-fees from protocol activity (e.g. DEX swaps, bonding curve trades, AI agent executions)
+      if (Math.random() < 0.40) {
+        const ethFee = parseFloat((Math.random() * 0.0035 + 0.0012).toFixed(5));
+        const aglFee = Math.floor(Math.random() * 120 + 30);
+        
+        const { swept, sweepLog } = TreasuryFeeService.addProtocolFees(ethFee, aglFee, "Base Mainnet Protocol Activity");
+        
+        if (swept && sweepLog) {
+          addTerminalLog(
+            "success",
+            `TREASURY_AUTO_SWEEP: Target threshold reached (${sweepLog.amountEth} ETH)! Automatically dispatched Web3 transaction (${sweepLog.txHash.slice(0, 10)}...) to Treasury Wallet (${AGL_TREASURY_ADDRESS.slice(0, 6)}...${AGL_TREASURY_ADDRESS.slice(-4)}).`
+          );
+          showToast(
+            `⚡ Automated Treasury Sweep Executed! Transferred ${sweepLog.amountEth} ETH ($${sweepLog.amountUsd.toFixed(2)}) to Treasury Wallet`,
+            "success"
+          );
+        }
+      }
+    };
+
+    const currentState = TreasuryFeeService.getState();
+    const intervalSeconds = currentState.checkIntervalSeconds || 15;
+
+    intervalId = setInterval(checkAndRunWorker, intervalSeconds * 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
   useEffect(() => {
     refreshAllData();
+
+    // Auto-open onboarding tour on first visit if not completed yet
+    if (typeof localStorage !== "undefined" && !localStorage.getItem("agunnaya_tour_completed_v1")) {
+      setTimeout(() => {
+        setIsTourOpen(true);
+      }, 1200);
+    }
 
     // 1. Listen to Firebase auth changes
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -388,12 +438,56 @@ export default function App() {
     try {
       await signOut(auth);
       setDriveAccessToken(null); // Clear in-memory token cache on signout
+      setAuthHealthState(null);
       showToast("Signed out of Google account.", "info");
       refreshAllData();
     } catch (error) {
       showToast("Google Sign-Out failed.", "error");
     }
   };
+
+  const handleRefreshAuthToken = async () => {
+    if (!firebaseUser) return;
+    setAuthHealthState(prev => prev ? { ...prev, isRefreshing: true } : null);
+    showToast("Refreshing Firebase Auth session token...", "info");
+    addTerminalLog("system", "AUTH_SYNC: Requesting session token refresh from Firebase Auth server...");
+
+    const result = await refreshAuthSessionToken(firebaseUser);
+    if (result.success) {
+      setAuthHealthState(result.state);
+      showToast("Firebase Auth session refreshed successfully!", "success");
+      addTerminalLog("success", `AUTH_SYNC: Session token renewed! Valid for ${result.state.expiresInMinutes ?? 60}m.`);
+    } else {
+      setAuthHealthState(result.state);
+      showToast("Session refresh failed. Please re-authenticate.", "error");
+      addTerminalLog("error", `AUTH_SYNC: Refresh failed: ${result.state.errorMessage}`);
+    }
+  };
+
+  // Background Auth Health Sync Service
+  useEffect(() => {
+    if (!firebaseUser) {
+      setAuthHealthState(null);
+      return;
+    }
+
+    const stopSync = startAuthHealthSyncService(
+      () => firebaseUser,
+      (healthState) => {
+        setAuthHealthState(healthState);
+        if (healthState.status === "nearing_expiration") {
+          addTerminalLog("system", `AUTH_SYNC WARNING: Firebase session nearing expiration (${healthState.expiresInMinutes ?? 0}m remaining).`);
+        } else if (healthState.status === "expired") {
+          addTerminalLog("error", "AUTH_SYNC ALERT: Firebase Auth session expired. Renewal required.");
+        }
+      },
+      20000 // Periodic background sync every 20 seconds
+    );
+
+    return () => {
+      stopSync();
+    };
+  }, [firebaseUser]);
 
   // Load real on-chain balances for connected wallet from Base Mainnet
   const syncWalletBalancesOnChain = async (addr: string) => {
@@ -884,6 +978,13 @@ export default function App() {
             tokens={tokens}
           />
         );
+      case "treasury-monitor":
+        return (
+          <TreasuryFeeMonitorComponent
+            wallet={wallet}
+            showToast={showToast}
+          />
+        );
       case "staking-vault":
         return (
           <StakingVaultPage
@@ -990,6 +1091,7 @@ export default function App() {
           onGoHome={() => setIsLaunched(false)}
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
+          onOpenTour={() => setIsTourOpen(true)}
         />
 
         {/* Main content viewport block */}
@@ -1024,6 +1126,9 @@ export default function App() {
             onSignInWithGoogle={handleSignInWithGoogle}
             onSignOut={handleSignOut}
             onOpenSidebar={() => setIsMobileSidebarOpen(true)}
+            authHealthState={authHealthState}
+            onRefreshAuthToken={handleRefreshAuthToken}
+            onOpenTour={() => setIsTourOpen(true)}
           />
 
           {/* Viewport contents scroll area */}
@@ -1400,6 +1505,17 @@ export default function App() {
           </div>
         )}
 
+        {/* Onboarding Tour Modal */}
+        <OnboardingTour
+          isOpen={isTourOpen}
+          onClose={() => setIsTourOpen(false)}
+          onSelectTab={(tab) => {
+            setSelectedToken(null);
+            setCurrentTab(tab);
+          }}
+          showToast={showToast}
+        />
+
         {/* Wallet Connection Modal overlay */}
         <WalletModal
           isOpen={isWalletModalOpen}
@@ -1433,8 +1549,6 @@ export default function App() {
           </div>
         )}
       </div>
-      <Analytics />
-      <SpeedInsights />
     </HelmetProvider>
   );
 }

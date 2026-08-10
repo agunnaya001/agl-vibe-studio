@@ -26,6 +26,7 @@ import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestor
 import { db } from "../lib/firebase";
 import { Activity, WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
 
 interface BurnLeaderboardProps {
   wallet?: WalletState;
@@ -213,8 +214,8 @@ export default function BurnLeaderboard({
 
     // Ensure seed top burners exist if data is sparse
     if (Object.keys(addressMap).length === 0) {
-      addressMap["0x479596943e70316A0d893De1876EBeA1Ea8E4D5B"] = {
-        address: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+      addressMap[AGL_TREASURY_ADDRESS] = {
+        address: AGL_TREASURY_ADDRESS,
         totalValueUsd: 12850.00,
         totalTokensBurned: 65000,
         burnCount: 12,

@@ -19,8 +19,12 @@ import {
   Activity, 
   Check, 
   HelpCircle, 
-  ShieldCheck 
+  ShieldCheck,
+  Building2
 } from "lucide-react";
+
+import { AGL_TREASURY_ADDRESS, AGL_MULTISIG_SAFE_ADDRESS } from "../lib/aglContracts";
+import TreasuryFeeMonitorComponent from "../components/TreasuryFeeMonitorComponent";
 
 interface AdminPanelPageProps {
   wallet: WalletState;
@@ -38,10 +42,13 @@ export default function AdminPanelPage({
   showToast 
 }: AdminPanelPageProps) {
   
-  const isMasterAdmin = wallet.isConnected && wallet.address.toLowerCase() === "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B".toLowerCase();
+  const isMasterAdmin = wallet.isConnected && (
+    wallet.address.toLowerCase() === AGL_TREASURY_ADDRESS.toLowerCase() ||
+    wallet.address.toLowerCase() === AGL_MULTISIG_SAFE_ADDRESS.toLowerCase()
+  );
   
-  // Tab control: "ecosystem" (system configs) or "proxy" (token upgrade proxy)
-  const [activeTab, setActiveTab] = useState<"ecosystem" | "proxy">("proxy");
+  // Tab control: "ecosystem" (system configs), "proxy" (token upgrade proxy), or "treasury" (fee auto-sweep monitor)
+  const [activeTab, setActiveTab] = useState<"ecosystem" | "proxy" | "treasury">("treasury");
 
   useEffect(() => {
     // Default master admin to ecosystem dashboard, and regular builders directly to the proxy tools
@@ -259,6 +266,18 @@ export default function AdminPanelPage({
             </button>
           )}
           <button
+            id="admin-tab-treasury"
+            onClick={() => setActiveTab("treasury")}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "treasury"
+                ? "bg-brand-purple text-white font-bold"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            Treasury Auto-Sweep
+          </button>
+          <button
             id="admin-tab-proxy"
             onClick={() => setActiveTab("proxy")}
             className={`px-4 py-2 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
@@ -272,6 +291,14 @@ export default function AdminPanelPage({
           </button>
         </div>
       </div>
+
+      {/* RENDER TREASURY AUTO-SWEEP MONITOR */}
+      {activeTab === "treasury" && (
+        <TreasuryFeeMonitorComponent
+          wallet={wallet}
+          showToast={showToast}
+        />
+      )}
 
       {/* RENDER SYSTEM ADMIN ECOSYSTEM PORTAL */}
       {activeTab === "ecosystem" && isMasterAdmin && (

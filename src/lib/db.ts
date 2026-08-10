@@ -49,11 +49,11 @@ export function getEthReturnForTokens(currentSupply: number, tokensToSell: numbe
 // INITIAL SEED DATA
 const SEED_TOKENS: Token[] = [
   {
-    address: "0xea1221b4d80a89bd8c75248fae7c176bd1854698",
+    address: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698",
     name: "Agunnaya Utility Token",
     symbol: "AGL",
     description: "The official utility token of Agunnaya Labs Studio. Used to unlock premium templates, pay for autonomous AI Agent triggers at a discount, secure governance rights, and stake for premium yield.",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
     creatorFeesEarned: 12.45,
     currentPrice: BASE_PRICE + SLOPE * 8500000,
     supply: 8500000,
@@ -70,11 +70,11 @@ const SEED_TOKENS: Token[] = [
     createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000
   },
   {
-    address: "0x3456...ef01",
+    address: "0x345678901234567890123456789012345678EF01",
     name: "Base AI Core",
     symbol: "BAIC",
     description: "An AI agent token supporting decentralized machine learning consensus on Base. Automatically buys compute bandwidth on-chain.",
-    creator: "0xCreatorOfBAIC",
+    creator: "0x7123456789012345678901234567890123456789",
     creatorFeesEarned: 1.87,
     currentPrice: BASE_PRICE + SLOPE * 4200000,
     supply: 4200000,
@@ -91,11 +91,11 @@ const SEED_TOKENS: Token[] = [
     createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000
   },
   {
-    address: "0x89ab...bcde",
+    address: "0x89ABCDEF0123456789012345678901234567BCDE",
     name: "Meme Pad Chad",
     symbol: "CHAD",
     description: "The ultimate hyper-deflationary meme asset on Base. Real physical gainz simulated mathematically via linear curves.",
-    creator: "0xMemeMaster",
+    creator: "0x8234567890123456789012345678901234567890",
     creatorFeesEarned: 5.42,
     currentPrice: BASE_PRICE + SLOPE * 12500000,
     supply: 12500000,
@@ -115,11 +115,11 @@ const SEED_TOKENS: Token[] = [
 
 const SEED_NFTS: NFTCollection[] = [
   {
-    contractAddress: "0x7890...cdef",
+    contractAddress: "0x789012345678901234567890123456789012CDEF",
     name: "Agunnaya Genesis Keys",
     symbol: "AGK",
     description: "A premium collection of 1000 fully on-chain 3D access keys on Base. Unlocks unlimited free deployments, early access to new AI Agents, and active fee share on Agunnaya Labs Studio.",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
     mintPrice: 0.05,
     currentSupply: 420,
     maxSupply: 1000,
@@ -158,12 +158,12 @@ const SEED_NFTS: NFTCollection[] = [
 
 const SEED_DAOS: DAO[] = [
   {
-    contractAddress: "0xdad1...eade",
+    contractAddress: "0xDAD100000000000000000000000000000000EADE",
     name: "Base Builders Guild DAO",
     symbol: "BBG",
     description: "A community DAO designed to fund open-source development tools, public goods, and meme generators exclusively on Base. Supported by Agunnaya Labs multi-sig.",
-    creator: "0xBBGCreator",
-    governanceTokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", // AGL token as gov token
+    creator: "0x9123456789012345678901234567890123456789",
+    governanceTokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", // AGL token as gov token
     treasuryBalanceEth: 25.5,
     memberCount: 142,
     proposals: [
@@ -171,7 +171,7 @@ const SEED_DAOS: DAO[] = [
         id: "prop-1",
         title: "Sponsor Base Memefest Hackathon 2026",
         description: "Deploy 5 ETH from the guild treasury to provide cash prizes for the best bonding curve meme coin created using Agunnaya Studio.",
-        creator: "0xGuildElder",
+        creator: "0x6123456789012345678901234567890123456789",
         status: "Active",
         votesFor: 852000,
         votesAgainst: 12000,
@@ -182,7 +182,7 @@ const SEED_DAOS: DAO[] = [
         id: "prop-2",
         title: "Integrate Gas sponsorship and Account Abstraction",
         description: "Deploy 2 ETH to sponsor gas fees for new users launching their first contract via Agunnaya AI Builder.",
-        creator: "0xSmartDev",
+        creator: "0x5123456789012345678901234567890123456789",
         status: "Passed",
         votesFor: 1200000,
         votesAgainst: 5000,
@@ -196,11 +196,11 @@ const SEED_DAOS: DAO[] = [
 
 const SEED_GAMEFI: GameFiProject[] = [
   {
-    contractAddress: "0x9876...5432",
+    contractAddress: "0x9876543210987654321098765432109876545432",
     name: "Base Cyber Arena",
     symbol: "BCA",
     description: "An arcade-inspired, retro Battle Pass game where players complete daily on-chain developer challenges to earn XP, achievements, and unlock exclusive rewards.",
-    creator: "0xArcadeMaster",
+    creator: "0x4123456789012345678901234567890123456789",
     prizePoolEth: 4.25,
     activeSeasons: 2,
     createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
@@ -215,9 +215,9 @@ const SEED_GAMEFI: GameFiProject[] = [
       { id: "ach-3", title: "Master Governor", description: "Create a DAO and submit your first treasury grant proposal.", badgeIcon: "ShieldAlert", unlocked: false }
     ],
     leaderboard: [
-      { rank: 1, user: "0x4795...4D5B", xp: 1240, score: 9800 },
-      { rank: 2, user: "0xGuildElder", xp: 950, score: 7200 },
-      { rank: 3, user: "0xMemeMaster", xp: 820, score: 6100 }
+      { rank: 1, user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", xp: 1240, score: 9800 },
+      { rank: 2, user: "0x6123456789012345678901234567890123456789", xp: 950, score: 7200 },
+      { rank: 3, user: "0x8234567890123456789012345678901234567890", xp: 820, score: 6100 }
     ],
     battlePass: [
       { level: 1, xpRequired: 100, rewardName: "Beginner Dev Badge", rewardType: "badge", unlocked: true },
@@ -233,8 +233,8 @@ const SEED_AGENTS: AIAgent[] = [
     name: "Agunnaya Labs Sentinel",
     symbol: "SENT",
     description: "Your autonomous blockchain security sentinel. Watches Base transactions, checks code for vulnerabilities, and advises on Gas-optimal multi-sig paths.",
-    contractAddress: "0xAgentSentinelAddress",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    contractAddress: "0x3123456789012345678901234567890123456789",
+    creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
     tokenPrice: 0.005,
     usageFeeEth: 0.001,
     lifetimeRevenueEth: 0.142,
@@ -256,8 +256,8 @@ const SEED_AGENTS: AIAgent[] = [
     name: "Base Oracle Agent",
     symbol: "BORA",
     description: "An autonomous data broker. Fetches off-chain API data, formats it into verifiable Merkle trees, and signs on-chain state updates.",
-    contractAddress: "0xAgentOracleAddress",
-    creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+    contractAddress: "0x2123456789012345678901234567890123456789",
+    creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
     tokenPrice: 0.008,
     usageFeeEth: 0.002,
     lifetimeRevenueEth: 0.088,
@@ -275,25 +275,25 @@ const SEED_AGENTS: AIAgent[] = [
 ];
 
 const SEED_STAKING: StakingPool[] = [
-  { id: "s-agl-flex", tokenName: "AGL Flexible Earn Vault", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 18.5, tvlEth: 28.5, stakedBalance: 0, earnedRewards: 12.5, lockPeriodDays: 0 },
-  { id: "s-agl-30d", tokenName: "AGL 30-Day Boosted Vault (1.5x Multiplier)", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 45.0, tvlEth: 64.2, stakedBalance: 0, earnedRewards: 48.0, lockPeriodDays: 30 },
-  { id: "s-agl-90d", tokenName: "AGL 90-Day Diamond Vault (2.5x Multiplier)", tokenSymbol: "AGL", tokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698", apr: 85.0, tvlEth: 112.0, stakedBalance: 0, earnedRewards: 115.2, lockPeriodDays: 90 },
-  { id: "s-lp-agl-eth", tokenName: "AGL / ETH LP Staking Vault", tokenSymbol: "AGL-ETH-LP", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", apr: 120.5, tvlEth: 85.4, stakedBalance: 0, earnedRewards: 320.0, lockPeriodDays: 14 },
-  { id: "s-lp-agl-usdc", tokenName: "AGL / USDC LP Staking Vault", tokenSymbol: "AGL-USDC-LP", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", apr: 95.2, tvlEth: 42.1, stakedBalance: 0, earnedRewards: 185.0, lockPeriodDays: 14 },
-  { id: "s-2", tokenName: "Meme Pad Chad Pool", tokenSymbol: "CHAD", tokenAddress: "0x89ab...bcde", apr: 82.0, tvlEth: 4.15, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 0 },
-  { id: "s-3", tokenName: "Base AI Core Pool", tokenSymbol: "BAIC", tokenAddress: "0x3456...ef01", apr: 48.0, tvlEth: 6.42, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 14 }
+  { id: "s-agl-flex", tokenName: "AGL Flexible Earn Vault", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", apr: 18.5, tvlEth: 28.5, stakedBalance: 0, earnedRewards: 12.5, lockPeriodDays: 0 },
+  { id: "s-agl-30d", tokenName: "AGL 30-Day Boosted Vault (1.5x Multiplier)", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", apr: 45.0, tvlEth: 64.2, stakedBalance: 0, earnedRewards: 48.0, lockPeriodDays: 30 },
+  { id: "s-agl-90d", tokenName: "AGL 90-Day Diamond Vault (2.5x Multiplier)", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", apr: 85.0, tvlEth: 112.0, stakedBalance: 0, earnedRewards: 115.2, lockPeriodDays: 90 },
+  { id: "s-lp-agl-eth", tokenName: "AGL / ETH LP Staking Vault", tokenSymbol: "AGL-ETH-LP", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", apr: 120.5, tvlEth: 85.4, stakedBalance: 0, earnedRewards: 320.0, lockPeriodDays: 14 },
+  { id: "s-lp-agl-usdc", tokenName: "AGL / USDC LP Staking Vault", tokenSymbol: "AGL-USDC-LP", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", apr: 95.2, tvlEth: 42.1, stakedBalance: 0, earnedRewards: 185.0, lockPeriodDays: 14 },
+  { id: "s-2", tokenName: "Meme Pad Chad Pool", tokenSymbol: "CHAD", tokenAddress: "0x89ABCDEF0123456789012345678901234567BCDE", apr: 82.0, tvlEth: 4.15, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 0 },
+  { id: "s-3", tokenName: "Base AI Core Pool", tokenSymbol: "BAIC", tokenAddress: "0x345678901234567890123456789012345678EF01", apr: 48.0, tvlEth: 6.42, stakedBalance: 0, earnedRewards: 0, lockPeriodDays: 14 }
 ];
 
 const SEED_ACTIVITIES: Activity[] = [
-  { id: "a-1", type: "create", tokenSymbol: "AGL", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 1000000000, ethValue: 0, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000, details: "Platform genesis launch of Agunnaya Labs Utility Token" },
-  { id: "a-2", type: "buy", tokenSymbol: "CHAD", tokenAddress: "0x89ab...bcde", user: "0x9821...5523", amount: 12000, ethValue: 0.015, timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000, details: "Bought 12,000 CHAD tokens on the bonding curve" },
-  { id: "a-3", type: "mint", tokenSymbol: "AGK", tokenAddress: "0x7890...cdef", user: "0x9821...5523", amount: 1, ethValue: 0.05, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000, details: "Minted Agunnaya Genesis Key #1 access NFT" },
-  { id: "a-4", type: "vote", tokenSymbol: "BBG", tokenAddress: "0xdad1...eade", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 50000, ethValue: 0, timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000, details: "Voted FOR Proposal #2 'AA integration' with 50,000 voting weight" },
-  { id: "a-burn-1", type: "burn", tokenSymbol: "AGL", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 50000, ethValue: 2.5, timestamp: Date.now() - 2 * 3600000, details: "Burned 50,000 AGL tokens to Null Address 0x000...dEaD" },
+  { id: "a-1", type: "create", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", amount: 1000000000, ethValue: 0, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000, details: "Platform genesis launch of Agunnaya Labs Utility Token" },
+  { id: "a-2", type: "buy", tokenSymbol: "CHAD", tokenAddress: "0x89ABCDEF0123456789012345678901234567BCDE", user: "0x98219483A12b059e93847aB19d72e73110555523", amount: 12000, ethValue: 0.015, timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000, details: "Bought 12,000 CHAD tokens on the bonding curve" },
+  { id: "a-3", type: "mint", tokenSymbol: "AGK", tokenAddress: "0x789012345678901234567890123456789012CDEF", user: "0x98219483A12b059e93847aB19d72e73110555523", amount: 1, ethValue: 0.05, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000, details: "Minted Agunnaya Genesis Key #1 access NFT" },
+  { id: "a-4", type: "vote", tokenSymbol: "BBG", tokenAddress: "0xDAD100000000000000000000000000000000EADE", user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", amount: 50000, ethValue: 0, timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000, details: "Voted FOR Proposal #2 'AA integration' with 50,000 voting weight" },
+  { id: "a-burn-1", type: "burn", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", amount: 50000, ethValue: 2.5, timestamp: Date.now() - 2 * 3600000, details: "Burned 50,000 AGL tokens to Null Address 0x000000000000000000000000000000000000dEaD" },
   { id: "a-burn-2", type: "burn", tokenSymbol: "USDC", tokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", user: "0x7890123456789012345678901234567890123456", amount: 2500, ethValue: 0.77, timestamp: Date.now() - 5 * 3600000, details: "Burned 2,500 USDC for Agunnaya Studio Compute Credits" },
   { id: "a-burn-3", type: "burn", tokenSymbol: "AERO", tokenAddress: "0x9940181a94A35A4569E4529A3CDfB74e38FD98631", user: "0x98219483A12b059e93847aB19d72e73110555523", amount: 15000, ethValue: 5.8, timestamp: Date.now() - 18 * 3600000, details: "Deflated 15,000 AERO tokens via null destination" },
-  { id: "a-burn-4", type: "burn", tokenSymbol: "AGL", tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", user: "0x334455667788990011223344556677889900aabb", amount: 12000, ethValue: 0.6, timestamp: Date.now() - 36 * 3600000, details: "Burned 12,000 AGL tokens on Base L2" },
-  { id: "a-burn-5", type: "burn", tokenSymbol: "cbETH", tokenAddress: "0x2Ae3F1Ec7F1F5012A27a5d3f112702170bA3b400", user: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B", amount: 1.5, ethValue: 1.62, timestamp: Date.now() - 48 * 3600000, details: "Burned 1.5 cbETH for protocol yield boost" }
+  { id: "a-burn-4", type: "burn", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", user: "0x334455667788990011223344556677889900aabb", amount: 12000, ethValue: 0.6, timestamp: Date.now() - 36 * 3600000, details: "Burned 12,000 AGL tokens on Base L2" },
+  { id: "a-burn-5", type: "burn", tokenSymbol: "cbETH", tokenAddress: "0x2Ae3F1Ec7F1F5012A27a5d3f112702170bA3b400", user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", amount: 1.5, ethValue: 1.62, timestamp: Date.now() - 48 * 3600000, details: "Burned 1.5 cbETH for protocol yield boost" }
 ];
 
 const DEFAULT_WALLET: WalletState = {
@@ -658,7 +658,7 @@ export class AgunnayaDatabase {
       {
         id: "sub_primary",
         label: "Primary Mainnet Wallet",
-        address: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+        address: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
         walletType: "metamask",
         balanceEth: 0.15,
         aglTokenBalance: 500,
@@ -1323,12 +1323,12 @@ export class AgunnayaDatabase {
             pairSymbol: "AGL / USDC",
             tokenA: { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", logoUrl: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80" },
             tokenB: { symbol: "USDC", name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", logoUrl: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png" },
-            reserveA: 1800000,
-            reserveB: 292500,
-            totalSupplyLP: 22945,
-            volume24hUsd: 585000,
-            apr: 95.2,
-            fee03PctCollectedEth: 1.755,
+            reserveA: 10000000,
+            reserveB: 1625000,
+            totalSupplyLP: 127475,
+            volume24hUsd: 2450000,
+            apr: 142.8,
+            fee03PctCollectedEth: 7.35,
             isVerified: true,
             createdAt: Date.now() - 86400000 * 20
           },
@@ -1463,6 +1463,61 @@ export class AgunnayaDatabase {
     return { amountA, amountB, newPair: pair };
   }
 
+  static injectInstitutionalAglUsdcLiquidity(amountAgl: number = 1500000, amountUsdc: number = 250000): { lpMinted: number; newPair: AGLLiquidityPair } {
+    const pairs = this.getLiquidityPairs();
+    let idx = pairs.findIndex(p => p.id === "pair_agl_usdc");
+
+    if (idx === -1) {
+      // Create if missing
+      const usdcPair: AGLLiquidityPair = {
+        id: "pair_agl_usdc",
+        pairSymbol: "AGL / USDC",
+        tokenA: { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", logoUrl: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80" },
+        tokenB: { symbol: "USDC", name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", logoUrl: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png" },
+        reserveA: 10000000,
+        reserveB: 1625000,
+        totalSupplyLP: 127475,
+        volume24hUsd: 2450000,
+        apr: 142.8,
+        fee03PctCollectedEth: 7.35,
+        isVerified: true,
+        createdAt: Date.now() - 86400000 * 20
+      };
+      pairs.unshift(usdcPair);
+      idx = 0;
+    }
+
+    const pair = pairs[idx];
+    const lpMinted = Math.sqrt(amountAgl * amountUsdc);
+
+    pair.reserveA += amountAgl;
+    pair.reserveB += amountUsdc;
+    pair.totalSupplyLP += lpMinted;
+    pair.volume24hUsd += amountUsdc * 1.5;
+    pair.apr = Math.min(185.0, pair.apr + 2.5);
+
+    pairs[idx] = pair;
+    this.saveLiquidityPairs(pairs);
+
+    // Update wallet LP staked balance
+    const wallet = this.getWallet();
+    wallet.aglLiquidityStaked = (wallet.aglLiquidityStaked || 0) + lpMinted;
+    this.saveWallet(wallet);
+
+    // Add Activity
+    this.addActivity({
+      type: "stake",
+      tokenSymbol: "AGL / USDC",
+      tokenAddress: pair.tokenA.address,
+      user: wallet.address || "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
+      amount: lpMinted,
+      ethValue: amountUsdc / 3250,
+      details: `Institutional Liquidity Injected: +${amountAgl.toLocaleString()} AGL + $${amountUsdc.toLocaleString()} USDC to Base L2 DEX Pools (Minted ${lpMinted.toFixed(0)} LP Tokens)`
+    });
+
+    return { lpMinted, newPair: pair };
+  }
+
   // --- AGL POLLS & PAIR GOVERNANCE ---
   static getAGLPolls(): AGLPoll[] {
     if (typeof window === "undefined" || !window.localStorage) return [];
@@ -1485,7 +1540,7 @@ export class AgunnayaDatabase {
             totalVotes: 3335000,
             status: "active",
             endTime: Date.now() + 86400000 * 6,
-            creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+            creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
             createdAt: Date.now() - 86400000 * 2
           },
           {
@@ -1494,14 +1549,14 @@ export class AgunnayaDatabase {
             description: "Determine how collected DEX swap fees across all AGL liquidity pools should be split between LP Providers, AGL Buyback/Burn, and Treasury.",
             category: "fee",
             options: [
-              { id: "opt_100_lp", label: "100% to Liquidity Providers (Max LP Yield)", votes: 2100000, voters: ["0x4795..."] },
+              { id: "opt_100_lp", label: "100% to Liquidity Providers (Max LP Yield)", votes: 2100000, voters: ["0x7256..."] },
               { id: "opt_80_20", label: "80% LPs / 20% Automated AGL Token Burn", votes: 3450000, voters: ["0x3456...", "0x89ab..."] },
               { id: "opt_70_30", label: "70% LPs / 30% AI Developer Grants Treasury", votes: 890000, voters: [] }
             ],
             totalVotes: 6440000,
             status: "active",
             endTime: Date.now() + 86400000 * 4,
-            creator: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+            creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
             createdAt: Date.now() - 86400000 * 4
           },
           {

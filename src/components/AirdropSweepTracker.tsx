@@ -26,6 +26,7 @@ import {
   Info
 } from "lucide-react";
 import { WalletState } from "../types";
+import { AGL_TREASURY_ADDRESS, AGL_MULTISIG_SAFE_ADDRESS } from "../lib/aglContracts";
 
 const BASE_RPC_URL = "https://mainnet.base.org";
 const BASE_EXPLORER = "https://basescan.org/address/";
@@ -47,7 +48,7 @@ export interface TrackedWallet {
   fundingSource?: string;
   protocolsActivity: string;
   tokenSymbol: string;
-  claimStatus: "Eligible" | "Claimed" | "Excluded" | "Consolidated Destination";
+  claimStatus: "Eligible" | "Claimed" | "Excluded" | "Consolidated Destination" | "Active Treasury" | "Active Safe";
   claimDate?: string;
   notes: string;
   isDeployerOnly?: boolean;
@@ -151,18 +152,37 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     isSwept: false
   },
   {
+    id: "treasury-wallet",
+    label: "Treasury Wallet",
+    address: AGL_TREASURY_ADDRESS,
+    role: "Official Treasury Revenue Destination Wallet",
+    chain: "Base Mainnet",
+    dateCreated: "2026-08-01",
+    fundingSource: "Protocol Fees & Token Sweeps",
+    protocolsActivity: "Receives protocol yield, fees, and token sweeps",
+    tokenSymbol: "AGL / ETH / USDC",
+    claimStatus: "Active Treasury",
+    claimDate: "2026-08-01",
+    notes: "Official Agunnaya Treasury EOA Wallet",
+    isTreasuryMultisig: false,
+    ethBalance: 12.45,
+    aglBalance: 5000000,
+    unclaimedAglAirdrop: 0,
+    isSwept: true
+  },
+  {
     id: "treasury-safe",
     label: "Treasury Safe (Multisig)",
-    address: "0x51546D5f9B66EcE7b6b91FA09D5b4aFF648D1e2d",
-    role: "Final sweep destination (multisig treasury)",
+    address: AGL_MULTISIG_SAFE_ADDRESS,
+    role: "Multisig Safe governance destination",
     chain: "Base Mainnet",
     dateCreated: "2026-08-03",
-    fundingSource: "Protocol Sweeps / Gnosis Safe 3/5",
+    fundingSource: "Gnosis Safe 3/5 Multisig",
     protocolsActivity: "Safe 3/5 Multisig Threshold, Gnosis Safe v1.3.0",
     tokenSymbol: "AGL / ETH / USDC",
-    claimStatus: "Consolidated Destination",
+    claimStatus: "Active Safe",
     claimDate: "2026-08-03",
-    notes: "Consolidated — replaces standalone Treasury EOA",
+    notes: "Official Gnosis Safe Multi-Sign Wallet",
     isTreasuryMultisig: true,
     ethBalance: 4.85,
     aglBalance: 1250000,
@@ -206,7 +226,7 @@ export default function AirdropSweepTracker({
   const [isSweepModalOpen, setIsSweepModalOpen] = useState<boolean>(false);
   const [selectedForSweep, setSelectedForSweep] = useState<string[]>(["airdrop-1", "airdrop-2", "airdrop-3"]);
   const [sweepAssetType, setSweepAssetType] = useState<"all" | "agl" | "eth">("all");
-  const [targetDestination, setTargetDestination] = useState<string>("0x51546D5f9B66EcE7b6b91FA09D5b4aFF648D1e2d");
+  const [targetDestination, setTargetDestination] = useState<string>(AGL_TREASURY_ADDRESS);
   const [isSweeping, setIsSweeping] = useState<boolean>(false);
   const [sweepStep, setSweepStep] = useState<number>(0);
   const [sweepProgress, setSweepProgress] = useState<number>(0);
@@ -532,8 +552,8 @@ export default function AirdropSweepTracker({
             <span className="text-[10px] uppercase font-bold tracking-wider">Treasury Destination</span>
             <Lock className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-xs font-mono font-bold text-white truncate">
-            0x5154...1e2d
+          <div className="text-xs font-mono font-bold text-white truncate flex items-center justify-between">
+            <span>{AGL_TREASURY_ADDRESS}</span>
           </div>
           <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 pt-1 border-t border-white/5">
             <span>Multisig Threshold:</span>

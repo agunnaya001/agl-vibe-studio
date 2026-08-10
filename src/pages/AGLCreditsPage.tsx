@@ -28,25 +28,14 @@ interface AGLCreditsPageProps {
   setWalletState: (wallet: WalletState) => void;
 }
 
+import { 
+  AGL_CREDITS_ADDRESS as CONTRACT_ADDRESS, 
+  AGL_TOKEN_ADDRESS,
+  AGL_CREDITS_ABI,
+  AGL_TOKEN_ABI as ERC20_ABI
+} from "../lib/aglContracts";
+
 const BASE_RPC_URL = "https://mainnet.base.org";
-const CONTRACT_ADDRESS = "0x13866F31c60822Ff70684213b9727915Ddf2c183";
-
-const AGL_CREDITS_ABI = [
-  "function aglToken() external view returns (address)",
-  "function creditsPerAGL() external view returns (uint256)",
-  "function totalCreditsPurchased(address) external view returns (uint256)",
-  "function totalAGLBurnedBy(address) external view returns (uint256)",
-  "function totalAGLBurned() external view returns (uint256)",
-  "function previewCredits(uint256 aglAmount) external view returns (uint256)",
-  "function purchaseCredits(uint256 aglAmount) external"
-];
-
-const ERC20_ABI = [
-  "function balanceOf(address) external view returns (uint256)",
-  "function allowance(address owner, address spender) external view returns (uint256)",
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function symbol() external view returns (string)"
-];
 
 export default function AGLCreditsPage({ 
   wallet, 

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { MCPServer, MCPTool } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
 
 interface MCPServerRegistryComponentProps {
   showToast: (message: string, type: "success" | "error" | "info") => void;
@@ -330,7 +331,7 @@ export default function MCPServerRegistryComponent({
                           setSelectedServer(server);
                           setActiveToolToTest(tool);
                           if (tool.name.includes("base")) {
-                            setToolInputJson(JSON.stringify({ address: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B" }, null, 2));
+                            setToolInputJson(JSON.stringify({ address: AGL_TREASURY_ADDRESS }, null, 2));
                           } else if (tool.name.includes("brave")) {
                             setToolInputJson(JSON.stringify({ query: "Agunnaya Labs Base L2" }, null, 2));
                           } else if (tool.name.includes("agl")) {

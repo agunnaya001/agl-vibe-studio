@@ -2,6 +2,7 @@ import { WalletState, Token, NFTCollection, DAO, GameFiProject, AIAgent, Activit
 import { AgunnayaDatabase } from "../lib/db";
 import ImageWithFallback from "../components/ImageWithFallback";
 import TransactionHistoryTable from "../components/TransactionHistoryTable";
+import ActivityFeed from "../components/ActivityFeed";
 import { useState, useMemo } from "react";
 import TaskSummaryWidget from "../components/TaskSummaryWidget";
 import { 
@@ -432,35 +433,8 @@ export default function DashboardPage({
           </div>
         </div>
 
-        {/* Recent Platform activity logs */}
-        <div className="glass-panel rounded-2xl border border-white/5 p-6 bg-zinc-900/20 flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold font-display uppercase tracking-wider text-white mb-4 flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-brand-purple" /> Global Activity Stream
-            </h3>
-            <div className="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
-              {(localActivities.length > 0 ? localActivities : initialActivities).slice(0, 6).map((act) => (
-                <div key={act.id} className="text-xs border-b border-white/5 pb-3">
-                  <div className="flex items-center justify-between mb-1 font-mono text-[9px] text-zinc-500">
-                    <span className="uppercase text-brand-purple font-bold">{act.type}</span>
-                    <span>{new Date(act.timestamp).toLocaleTimeString()}</span>
-                  </div>
-                  <p className="text-zinc-200 leading-normal">{act.details}</p>
-                  <span className="block text-[9px] font-mono text-zinc-600 truncate mt-1">User: {act.user}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="pt-4 border-t border-white/5 mt-4 text-center">
-            <button 
-              id="dash-view-analytics"
-              onClick={() => onSelectTab("analytics")}
-              className="text-[10px] font-mono text-brand-blue hover:text-white font-bold transition-all"
-            >
-              Analyze Base Statistics →
-            </button>
-          </div>
-        </div>
+        {/* Recent Platform activity logs from Firestore */}
+        <ActivityFeed onViewAll={() => onSelectTab("analytics")} />
       </div>
 
       {/* Detailed Paginated Transaction History Ledger */}

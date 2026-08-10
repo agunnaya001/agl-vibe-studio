@@ -22,12 +22,17 @@ function getAIClient(): GoogleGenAI {
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not defined. Please add it via the Settings > Secrets panel.");
     }
+    const headers: Record<string, string> = {
+      "User-Agent": "aistudio-build",
+    };
+    if (process.env.AI_GATEWAY_API_KEY && process.env.AI_GATEWAY_API_KEY !== "MY_AI_GATEWAY_API_KEY") {
+      headers["x-ai-gateway-key"] = process.env.AI_GATEWAY_API_KEY;
+    }
+
     aiClient = new GoogleGenAI({
       apiKey,
       httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
+        headers,
       },
     });
   }
@@ -656,6 +661,28 @@ app.post("/api/ai/video-download", async (req, res) => {
 // Support health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "active", network: "Base Mainnet & Sepolia Proxy", time: new Date() });
+});
+
+// AI Gateway Status Endpoint
+app.get("/api/ai/gateway-status", (req, res) => {
+  const gatewayKey = process.env.AI_GATEWAY_API_KEY;
+  const isGatewayConfigured = Boolean(
+    gatewayKey && gatewayKey !== "MY_AI_GATEWAY_API_KEY" && gatewayKey.trim() !== ""
+  );
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const isGeminiConfigured = Boolean(
+    geminiKey && geminiKey !== "MY_GEMINI_API_KEY" && geminiKey.trim() !== ""
+  );
+
+  res.json({
+    gatewayConfigured: isGatewayConfigured,
+    geminiConfigured: isGeminiConfigured,
+    maskedGatewayKey: isGatewayConfigured
+      ? `${gatewayKey!.slice(0, 4)}...${gatewayKey!.slice(-4)}`
+      : "Not Configured (Using direct server Gemini routes)",
+    provider: "Agunnaya Labs Studio AI Gateway & Gemini 3.6 Proxy"
+  });
 });
 
 // Helper for LI.FI API headers

@@ -25,6 +25,7 @@ import { proposeDeploymentAI, AIDeploymentProposal } from "../lib/gemini";
 import { WalletState } from "../types";
 import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
 import InsufficientCreditsModal from "./InsufficientCreditsModal";
+import { ensureCorrectChain } from "../lib/tokenFactory";
 
 interface AIDeploymentWizardModalProps {
   isOpen: boolean;
@@ -760,7 +761,12 @@ export default function AIDeploymentWizardModal({
 
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
+                      const targetChainId = targetNetwork === "sepolia" ? 84532 : 8453;
+                      if (typeof window !== "undefined" && (window as any).ethereum) {
+                        const isRightChain = await ensureCorrectChain(targetChainId, addTerminalLog, showToast);
+                        if (!isRightChain) return;
+                      }
                       if (onDirectLaunch) onDirectLaunch(proposal);
                       onClose();
                     }}

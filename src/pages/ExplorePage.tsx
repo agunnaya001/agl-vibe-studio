@@ -1,12 +1,106 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Token } from "../types";
 import ImageWithFallback from "../components/ImageWithFallback";
-import { Search, Star, StarOff, Filter, Percent, Copy, Check, X } from "lucide-react";
+import { Search, Star, StarOff, Filter, Percent, Copy, Check, X, TrendingUp, TrendingDown } from "lucide-react";
+import { ResponsiveContainer, AreaChart, Area, YAxis, Tooltip } from "recharts";
 
 interface ExplorePageProps {
   tokens: Token[];
   onSelectToken: (token: Token) => void;
 }
+
+// Generate deterministic 24-hour price trend data for Sparkline chart
+const generateSparklineData = (token: Token) => {
+  const points = [];
+  const basePrice = token.currentPrice * 1000000; // in μETH
+  
+  let seed = 0;
+  for (let i = 0; i < token.address.length; i++) {
+    seed += token.address.charCodeAt(i);
+  }
+
+  const isUp = (seed % 2) === 0 || token.symbol === "AGL";
+  const volatility = 0.03 + ((seed % 7) * 0.01); // 3% to 9% variance
+
+  for (let hour = 24; hour >= 0; hour -= 2) {
+    const timeLabel = hour === 0 ? "Now" : `-${hour}h`;
+    const noise = (Math.sin(hour * 0.8 + seed) * 0.5 + ((seed % 5 === 0) ? 0.3 : -0.1)) * volatility;
+    const progress = (24 - hour) / 24;
+    
+    const trendPrice = isUp
+      ? basePrice * (1 - volatility * (1 - progress))
+      : basePrice * (1 + volatility * (1 - progress));
+    
+    const currentPointPrice = hour === 0 ? basePrice : Math.max(0.001, trendPrice * (1 + noise * 0.4));
+    
+    points.push({
+      time: timeLabel,
+      price: parseFloat(currentPointPrice.toFixed(2))
+    });
+  }
+
+  const startPrice = points[0].price;
+  const endPrice = points[points.length - 1].price;
+  const pctChange = ((endPrice - startPrice) / startPrice) * 100;
+
+  return { points, pctChange, isPositive: pctChange >= 0 };
+};
+
+const TokenSparkline = ({ token }: { token: Token }) => {
+  const { points, pctChange, isPositive } = useMemo(() => generateSparklineData(token), [token.address, token.currentPrice]);
+  const color = isPositive ? "#34d399" : "#f87171"; // Emerald vs Rose
+  const gradientId = `sparkline-grad-${token.address.replace(/[^a-zA-Z0-9]/g, "")}`;
+
+  return (
+    <div className="space-y-1 my-3 bg-black/30 p-2.5 rounded-xl border border-white/5">
+      <div className="flex items-center justify-between text-[10px] font-mono">
+        <span className="text-zinc-400 font-medium flex items-center gap-1">
+          <TrendingUp className="w-3 h-3 text-brand-purple" /> 24h Price Movement
+        </span>
+        <span className={`font-bold flex items-center gap-0.5 px-1.5 py-0.2 rounded ${isPositive ? "text-emerald-400 bg-emerald-500/10" : "text-rose-400 bg-rose-500/10"}`}>
+          {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {isPositive ? "+" : ""}{pctChange.toFixed(2)}%
+        </span>
+      </div>
+
+      <div className="h-11 w-full pt-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={points} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+                <stop offset="100%" stopColor={color} stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <YAxis domain={["dataMin", "dataMax"]} hide />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-zinc-950 border border-white/10 px-2 py-1 rounded text-[10px] font-mono text-white shadow-xl">
+                      <span className="text-zinc-400 mr-1.5">{payload[0].payload.time}:</span>
+                      <span className="font-bold text-brand-purple">{payload[0].value} μETH</span>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="price"
+              stroke={color}
+              strokeWidth={1.5}
+              fillOpacity={1}
+              fill={`url(#${gradientId})`}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
 
 export default function ExplorePage({ tokens, onSelectToken }: ExplorePageProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -217,12 +311,15 @@ export default function ExplorePage({ tokens, onSelectToken }: ExplorePageProps)
                 </div>
 
                 {/* Description snippet */}
-                <p className="text-zinc-400 text-[11px] leading-relaxed line-clamp-2 min-h-[32px] mb-4">
+                <p className="text-zinc-400 text-[11px] leading-relaxed line-clamp-2 min-h-[32px] mb-2">
                   {t.description}
                 </p>
 
+                {/* 24-Hour Price Sparkline Chart */}
+                <TokenSparkline token={t} />
+
                 {/* Bonding Curve Meter */}
-                <div className="space-y-1.5 mb-4 border-t border-white/5 pt-3.5">
+                <div className="space-y-1.5 mb-3 border-t border-white/5 pt-3">
                   <div className="flex justify-between text-[10px] font-mono text-zinc-500">
                     <span className="flex items-center gap-1">
                       <Percent className="w-3 h-3 text-brand-purple" /> Bonding Progress:

@@ -17,10 +17,13 @@ import {
   Fuel,
   Cpu,
   BarChart3,
-  Bot
+  Bot,
+  AlertTriangle
 } from "lucide-react";
 import { WalletState, Token } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
+import { TreasuryFeeService } from "../lib/treasuryFeeService";
 import ImageWithFallback from "./ImageWithFallback";
 
 interface DexAggregatorComponentProps {
@@ -62,11 +65,16 @@ export default function DexAggregatorComponent({
   const [toToken, setToToken] = useState(SUPPORTED_TOKENS[1]);     // AGL
   const [inputAmount, setInputAmount] = useState<string>("0.1");
   const [slippage, setSlippage] = useState<number>(0.5);
+  const [customSlippage, setCustomSlippage] = useState<string>("");
+  const [isCustomSlippage, setIsCustomSlippage] = useState<boolean>(false);
   const [mevProtection, setMevProtection] = useState<boolean>(true);
   const [selectedDex, setSelectedDex] = useState<string>("1inch");
   const [isQuoting, setIsQuoting] = useState<boolean>(false);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [quotes, setQuotes] = useState<DexQuote[]>([]);
+
+  // Get active effective slippage
+  const effectiveSlippage = isCustomSlippage ? (parseFloat(customSlippage) || 0.5) : slippage;
 
   // Calculate live quotes whenever inputs change
   useEffect(() => {
@@ -224,11 +232,17 @@ export default function DexAggregatorComponent({
       }
 
       AgunnayaDatabase.saveWallet(updatedWallet);
+
+      // Record 0.3% swap fee into Treasury Fee Monitor
+      const swapEthFee = fromToken.symbol === "ETH" ? amt * 0.003 : 0.0005;
+      const swapAglFee = fromToken.symbol === "AGL" ? amt * 0.003 : 15;
+      TreasuryFeeService.addProtocolFees(swapEthFee, swapAglFee, `DEX Aggregator (${activeQuote.dexName})`);
+
       AgunnayaDatabase.addActivity({
         type: "buy",
         tokenSymbol: toToken.symbol,
         tokenAddress: toToken.address,
-        user: wallet.address || "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+        user: wallet.address || AGL_TREASURY_ADDRESS,
         amount: activeQuote.outputAmount,
         ethValue: fromToken.symbol === "ETH" ? amt : 0,
         details: `Swapped ${amt} ${fromToken.symbol} for ${activeQuote.outputAmount.toFixed(2)} ${toToken.symbol} via ${activeQuote.dexName}`
@@ -284,20 +298,54 @@ export default function DexAggregatorComponent({
               <SlidersHorizontal className="w-3.5 h-3.5 text-brand-purple" /> Swap Parameters
             </span>
 
-            {/* Slippage Selector */}
-            <div className="flex items-center gap-1 font-mono text-[11px]">
-              <span className="text-zinc-500 mr-1">Slippage:</span>
+            {/* Slippage Selector & Custom Input */}
+            <div className="flex items-center gap-1 font-mono text-[11px] flex-wrap justify-end">
+              <span className="text-zinc-500 mr-0.5">Slippage:</span>
               {[0.1, 0.5, 1.0].map(s => (
                 <button
                   key={s}
-                  onClick={() => setSlippage(s)}
-                  className={`px-2 py-0.5 rounded ${slippage === s ? "bg-brand-purple text-white font-bold" : "bg-black/40 text-zinc-400 hover:text-white"}`}
+                  onClick={() => {
+                    setSlippage(s);
+                    setIsCustomSlippage(false);
+                  }}
+                  className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                    !isCustomSlippage && slippage === s 
+                      ? "bg-brand-purple text-white font-bold shadow-sm shadow-purple-500/50" 
+                      : "bg-black/40 text-zinc-400 hover:text-white"
+                  }`}
                 >
                   {s}%
                 </button>
               ))}
+
+              {/* Custom Slippage Input */}
+              <div className="relative flex items-center">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.05"
+                  max="10"
+                  placeholder="Custom"
+                  value={customSlippage}
+                  onChange={(e) => {
+                    setCustomSlippage(e.target.value);
+                    setIsCustomSlippage(true);
+                  }}
+                  className={`w-14 px-1.5 py-0.5 rounded bg-black/60 border text-[10px] font-bold text-white focus:outline-none text-right ${
+                    isCustomSlippage ? "border-brand-purple text-purple-300" : "border-white/10"
+                  }`}
+                />
+                <span className="text-[10px] text-zinc-400 ml-0.5">%</span>
+              </div>
             </div>
           </div>
+
+          {effectiveSlippage > 2.0 && (
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>High slippage tolerance ({effectiveSlippage}%). Your trade may be front-run by MEV searchers. MEV protection active.</span>
+            </div>
+          )}
 
           {/* From Token Field */}
           <div className="p-4 rounded-xl bg-black/60 border border-white/10 space-y-2">

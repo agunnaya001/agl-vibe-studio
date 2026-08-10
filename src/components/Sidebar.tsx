@@ -22,6 +22,8 @@ import {
   Landmark,
   Clock,
   Send,
+  Building2,
+  Compass,
   X
 } from "lucide-react";
 
@@ -32,6 +34,7 @@ interface SidebarProps {
   onGoHome?: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpenTour?: () => void;
 }
 
 export default function Sidebar({ 
@@ -40,7 +43,8 @@ export default function Sidebar({
   isAdmin, 
   onGoHome, 
   isOpen = false, 
-  onClose 
+  onClose,
+  onOpenTour
 }: SidebarProps) {
   // Lock body scrolling on mobile when open
   useEffect(() => {
@@ -86,6 +90,7 @@ export default function Sidebar({
     { id: "staking-vault", label: "Automated Staking Vaults", icon: Landmark, category: "DeFi Tools", highlight: true },
     { id: "token-burner", label: "ERC-20 Token Burner", icon: Flame, category: "DeFi Tools", highlight: true },
     { id: "batch-transfer", label: "Batch Multi-Send", icon: Send, category: "DeFi Tools", highlight: true },
+    { id: "treasury-monitor", label: "Treasury Fee Auto-Sweep", icon: Building2, category: "DeFi Tools", highlight: true },
     { id: "agl-credits", label: "AGL Credits Burn", icon: Flame, category: "DeFi Tools", highlight: true },
     { id: "gas-dashboard", label: "Gas Sponsorship Pad", icon: Gauge, category: "DeFi Tools", highlight: true },
     { id: "analytics", label: "Base Analytics", icon: BarChart3, category: "DeFi Tools" },
@@ -195,8 +200,21 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Sidebar Footer with Ecosystem Stats */}
-        <div className="p-4 border-t border-white/10 bg-black/30 text-center space-y-2">
+        {/* Sidebar Footer with Ecosystem Stats & Tour Trigger */}
+        <div className="p-4 border-t border-white/10 bg-black/30 space-y-2.5">
+          {onOpenTour && (
+            <button
+              onClick={() => {
+                onOpenTour();
+                if (onClose) onClose();
+              }}
+              className="w-full py-2 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-500/40 rounded-xl text-purple-200 text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Compass className="w-4 h-4 text-purple-400 animate-spin-slow" />
+              <span>Launch Onboarding Tour</span>
+            </button>
+          )}
+
           <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono">
             <span>TVL Deployed:</span>
             <span className="text-white font-bold">14,250 ETH</span>
@@ -205,7 +223,7 @@ export default function Sidebar({
             <span>Total Launches:</span>
             <span className="text-white font-bold">3,892</span>
           </div>
-          <div className="pt-2 text-[9px] text-zinc-600 font-medium">
+          <div className="pt-1 text-center text-[9px] text-zinc-600 font-medium">
             Agunnaya Labs © 2026
           </div>
         </div>

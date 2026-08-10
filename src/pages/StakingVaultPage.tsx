@@ -126,7 +126,11 @@ const VAULT_TIERS: VaultTier[] = [
   }
 ];
 
-const STAKING_CONTRACT_ADDRESS = "0xd4B61B4876c15e78e0275EbA52cf62D55ED5fD30";
+import { 
+  AGL_STAKING_ADDRESS as STAKING_CONTRACT_ADDRESS, 
+  AGL_STAKING_ABI 
+} from "../lib/aglContracts";
+
 const AGL_PRICE_USD = 0.1625;
 
 export default function StakingVaultPage({
@@ -463,7 +467,7 @@ export default function StakingVaultPage({
           <div className="bg-black/40 p-3.5 rounded-2xl border border-white/5">
             <span className="text-zinc-400 block text-[10px] uppercase">Vault Smart Contract</span>
             <span className="text-zinc-200 font-bold text-xs truncate mt-1 flex items-center justify-between">
-              <span>0xd4B6...5fD30</span>
+              <span>{STAKING_CONTRACT_ADDRESS.slice(0, 6)}...{STAKING_CONTRACT_ADDRESS.slice(-5)}</span>
               <button onClick={() => copyToClipboard(STAKING_CONTRACT_ADDRESS, "Contract Address")} className="text-zinc-500 hover:text-white">
                 <Copy className="w-3 h-3" />
               </button>

@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Wallet, Coins, RefreshCw, Layers, Database, Search, X, Bot, Palette, Cloud, CloudOff, Menu } from "lucide-react";
+import { Wallet, Coins, RefreshCw, Layers, Database, Search, X, Bot, Palette, Cloud, CloudOff, Menu, AlertTriangle, Clock, ShieldAlert, ArrowRightLeft, Share2, Compass } from "lucide-react";
 import { WalletState, Token, NFTCollection, AIAgent } from "../types";
+import { AuthHealthState } from "../lib/authSyncService";
+import { ensureCorrectChain, getChainNameFromId } from "../lib/tokenFactory";
+import { aglSdk } from "../lib/aglSdk";
 import ImageWithFallback from "./ImageWithFallback";
 
 interface HeaderProps {
@@ -19,6 +22,9 @@ interface HeaderProps {
   onSignInWithGoogle?: () => void;
   onSignOut?: () => void;
   onOpenSidebar?: () => void;
+  authHealthState?: AuthHealthState | null;
+  onRefreshAuthToken?: () => void;
+  onOpenTour?: () => void;
 }
 
 export default function Header({ 
@@ -36,7 +42,10 @@ export default function Header({
   firebaseUser = null,
   onSignInWithGoogle,
   onSignOut,
-  onOpenSidebar
+  onOpenSidebar,
+  authHealthState = null,
+  onRefreshAuthToken,
+  onOpenTour
 }: HeaderProps) {
   const shortAddress = wallet.isConnected && wallet.address
     ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
@@ -44,7 +53,31 @@ export default function Header({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [currentChainId, setCurrentChainId] = useState<number | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Monitor connected wallet chain ID
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      const ethereum = (window as any).ethereum;
+
+      const updateChain = () => {
+        if (ethereum.chainId) {
+          setCurrentChainId(parseInt(ethereum.chainId, 16));
+        }
+      };
+
+      updateChain();
+
+      ethereum.on?.("chainChanged", (hexChainId: string) => {
+        setCurrentChainId(parseInt(hexChainId, 16));
+      });
+
+      return () => {
+        ethereum.removeListener?.("chainChanged", updateChain);
+      };
+    }
+  }, [wallet.isConnected]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -342,8 +375,35 @@ export default function Header({
           </button>
         )}
 
+        {/* Persistent Onboarding Tour Button */}
+        {onOpenTour && (
+          <button
+            id="persistent-tour-button"
+            onClick={onOpenTour}
+            title="Launch Interactive Onboarding Tour"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 text-xs font-mono font-bold transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:scale-105 active:scale-95"
+          >
+            <Compass className="w-3.5 h-3.5 text-purple-400 animate-spin-slow" />
+            <span>Tour</span>
+          </button>
+        )}
+
         {wallet.isConnected && (
           <>
+            {/* Viral Share / Referral Link Button */}
+            <button
+              id="viral-share-button"
+              onClick={async () => {
+                const config = aglSdk.generateViralReferralLink(wallet.address || "0x725615639B760DAa64b3e794AA49B5A9a8A7632E");
+                await aglSdk.shareViralEngagement(config);
+              }}
+              title="Share Agunnaya Studio & earn referral credits"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-mono font-semibold transition-all shadow-[0_0_12px_rgba(168,85,247,0.15)]"
+            >
+              <Share2 className="w-3.5 h-3.5 text-purple-400" />
+              <span>Share & Earn</span>
+            </button>
+
             {/* Faucet/Fund Button */}
             <button
               id="faucet-button"
@@ -378,34 +438,103 @@ export default function Header({
           </>
         )}
 
-        {/* Google Cloud Sync Widget */}
+        {/* Google Cloud Sync Widget & Session Health Indicator */}
         {firebaseUser ? (
-          <div className="flex items-center gap-1.5 bg-black/50 border border-emerald-500/30 rounded-xl p-1 font-mono text-xs shadow-[0_0_15px_rgba(16,185,129,0.05)]">
-            <div className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
-              <Cloud className="w-3.5 h-3.5" />
-              <span className="text-[10px] hidden lg:inline">Cloud Sync Active</span>
-            </div>
-            {firebaseUser.photoURL ? (
-              <ImageWithFallback 
-                src={firebaseUser.photoURL} 
-                alt={firebaseUser.displayName || "Google User"} 
-                fallbackText={firebaseUser.displayName}
-                className="w-5 h-5 rounded-full border border-white/10"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center font-bold text-[9px] text-zinc-400">
-                G
+          <div className="flex items-center gap-1.5 font-mono text-xs">
+            {/* Session Expiration Warning Badge */}
+            {authHealthState?.status === "nearing_expiration" && (
+              <div 
+                id="header-session-expiration-warning"
+                className="flex items-center gap-2 px-2.5 py-1 bg-amber-500/15 border border-amber-500/40 text-amber-300 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] animate-pulse"
+                title={`Firebase Auth session token expires in ${authHealthState.expiresInMinutes ?? 0} min. Click 'Renew' to refresh token without interruption.`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="text-[10px] font-bold tracking-tight">
+                  Session Expiring ({authHealthState.expiresInMinutes ? `${authHealthState.expiresInMinutes}m` : `${authHealthState.expiresInSeconds}s`})
+                </span>
+                {onRefreshAuthToken && (
+                  <button
+                    id="header-refresh-auth-token-button"
+                    onClick={onRefreshAuthToken}
+                    disabled={authHealthState.isRefreshing}
+                    className="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-200 text-[9px] font-bold transition-all flex items-center gap-1 active:scale-95"
+                    title="Refresh Firebase Auth token"
+                  >
+                    <RefreshCw className={`w-2.5 h-2.5 ${authHealthState.isRefreshing ? "animate-spin" : ""}`} />
+                    <span>{authHealthState.isRefreshing ? "Renewing..." : "Renew"}</span>
+                  </button>
+                )}
               </div>
             )}
-            <button
-              onClick={onSignOut}
-              className="px-2 py-1 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-red-400 transition-all text-[10px]"
-              title="Sign out of Google Cloud Backup"
-            >
-              Sign Out
-            </button>
+
+            {/* Session Expired Alert Badge */}
+            {authHealthState?.status === "expired" && (
+              <div 
+                id="header-session-expired-alert"
+                className="flex items-center gap-2 px-2.5 py-1 bg-red-500/20 border border-red-500/50 text-red-300 rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                title="Firebase Auth token has expired. Please refresh your session or re-authenticate."
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0 animate-bounce" />
+                <span className="text-[10px] font-bold tracking-tight">
+                  Session Expired
+                </span>
+                {onRefreshAuthToken && (
+                  <button
+                    id="header-reauth-button"
+                    onClick={onRefreshAuthToken}
+                    className="ml-1 px-1.5 py-0.5 rounded bg-red-500/30 hover:bg-red-500/40 border border-red-400/40 text-red-100 text-[9px] font-bold transition-all flex items-center gap-1 active:scale-95"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    <span>Re-Auth</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Session Offline Indicator */}
+            {authHealthState?.status === "offline" && (
+              <div 
+                className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-amber-500/30 text-amber-400 rounded-xl text-[10px]"
+                title={authHealthState.errorMessage || "Auth Sync Offline"}
+              >
+                <CloudOff className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden xl:inline">Sync Offline</span>
+              </div>
+            )}
+
+            {/* Main User Cloud Sync Capsule */}
+            <div className="flex items-center gap-1.5 bg-black/50 border border-emerald-500/30 rounded-xl p-1 font-mono text-xs shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+              <div 
+                className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5"
+                title={authHealthState?.expiresInMinutes ? `Firebase Auth Healthy (${authHealthState.expiresInMinutes}m remaining)` : "Cloud Sync Active"}
+              >
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                <Cloud className="w-3.5 h-3.5" />
+                <span className="text-[10px] hidden lg:inline">
+                  Cloud Sync Active
+                </span>
+              </div>
+              {firebaseUser.photoURL ? (
+                <ImageWithFallback 
+                  src={firebaseUser.photoURL} 
+                  alt={firebaseUser.displayName || "Google User"} 
+                  fallbackText={firebaseUser.displayName}
+                  className="w-5 h-5 rounded-full border border-white/10"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center font-bold text-[9px] text-zinc-400">
+                  G
+                </div>
+              )}
+              <button
+                onClick={onSignOut}
+                className="px-2 py-1 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-red-400 transition-all text-[10px]"
+                title="Sign out of Google Cloud Backup"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         ) : (
           <button
@@ -418,9 +547,43 @@ export default function Header({
           </button>
         )}
 
+        {/* Quick Platform Tour Trigger */}
+        {onOpenTour && (
+          <button
+            id="header-quick-tour-btn"
+            onClick={onOpenTour}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple border border-brand-purple/30 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer hover:scale-105 active:scale-95"
+            title="Open Interactive Platform Tour"
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Quick Tour</span>
+          </button>
+        )}
+
         {/* Connection Widget */}
         {wallet.isConnected ? (
           <div className="flex items-center gap-1 bg-black/50 border border-white/10 rounded-xl p-1 font-mono text-xs shadow-[0_0_15px_rgba(255,255,255,0.02)]">
+            {/* Active Network Indicator / Auto Switch Prompt */}
+            {currentChainId && currentChainId !== 8453 ? (
+              <button
+                id="header-switch-network-btn"
+                onClick={async () => {
+                  await ensureCorrectChain(8453);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-[10px] flex items-center gap-1.5 transition-all animate-pulse"
+                title={`Connected to ${getChainNameFromId(currentChainId)} (ID: ${currentChainId}). Click to switch wallet network to Base Mainnet (8453).`}
+              >
+                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">Switch to Base</span>
+                <span className="sm:hidden">Switch</span>
+              </button>
+            ) : (
+              <div className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold text-[10px] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
+                <span>Base Mainnet</span>
+              </div>
+            )}
+
             {/* Wallet Type icon */}
             <div className="px-2.5 py-1 rounded-lg bg-white/5 text-zinc-300 flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-[#0052FF] rounded-full animate-pulse shadow-[0_0_8px_#0052ff]"></span>

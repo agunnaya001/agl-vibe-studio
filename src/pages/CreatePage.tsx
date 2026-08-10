@@ -16,7 +16,9 @@ import {
   TOKEN_FACTORY_ABI,
   createTokenOnChain,
   fetchOnChainTokenCount,
-  fetchOnChainTokens
+  fetchOnChainTokens,
+  ensureCorrectChain,
+  getChainNameFromId
 } from "../lib/tokenFactory";
 import { 
   Sparkles, 
@@ -126,7 +128,14 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
     addTerminalLog("system", `AI DEPLOYMENT WIZARD: Parameters successfully loaded for ${proposal.tokenName} ($${proposal.tokenSymbol})`);
   };
 
-  const handleWizardDirectLaunch = (proposal: AIDeploymentProposal) => {
+  const handleWizardDirectLaunch = async (proposal: AIDeploymentProposal) => {
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      const isRightChain = await ensureCorrectChain(8453, addTerminalLog, showToast);
+      if (!isRightChain) {
+        return;
+      }
+    }
+
     const mockLogo = "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60";
     const newAddress = `0x${Math.random().toString(16).substring(2, 42)}`;
     
@@ -328,7 +337,7 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
   const getPreFlightChecks = (): PreFlightCheckItem[] => {
     const checks: PreFlightCheckItem[] = [];
 
-    // 1. Wallet Connection
+    // 1. Wallet Connection & Network Check
     if (!wallet.isConnected) {
       checks.push({
         id: "wallet-conn",
@@ -345,6 +354,31 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
         status: "pass",
         message: `Connected: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
       });
+
+      // Injected Provider Network Check
+      if (typeof window !== "undefined" && (window as any).ethereum) {
+        const ethereum = (window as any).ethereum;
+        const currentChainHex = ethereum.chainId || "0x2105";
+        const currentChainId = parseInt(currentChainHex, 16);
+        if (currentChainId === 8453) {
+          checks.push({
+            id: "wallet-network",
+            label: "Base Mainnet Network",
+            category: "Wallet",
+            status: "pass",
+            message: "Verified on Base Mainnet (Chain ID 8453)."
+          });
+        } else {
+          const chainName = getChainNameFromId(currentChainId);
+          checks.push({
+            id: "wallet-network",
+            label: "Network Auto-Switch",
+            category: "Wallet",
+            status: "warn",
+            message: `Connected to ${chainName}. Network switch prompt to Base Mainnet will trigger on launch.`
+          });
+        }
+      }
     }
 
     // 2. Token Name
@@ -553,6 +587,30 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
         status: "pass",
         message: `Connected: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
       });
+
+      if (typeof window !== "undefined" && (window as any).ethereum) {
+        const ethereum = (window as any).ethereum;
+        const currentChainHex = ethereum.chainId || "0x2105";
+        const currentChainId = parseInt(currentChainHex, 16);
+        if (currentChainId === 8453) {
+          checks.push({
+            id: "ai-wallet-network",
+            label: "Base Mainnet Network",
+            category: "Wallet",
+            status: "pass",
+            message: "Verified on Base Mainnet (Chain ID 8453)."
+          });
+        } else {
+          const chainName = getChainNameFromId(currentChainId);
+          checks.push({
+            id: "ai-wallet-network",
+            label: "Network Auto-Switch",
+            category: "Wallet",
+            status: "warn",
+            message: `Connected to ${chainName}. Auto-switch prompt to Base Mainnet will trigger on deploy.`
+          });
+        }
+      }
     }
 
     if (!aiResult.name) {
@@ -855,6 +913,13 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
       return;
     }
     if (!tokenName || !tokenSymbol || !tokenDesc || launchingToken) return;
+
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      const isRightChain = await ensureCorrectChain(8453, addTerminalLog, showToast);
+      if (!isRightChain) {
+        return;
+      }
+    }
 
     // Enforce Pre-Flight Check Validation
     const preFlight = getPreFlightChecks();

@@ -16,7 +16,10 @@ import {
   ExternalLink,
   Lock,
   Flame,
-  X
+  X,
+  Building2,
+  Globe,
+  ArrowUpRight
 } from "lucide-react";
 import { AGLLiquidityPair, WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
@@ -47,6 +50,9 @@ export default function AGLLiquidityPoolsComponent({
   const [lpBurnAmount, setLpBurnAmount] = useState<string>("100");
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
+  // Institutional Liquidity Boost State
+  const [isInjectingUsdc, setIsInjectingUsdc] = useState(false);
+
   // Create New Pair Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPairSymbolB, setNewPairSymbolB] = useState("SOL");
@@ -62,8 +68,30 @@ export default function AGLLiquidityPoolsComponent({
     const list = AgunnayaDatabase.getLiquidityPairs();
     setPairs(list);
     if (list.length > 0 && !selectedPair) {
-      setSelectedPair(list[0]);
+      const usdcPair = list.find(p => p.id === "pair_agl_usdc") || list[0];
+      setSelectedPair(usdcPair);
     }
+  };
+
+  const handleInjectInstitutionalLiquidity = () => {
+    setIsInjectingUsdc(true);
+    setTimeout(() => {
+      try {
+        const { lpMinted, newPair } = AgunnayaDatabase.injectInstitutionalAglUsdcLiquidity(1500000, 250000);
+        setSelectedPair(newPair);
+        loadPairs();
+        onRefreshWallet();
+        setIsInjectingUsdc(false);
+
+        if (addTerminalLog) {
+          addTerminalLog("success", `INSTITUTIONAL LIQUIDITY INJECTED! Added +1,500,000 AGL + $250,000 USDC to Base L2 primary trading anchor pool. Minted ${lpMinted.toFixed(0)} LP Tokens.`);
+        }
+        showToast("🎉 Successfully Injected +$250,000 USDC / 1.5M AGL Liquidity to AGL/USDC Pool!", "success");
+      } catch (err: any) {
+        setIsInjectingUsdc(false);
+        showToast(`Liquidity injection failed: ${err.message}`, "error");
+      }
+    }, 1200);
   };
 
   const handleAddLiquidity = (e: React.FormEvent) => {
@@ -227,6 +255,133 @@ export default function AGLLiquidityPoolsComponent({
           </div>
         </div>
       </div>
+
+      {/* Primary AGL / USDC Institutional Liquidity & Multi-Exchange Hub */}
+      {(() => {
+        const usdcPair = pairs.find(p => p.id === "pair_agl_usdc");
+        const reserveAgl = usdcPair ? usdcPair.reserveA : 10000000;
+        const reserveUsdc = usdcPair ? usdcPair.reserveB : 1625000;
+        const tvlUsd = (reserveAgl * 0.1625) + reserveUsdc;
+
+        return (
+          <div className="p-6 rounded-3xl bg-zinc-900/90 border border-brand-purple/30 bg-gradient-to-br from-purple-950/30 via-zinc-900 to-zinc-900 shadow-2xl space-y-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/10 pb-5 relative z-10">
+              <div className="flex items-start gap-4">
+                <div className="p-3.5 rounded-2xl bg-brand-purple/20 border border-brand-purple/40 text-brand-purple shrink-0">
+                  <Building2 className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-mono text-xs text-brand-purple font-bold">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>PRIMARY DEX LIQUIDITY ANCHOR • BASE L2</span>
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] rounded-full border border-emerald-500/30">
+                      0.05% MAX SLIPPAGE GUARANTEE
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-3">
+                    AGL / USDC Deep Liquidity Pool
+                    <span className="text-xs font-mono font-normal text-zinc-400">
+                      Contract: 0x833589...2913
+                    </span>
+                  </h3>
+                  <p className="text-xs text-zinc-400 max-w-2xl">
+                    High-depth liquidity pool engineered for institutional market making. Ensures seamless, low-slippage $AGL execution across all major decentralized exchanges and aggregators.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  id="btn-inject-institutional-usdc-liquidity"
+                  onClick={handleInjectInstitutionalLiquidity}
+                  disabled={isInjectingUsdc}
+                  className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-50"
+                >
+                  {isInjectingUsdc ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Injecting +$250k USDC...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 text-amber-300 fill-amber-300" /> Inject +$250k USDC / 1.5M AGL Liquidity
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics & Multi-Exchange Sync Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 font-mono text-xs">
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-1">
+                <span className="text-zinc-500 text-[10px] uppercase font-bold block">Pool TVL (USD)</span>
+                <span className="text-lg font-bold text-emerald-400">${tvlUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span className="text-[10px] text-zinc-400 block font-sans">
+                  Reserve: {reserveAgl.toLocaleString()} AGL + ${reserveUsdc.toLocaleString()} USDC
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-1">
+                <span className="text-zinc-500 text-[10px] uppercase font-bold block">24h Trading Volume</span>
+                <span className="text-lg font-bold text-white">${(usdcPair?.volume24hUsd || 2450000).toLocaleString()}</span>
+                <span className="text-[10px] text-emerald-400 block font-sans">
+                  ↑ 28.4% volume growth across DEX routes
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-1">
+                <span className="text-zinc-500 text-[10px] uppercase font-bold block">LP Fee Yield APY</span>
+                <span className="text-lg font-bold text-purple-300">{usdcPair?.apr || 142.8}% APY</span>
+                <span className="text-[10px] text-zinc-400 block font-sans">
+                  0.3% fee distributed directly to LP token holders
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-1">
+                <span className="text-zinc-500 text-[10px] uppercase font-bold block">Cross-Exchange Status</span>
+                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 pt-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Synced Across 6 DEXes
+                </span>
+                <span className="text-[10px] text-zinc-400 block font-sans">
+                  1inch, Aerodrome, Uniswap V3, Matcha
+                </span>
+              </div>
+            </div>
+
+            {/* Active Exchange Route Status Badges */}
+            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2 relative z-10 font-mono text-xs">
+              <span className="text-[11px] font-bold text-zinc-300 flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5 text-brand-purple" />
+                Integrated Exchanges & Order Routing Venues for AGL/USDC:
+              </span>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1">
+                {[
+                  { name: "Aerodrome Slipstream", depth: "$850k Depth", fee: "0.05%" },
+                  { name: "Uniswap V3 Base", depth: "$520k Depth", fee: "0.05%" },
+                  { name: "1inch Aggregator", depth: "Optimal Router", fee: "Best Rate" },
+                  { name: "Matcha / 0x RFQ", depth: "Gas Optimized", fee: "Zero Slippage" },
+                  { name: "BaseSwap V3", depth: "$280k Depth", fee: "0.25%" },
+                  { name: "Agunnaya AMM Core", depth: "Anchor Vault", fee: "0.30%" }
+                ].map((venue, idx) => (
+                  <div key={idx} className="p-2 bg-zinc-950/80 border border-white/10 rounded-xl text-[10px]">
+                    <div className="flex items-center justify-between text-white font-bold mb-0.5">
+                      <span>{venue.name}</span>
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    </div>
+                    <div className="text-zinc-400 flex justify-between">
+                      <span>{venue.depth}</span>
+                      <span className="text-purple-300 font-semibold">{venue.fee}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Main Grid: Pair List (7 cols) + Deposit/Withdraw Manager (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

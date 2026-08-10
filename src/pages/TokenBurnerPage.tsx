@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { WalletState, Token } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
 import ImageWithFallback from "../components/ImageWithFallback";
 import BurnLeaderboard from "../components/BurnLeaderboard";
 
@@ -145,7 +146,7 @@ export default function TokenBurnerPage({
         tokenLogo: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
         amount: 5000,
         amountUsd: 812.50,
-        burnerAddress: "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+        burnerAddress: AGL_TREASURY_ADDRESS,
         nullAddress: DEAD_ADDRESS,
         burnType: "standard",
         blockNumber: 18452910,
@@ -336,7 +337,7 @@ export default function TokenBurnerPage({
               type: "burn",
               tokenSymbol: activeToken.symbol,
               tokenAddress: activeToken.address,
-              user: wallet.address || "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B",
+              user: wallet.address || AGL_TREASURY_ADDRESS,
               amount: amt,
               ethValue: (amt * activeToken.priceUsd) / 3250,
               details: `Burned ${amt} ${activeToken.symbol} (${burnMode} mode) on Base Mainnet`

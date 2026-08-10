@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
 import StakingComponent from "../components/StakingComponent";
 import AirdropSweepTracker from "../components/AirdropSweepTracker";
 import LiFiBridgeComponent from "../components/LiFiBridgeComponent";
@@ -793,7 +794,7 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
 
         <div className="text-[11px] font-mono text-zinc-500 hidden xl:flex items-center gap-2 pr-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Multisig Target: 0x5154...1e2d (3/5 Safe)</span>
+          <span>Multisig Target: {AGL_TREASURY_ADDRESS.slice(0, 6)}...{AGL_TREASURY_ADDRESS.slice(-4)} (3/5 Safe)</span>
         </div>
       </div>
 
