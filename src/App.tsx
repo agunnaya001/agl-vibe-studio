@@ -5,6 +5,7 @@ import { User, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/aut
 import { auth, db } from "./lib/firebase";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import WalletModal from "./components/WalletModal";
@@ -1433,6 +1434,7 @@ export default function App() {
         )}
       </div>
       <Analytics />
+      <SpeedInsights />
     </HelmetProvider>
   );
 }
