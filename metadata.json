@@ -1,16 +1,6 @@
 {
   "name": "Agunnaya Labs Studio",
-  "description": "Create, launch, manage, and scale fully custom on-chain applications, tokens, DAOs, and autonomous AI agents on Base without writing smart contracts.",
-  "homepage": "https://github.com/agunnaya001/agl-vibe-studio",
-  "version": "1.0.0",
-  "languages": ["TypeScript", "Solidity"],
-  "tags": ["web3", "blockchain", "base", "tokens", "daos", "ai", "no-code"],
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API",
-    "MAJOR_CAPABILITY_WEB3_INTEGRATION",
-    "MAJOR_CAPABILITY_TOKEN_LAUNCH",
-    "MAJOR_CAPABILITY_DAO_CREATION",
-    "MAJOR_CAPABILITY_AI_AGENTS"
-  ]
+  "description": "An AI-powered Web3 builder and launchpad where anyone can create, launch, manage, and scale blockchain applications and tokens on Base without writing smart contracts.",
+  "requestFramePermissions": ["microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

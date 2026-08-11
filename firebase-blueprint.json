@@ -1,112 +1,84 @@
 {
-  "_metadata": {
-    "version": "1.1.0",
-    "schemaVersion": 1,
-    "lastUpdated": "2026-07-16",
-    "description": "AGL Vibe Studio Firebase Firestore schema and security configuration"
-  },
   "entities": {
     "Token": {
       "title": "Token",
       "description": "Information about a bonding curve token",
       "type": "object",
       "properties": {
-        "address": { "type": "string", "description": "Token contract address on Base" },
+        "address": { "type": "string" },
         "name": { "type": "string" },
         "symbol": { "type": "string" },
         "description": { "type": "string" },
-        "creator": { "type": "string", "description": "Wallet address of token creator" },
-        "creatorFeesEarned": { "type": "number", "minimum": 0 },
-        "currentPrice": { "type": "number", "minimum": 0 },
-        "supply": { "type": "number", "minimum": 0 },
-        "maxSupply": { "type": "number", "minimum": 0 },
-        "marketCap": { "type": "number", "minimum": 0 },
-        "reserveEth": { "type": "number", "minimum": 0 },
-        "volume24h": { "type": "number", "minimum": 0 },
+        "creator": { "type": "string" },
+        "creatorFeesEarned": { "type": "number" },
+        "currentPrice": { "type": "number" },
+        "supply": { "type": "number" },
+        "maxSupply": { "type": "number" },
+        "marketCap": { "type": "number" },
+        "reserveEth": { "type": "number" },
+        "volume24h": { "type": "number" },
         "category": { "type": "string", "enum": ["meme", "defi", "ai", "utility", "gamefi"] },
-        "logoUrl": { "type": "string", "format": "uri" },
+        "logoUrl": { "type": "string" },
         "isVerified": { "type": "boolean" },
-        "vestingWeeks": { "type": "number", "minimum": 0 },
-        "referralRewardsPct": { "type": "number", "minimum": 0, "maximum": 100 },
-        "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
-        "createdAt": { "type": "number", "description": "Unix timestamp" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "vestingWeeks": { "type": "number" },
+        "referralRewardsPct": { "type": "number" },
+        "createdAt": { "type": "number" }
       },
-      "required": ["address", "name", "symbol", "creator", "currentPrice", "supply", "createdAt"],
-      "indexes": [
-        { "fields": ["category", "createdAt"], "order": ["asc", "desc"] },
-        { "fields": ["marketCap"], "order": ["desc"] },
-        { "fields": ["creator", "createdAt"], "order": ["asc", "desc"] }
-      ]
+      "required": ["address", "name", "symbol", "creator", "currentPrice", "supply", "createdAt"]
     },
     "NFTCollection": {
       "title": "NFTCollection",
       "description": "Details about an NFT collection on Base",
       "type": "object",
       "properties": {
-        "contractAddress": { "type": "string", "description": "NFT contract address" },
+        "contractAddress": { "type": "string" },
         "name": { "type": "string" },
         "symbol": { "type": "string" },
         "description": { "type": "string" },
-        "creator": { "type": "string", "description": "Wallet address of collection creator" },
-        "mintPrice": { "type": "number", "minimum": 0 },
-        "currentSupply": { "type": "number", "minimum": 0 },
-        "maxSupply": { "type": "number", "minimum": 0 },
-        "royaltyFee": { "type": "number", "minimum": 0, "maximum": 100 },
+        "creator": { "type": "string" },
+        "mintPrice": { "type": "number" },
+        "currentSupply": { "type": "number" },
+        "maxSupply": { "type": "number" },
+        "royaltyFee": { "type": "number" },
         "isRevealed": { "type": "boolean" },
         "isVerified": { "type": "boolean" },
-        "imageUrl": { "type": "string", "format": "uri" },
-        "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
-        "createdAt": { "type": "number", "description": "Unix timestamp" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "number" }
       },
-      "required": ["contractAddress", "name", "symbol", "creator", "mintPrice", "currentSupply", "maxSupply", "createdAt"],
-      "indexes": [
-        { "fields": ["creator", "createdAt"], "order": ["asc", "desc"] }
-      ]
+      "required": ["contractAddress", "name", "symbol", "creator", "mintPrice", "currentSupply", "maxSupply", "createdAt"]
     },
     "DAO": {
       "title": "DAO",
       "description": "A decentralized autonomous organization",
       "type": "object",
       "properties": {
-        "contractAddress": { "type": "string", "description": "DAO contract address" },
+        "contractAddress": { "type": "string" },
         "name": { "type": "string" },
         "symbol": { "type": "string" },
         "description": { "type": "string" },
-        "creator": { "type": "string", "description": "Wallet address of DAO creator" },
-        "governanceTokenAddress": { "type": "string", "description": "References /tokens/{address}" },
-        "treasuryBalanceEth": { "type": "number", "minimum": 0 },
-        "memberCount": { "type": "number", "minimum": 0 },
-        "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
-        "createdAt": { "type": "number", "description": "Unix timestamp" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "creator": { "type": "string" },
+        "governanceTokenAddress": { "type": "string" },
+        "treasuryBalanceEth": { "type": "number" },
+        "memberCount": { "type": "number" },
+        "createdAt": { "type": "number" }
       },
-      "required": ["contractAddress", "name", "symbol", "creator", "governanceTokenAddress", "treasuryBalanceEth", "memberCount", "createdAt"],
-      "indexes": [
-        { "fields": ["creator", "createdAt"], "order": ["asc", "desc"] }
-      ]
+      "required": ["contractAddress", "name", "symbol", "creator", "governanceTokenAddress", "treasuryBalanceEth", "memberCount", "createdAt"]
     },
     "GameFiProject": {
       "title": "GameFiProject",
       "description": "An interactive Web3 gaming and developer achievement system",
       "type": "object",
       "properties": {
-        "contractAddress": { "type": "string", "description": "GameFi contract address" },
+        "contractAddress": { "type": "string" },
         "name": { "type": "string" },
         "symbol": { "type": "string" },
         "description": { "type": "string" },
-        "creator": { "type": "string", "description": "Wallet address of project creator" },
-        "prizePoolEth": { "type": "number", "minimum": 0 },
-        "activeSeasons": { "type": "number", "minimum": 0 },
-        "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
-        "createdAt": { "type": "number", "description": "Unix timestamp" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "creator": { "type": "string" },
+        "prizePoolEth": { "type": "number" },
+        "activeSeasons": { "type": "number" },
+        "createdAt": { "type": "number" }
       },
-      "required": ["contractAddress", "name", "symbol", "creator", "prizePoolEth", "createdAt"],
-      "indexes": [
-        { "fields": ["creator", "createdAt"], "order": ["asc", "desc"] }
-      ]
+      "required": ["contractAddress", "name", "symbol", "creator", "prizePoolEth", "createdAt"]
     },
     "AIAgent": {
       "title": "AIAgent",
@@ -118,22 +90,17 @@
         "symbol": { "type": "string" },
         "description": { "type": "string" },
         "contractAddress": { "type": "string" },
-        "creator": { "type": "string", "description": "Wallet address of agent creator" },
-        "tokenPrice": { "type": "number", "minimum": 0 },
-        "usageFeeEth": { "type": "number", "minimum": 0 },
-        "lifetimeRevenueEth": { "type": "number", "minimum": 0 },
-        "queryCount": { "type": "number", "minimum": 0 },
+        "creator": { "type": "string" },
+        "tokenPrice": { "type": "number" },
+        "usageFeeEth": { "type": "number" },
+        "lifetimeRevenueEth": { "type": "number" },
+        "queryCount": { "type": "number" },
         "systemPrompt": { "type": "string" },
-        "avatarUrl": { "type": "string", "format": "uri" },
+        "avatarUrl": { "type": "string" },
         "aglRewardDiscounts": { "type": "boolean" },
-        "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
-        "createdAt": { "type": "number", "description": "Unix timestamp" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "createdAt": { "type": "number" }
       },
-      "required": ["id", "name", "symbol", "creator", "usageFeeEth", "createdAt"],
-      "indexes": [
-        { "fields": ["creator", "createdAt"], "order": ["asc", "desc"] }
-      ]
+      "required": ["id", "name", "symbol", "creator", "usageFeeEth", "createdAt"]
     },
     "StakingPool": {
       "title": "StakingPool",
@@ -143,20 +110,14 @@
         "id": { "type": "string" },
         "tokenName": { "type": "string" },
         "tokenSymbol": { "type": "string" },
-        "tokenAddress": { "type": "string", "description": "References /tokens/{address}" },
-        "apr": { "type": "number", "minimum": 0, "maximum": 1000 },
-        "tvlEth": { "type": "number", "minimum": 0 },
-        "stakedBalance": { "type": "number", "minimum": 0 },
-        "earnedRewards": { "type": "number", "minimum": 0 },
-        "lockPeriodDays": { "type": "number", "minimum": 0 },
-        "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "tokenAddress": { "type": "string" },
+        "apr": { "type": "number" },
+        "tvlEth": { "type": "number" },
+        "stakedBalance": { "type": "number" },
+        "earnedRewards": { "type": "number" },
+        "lockPeriodDays": { "type": "number" }
       },
-      "required": ["id", "tokenName", "tokenSymbol", "tokenAddress", "apr", "tvlEth"],
-      "indexes": [
-        { "fields": ["apr"], "order": ["desc"] },
-        { "fields": ["tvlEth"], "order": ["desc"] }
-      ]
+      "required": ["id", "tokenName", "tokenSymbol", "tokenAddress", "apr", "tvlEth"]
     },
     "Activity": {
       "title": "Activity",
@@ -164,20 +125,16 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "type": { "type": "string", "enum": ["mint", "burn", "trade", "stake", "unstake", "claim", "transfer"] },
+        "type": { "type": "string" },
         "tokenSymbol": { "type": "string" },
         "tokenAddress": { "type": "string" },
-        "user": { "type": "string", "description": "User wallet address" },
-        "amount": { "type": "number", "minimum": 0 },
-        "ethValue": { "type": "number", "minimum": 0 },
-        "timestamp": { "type": "number", "description": "Unix timestamp" },
+        "user": { "type": "string" },
+        "amount": { "type": "number" },
+        "ethValue": { "type": "number" },
+        "timestamp": { "type": "number" },
         "details": { "type": "string" }
       },
-      "required": ["id", "type", "user", "timestamp", "details"],
-      "indexes": [
-        { "fields": ["user", "timestamp"], "order": ["asc", "desc"] },
-        { "fields": ["type", "timestamp"], "order": ["asc", "desc"] }
-      ]
+      "required": ["id", "type", "user", "timestamp", "details"]
     },
     "ReferralRecord": {
       "title": "ReferralRecord",
@@ -185,119 +142,139 @@
       "type": "object",
       "properties": {
         "code": { "type": "string" },
-        "ownerAddress": { "type": "string", "description": "Wallet address of referral code owner" },
-        "totalReferredCount": { "type": "number", "minimum": 0 },
-        "totalFeesGeneratedEth": { "type": "number", "minimum": 0 },
-        "unclaimedRewardsAgl": { "type": "number", "minimum": 0 },
-        "claimedRewardsAgl": { "type": "number", "minimum": 0 },
-        "status": { "type": "string", "enum": ["active", "inactive", "deleted"], "default": "active" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "ownerAddress": { "type": "string" },
+        "totalReferredCount": { "type": "number" },
+        "totalFeesGeneratedEth": { "type": "number" },
+        "unclaimedRewardsAgl": { "type": "number" },
+        "claimedRewardsAgl": { "type": "number" }
       },
       "required": ["code", "ownerAddress", "totalReferredCount", "totalFeesGeneratedEth", "unclaimedRewardsAgl", "claimedRewardsAgl"]
     },
-    "Session": {
-      "title": "Session",
-      "description": "Real-time backed developer session history for AI Builder state recovery",
+    "PriceAlert": {
+      "title": "PriceAlert",
+      "description": "User-defined token price target alerts",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "prompt": { "type": "string" },
-        "projectType": { "type": "string" },
-        "aiResult": { "type": "object" },
-        "status": { "type": "string", "enum": ["active", "completed", "failed"], "default": "active" },
-        "createdAt": { "type": "number", "description": "Unix timestamp" },
-        "updatedAt": { "type": "number", "description": "Last modification timestamp" }
+        "userId": { "type": "string" },
+        "tokenAddress": { "type": "string" },
+        "tokenSymbol": { "type": "string" },
+        "targetPrice": { "type": "number" },
+        "condition": { "type": "string", "enum": ["above", "below"] },
+        "status": { "type": "string", "enum": ["active", "triggered"] },
+        "createdAt": { "type": "number" },
+        "triggeredAt": { "type": "number" }
       },
-      "required": ["id", "prompt", "projectType", "updatedAt"],
-      "indexes": [
-        { "fields": ["updatedAt"], "order": ["desc"] }
-      ]
+      "required": ["id", "userId", "tokenAddress", "tokenSymbol", "targetPrice", "condition", "status", "createdAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Developer task tracking in TaskSync",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "in-progress"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "dueDate": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "title", "description", "status", "priority", "createdAt"]
+    },
+    "AgentServiceConnection": {
+      "title": "AgentServiceConnection",
+      "description": "Service connections for AI agents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "providerName": { "type": "string" },
+        "issuer": { "type": "string" },
+        "description": { "type": "string" },
+        "connectedAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "revoked"] }
+      },
+      "required": ["id", "providerName", "connectedAt", "status"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document tracking daily missions and bonus AGL credits",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "totalCreditsEarned": { "type": "number" },
+        "streakDays": { "type": "number" },
+        "lastCheckinDate": { "type": "string" },
+        "dailyMissions": { "type": "array" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "updatedAt"]
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document tracking daily missions and bonus AGL credits"
+    },
     "/tokens/{address}": {
       "schema": { "$ref": "#/entities/Token" },
-      "description": "Database-backed registry for dynamic bonding curve tokens",
-      "queryPatterns": ["category + createdAt", "marketCap DESC", "creator + createdAt"]
+      "description": "Database-backed registry for dynamic bonding curve tokens"
+    },
+    "/price_alerts/{id}": {
+      "schema": { "$ref": "#/entities/PriceAlert" },
+      "description": "A collection of price targets and criteria set by users"
     },
     "/nfts/{contractAddress}": {
       "schema": { "$ref": "#/entities/NFTCollection" },
-      "description": "Registry of on-chain minted non-fungible collections",
-      "queryPatterns": ["creator + createdAt"]
+      "description": "Registry of on-chain minted non-fungible collections"
     },
     "/daos/{contractAddress}": {
       "schema": { "$ref": "#/entities/DAO" },
-      "description": "Guilds and DAOs with proposals on-chain",
-      "queryPatterns": ["creator + createdAt"]
+      "description": "Guilds and DAOs with proposals on-chain"
     },
     "/gamefi/{contractAddress}": {
       "schema": { "$ref": "#/entities/GameFiProject" },
-      "description": "GameFi profiles detailing developer battles and quests",
-      "queryPatterns": ["creator + createdAt"]
+      "description": "GameFi profiles detailing developer battles and quests"
     },
     "/agents/{id}": {
       "schema": { "$ref": "#/entities/AIAgent" },
-      "description": "Registry for AI Agent engines",
-      "queryPatterns": ["creator + createdAt"]
+      "description": "Registry for AI Agent engines"
     },
     "/staking/{id}": {
       "schema": { "$ref": "#/entities/StakingPool" },
-      "description": "Active staking positions and TVL tracking",
-      "queryPatterns": ["apr DESC", "tvlEth DESC"]
+      "description": "Active staking positions and TVL tracking"
     },
     "/activities/{id}": {
       "schema": { "$ref": "#/entities/Activity" },
-      "description": "Unified transaction ledger of actions taken inside the app",
-      "queryPatterns": ["user + timestamp DESC", "type + timestamp DESC"]
+      "description": "Unified transaction ledger of actions taken inside the app"
     },
     "/referrals/{ownerAddress}": {
       "schema": { "$ref": "#/entities/ReferralRecord" },
       "description": "Active affiliate invite links"
     },
     "/sessions/{id}": {
-      "schema": { "$ref": "#/entities/Session" },
-      "description": "Real-time backed developer session history for AI Builder state recovery",
-      "queryPatterns": ["updatedAt DESC"]
-    }
-  },
-  "security": {
-    "rules": {
-      "/tokens/{address}": {
-        "read": "true",
-        "write": "request.auth != null && request.auth.uid == resource.data.creator"
+      "schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "prompt": { "type": "string" },
+          "projectType": { "type": "string" },
+          "updatedAt": { "type": "number" },
+          "aiResult": { "type": "object" }
+        },
+        "required": ["id", "prompt", "projectType", "updatedAt"]
       },
-      "/nfts/{contractAddress}": {
-        "read": "true",
-        "write": "request.auth != null && request.auth.uid == resource.data.creator"
-      },
-      "/daos/{contractAddress}": {
-        "read": "true",
-        "write": "request.auth != null && request.auth.uid == resource.data.creator"
-      },
-      "/gamefi/{contractAddress}": {
-        "read": "true",
-        "write": "request.auth != null && request.auth.uid == resource.data.creator"
-      },
-      "/agents/{id}": {
-        "read": "true",
-        "write": "request.auth != null && request.auth.uid == resource.data.creator"
-      },
-      "/staking/{id}": {
-        "read": "true",
-        "write": "request.auth != null"
-      },
-      "/activities/{id}": {
-        "read": "request.auth != null",
-        "write": "request.auth != null"
-      },
-      "/referrals/{ownerAddress}": {
-        "read": "request.auth != null && request.auth.uid == ownerAddress",
-        "write": "request.auth != null && request.auth.uid == ownerAddress"
-      },
-      "/sessions/{id}": {
-        "read": "request.auth != null",
-        "write": "request.auth != null"
-      }
+      "description": "Real-time backed developer session history for AI Builder state recovery"
+    },
+    "/tasks/{id}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Developer task collection"
+    },
+    "/service_connections/{id}": {
+      "schema": { "$ref": "#/entities/AgentServiceConnection" },
+      "description": "Agent service connections registry"
     }
   }
 }

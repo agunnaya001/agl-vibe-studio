@@ -117,8 +117,51 @@ service cloud.firestore {
         && data.claimedRewardsAgl is number && data.claimedRewardsAgl >= 0;
     }
 
+    function isValidPriceAlert(data) {
+      return data.keys().hasAll(['id', 'userId', 'tokenAddress', 'tokenSymbol', 'targetPrice', 'condition', 'status', 'createdAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.tokenAddress is string && data.tokenAddress.size() >= 10 && data.tokenAddress.size() <= 64
+        && data.tokenSymbol is string && data.tokenSymbol.size() >= 1 && data.tokenSymbol.size() <= 10
+        && data.targetPrice is number && data.targetPrice >= 0
+        && data.condition is string && (data.condition == 'above' || data.condition == 'below')
+        && data.status is string && (data.status == 'active' || data.status == 'triggered')
+        && data.createdAt is number;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['id', 'title', 'description', 'status', 'priority', 'createdAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 200
+        && data.description is string
+        && data.status is string && (data.status == 'pending' || data.status == 'completed' || data.status == 'in-progress')
+        && data.priority is string && (data.priority == 'low' || data.priority == 'medium' || data.priority == 'high')
+        && data.createdAt is number;
+    }
+
+    function isValidAgentServiceConnection(data) {
+      return data.keys().hasAll(['id', 'providerName', 'connectedAt', 'status'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 100
+        && data.connectedAt is number
+        && data.status is string && (data.status == 'active' || data.status == 'revoked');
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'updatedAt'])
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.updatedAt is number;
+    }
+
     // 4. Secure Collections Match Blocks
     
+    // USERS COLLECTION
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == userId || resource.data.userId == request.auth.uid);
+      allow create, update: if isSignedIn() && isValidId(userId) && isValidUserProfile(incoming()) && (isAdmin() || request.auth.uid == userId || incoming().userId == request.auth.uid);
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
     // TOKENS COLLECTION
     match /tokens/{address} {
       allow read: if true;
@@ -129,6 +172,20 @@ service cloud.firestore {
         incoming().diff(existing()).affectedKeys().hasOnly(['currentPrice', 'supply', 'marketCap', 'reserveEth', 'volume24h', 'creatorFeesEarned'])
       );
       allow delete: if isAdmin();
+    }
+
+    // PRICE ALERTS COLLECTION
+    match /price_alerts/{id} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(id) && isValidPriceAlert(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidPriceAlert(incoming()) && (
+        isAdmin() || (
+          existing().userId == request.auth.uid &&
+          incoming().userId == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'triggeredAt'])
+        )
+      );
+      allow delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
     }
 
     // NFTS COLLECTION
@@ -211,6 +268,20 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isSignedIn() && isValidId(id);
       allow delete: if isSignedIn() && (isAdmin() || request.auth.uid == id);
+    }
+
+    // TASKS COLLECTION
+    match /tasks/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidTask(incoming());
+      allow delete: if isSignedIn() && (isAdmin() || isValidId(id));
+    }
+
+    // SERVICE CONNECTIONS COLLECTION
+    match /service_connections/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidAgentServiceConnection(incoming());
+      allow delete: if isSignedIn() && (isAdmin() || isValidId(id));
     }
 
     // TEST COLLECTION

@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   FolderPlus
 } from "lucide-react";
+import ImageWithFallback from "../components/ImageWithFallback";
 import { GoogleDriveService, GoogleDriveFile } from "../lib/driveService";
 import { AgunnayaDatabase } from "../lib/db";
 import { User } from "firebase/auth";
@@ -318,9 +319,10 @@ export default function GoogleDrivePage({
             {/* Active User Card */}
             <div className="bg-zinc-950 border border-white/10 rounded-2xl p-5 flex items-center gap-4">
               {firebaseUser?.photoURL ? (
-                <img 
+                <ImageWithFallback 
                   src={firebaseUser.photoURL} 
                   alt={firebaseUser.displayName || "Google User"} 
+                  fallbackText={firebaseUser.displayName}
                   className="w-12 h-12 rounded-full border border-white/15"
                   referrerPolicy="no-referrer"
                 />

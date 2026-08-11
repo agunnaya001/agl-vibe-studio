@@ -1,82 +1,126 @@
-/**
- * AGL Credits — client-side utilities
- * Interfaces with /api/credits/* and the AGLCredits contract via MetaMask.
- */
+import { WalletState } from "../types";
+import { AgunnayaDatabase } from "./db";
 
-export interface CreditBalance {
-  totalCreditsPurchased: number;
-  creditsSpent: number;
-  creditsRemaining: number;
-  totalAGLBurnedBy: string;        // formatted (e.g. "0.5")
-  creditsPerAGL: number;           // credits per 1 whole AGL
-  totalProtocolAGLBurned: string;  // formatted
-  aglTokenAddress: string;
-  costs: Record<string, number>;
-}
-
-/** Credit cost for each AI call type — keep in sync with server CREDIT_COSTS */
 export const CREDIT_COSTS = {
-  build: 50,
-  'agent-chat': 5,
-  'draft-email': 10,
-} as const;
+  CONTRACT_BUILD: 50,
+  AI_ADVISOR_CHAT: 5,
+  AGENT_HARNESS_CHAT: 10,
+  IMAGE_GENERATION: 25,
+  VIDEO_GENERATION: 50,
+  DEPLOYMENT_PROPOSAL: 30,
+  EMAIL_DRAFT: 10,
+  PORTFOLIO_REBALANCE: 20,
+};
 
-export type CreditAction = keyof typeof CREDIT_COSTS;
+export interface CreditCheckParams {
+  wallet: WalletState;
+  onRefreshWallet: () => void;
+  requiredCredits: number;
+  featureName: string;
+  showToast: (message: string, type: "success" | "error" | "info" | "showToast") => void;
+  addTerminalLog?: (type: "info" | "success" | "error" | "buy" | "sell" | "system", message: string) => void;
+  onRequestCreditsModal?: (featureName: string, required: number, available: number) => void;
+}
 
-export async function fetchCreditBalance(address: string): Promise<CreditBalance> {
-  const res = await fetch(`/api/credits/balance/${address}`);
-  if (!res.ok) throw new Error('Failed to fetch credit balance from server.');
-  return res.json();
+export interface CreditValidationResult {
+  success: boolean;
+  currentCredits: number;
+  requiredCredits: number;
+  remainingCredits: number;
+  refund: () => void;
 }
 
 /**
- * Preview how many credits a given AGL amount (as a human-readable string like "0.5") yields.
+ * Validates whether the user has sufficient computational credits before launching an AI generation.
+ * - If insufficient: returns success=false, displays a prominent error toast, logs to terminal, triggers modal if available.
+ * - If sufficient: deducts credits immediately, saves wallet state, alerts if credits are low, and provides a refund callback.
  */
-export async function previewCreditsForAmount(aglAmountHuman: string): Promise<number> {
-  try {
-    // Use ethers to convert to wei
-    const aglWei = BigInt(Math.floor(parseFloat(aglAmountHuman) * 1e18)).toString();
-    const res = await fetch(`/api/credits/preview/${aglWei}`);
-    if (!res.ok) return 0;
-    const { credits } = await res.json();
-    return credits;
-  } catch {
-    return 0;
+export function validateAndConsumeCredits({
+  wallet,
+  onRefreshWallet,
+  requiredCredits,
+  featureName,
+  showToast,
+  addTerminalLog,
+  onRequestCreditsModal
+}: CreditCheckParams): CreditValidationResult {
+  const currentCredits = wallet.aglCredits ?? 0;
+
+  if (currentCredits < requiredCredits) {
+    const errorMsg = `Insufficient AGL Credits for ${featureName}! Required: ${requiredCredits} Credits (Available: ${currentCredits} Credits).`;
+    showToast(`⚠️ AI Generation Blocked: ${errorMsg}`, "error");
+
+    if (addTerminalLog) {
+      addTerminalLog(
+        "error",
+        `[CREDIT ENGINE] AI Generation Rejected for ${featureName}. Required: ${requiredCredits} credits, Available: ${currentCredits} credits. Navigate to 'AGL Credits Burn' to purchase computational credits.`
+      );
+    }
+
+    if (onRequestCreditsModal) {
+      onRequestCreditsModal(featureName, requiredCredits, currentCredits);
+    }
+
+    return {
+      success: false,
+      currentCredits,
+      requiredCredits,
+      remainingCredits: currentCredits,
+      refund: () => {}
+    };
   }
-}
 
-/**
- * Purchase credits by burning AGL tokens via real MetaMask.
- * Runs the two-step approve → purchaseCredits flow.
- *
- * @param aglAmountHuman  Human-readable AGL amount (e.g. "0.5")
- * @param aglTokenAddress On-chain AGL token contract address
- * @param onStatus        Callback for status updates shown in the UI
- * @returns Transaction hash of the purchaseCredits tx
- */
-export async function purchaseCreditsWithMetaMask(
-  aglAmountHuman: string,
-  aglTokenAddress: string,
-  onStatus: (msg: string) => void
-): Promise<string> {
-  const eth = (window as any).ethereum;
-  if (!eth) {
-    throw new Error('MetaMask not detected. Install MetaMask to purchase credits on Base Mainnet.');
+  // Deduct required credits
+  const remainingCredits = Math.max(0, currentCredits - requiredCredits);
+  const updatedWallet: WalletState = {
+    ...wallet,
+    aglCredits: remainingCredits
+  };
+
+  AgunnayaDatabase.saveWallet(updatedWallet);
+  onRefreshWallet();
+
+  showToast(`Consumed ${requiredCredits} AGL Credits for ${featureName}`, "info");
+
+  if (addTerminalLog) {
+    addTerminalLog(
+      "system",
+      `[CREDIT ENGINE] Deducted ${requiredCredits} AGL Credits for ${featureName}. Remaining balance: ${remainingCredits} credits.`
+    );
   }
 
-  // Dynamic imports — only loaded when the user actually tries to buy
-  const { ethers: e } = await import('ethers');
-  const { approveAGL, purchaseCredits } = await import('./aglTokenomics');
+  if (remainingCredits < 20) {
+    showToast(`⚠️ Low Computational Credits: Only ${remainingCredits} AGL Credits remaining. Burn AGL tokens to maintain uninterrupted AI generation!`, "info");
+  }
 
-  const provider = new e.BrowserProvider(eth);
-  const signer = await provider.getSigner();
-  const aglWei = e.parseUnits(aglAmountHuman, 18);
+  let refunded = false;
+  const refund = () => {
+    if (refunded) return;
+    refunded = true;
 
-  onStatus('Step 1/2 — Requesting AGL spend approval in MetaMask…');
-  await approveAGL(signer, aglTokenAddress, aglWei);
+    const currentWallet = AgunnayaDatabase.getWallet();
+    const restoredWallet: WalletState = {
+      ...currentWallet,
+      aglCredits: (currentWallet.aglCredits || 0) + requiredCredits
+    };
 
-  onStatus('Step 2/2 — Burning AGL for credits…');
-  const txHash = await purchaseCredits(signer, aglWei);
+    AgunnayaDatabase.saveWallet(restoredWallet);
+    onRefreshWallet();
 
-  return txHash;
+    showToast(`🔄 AI Generation Failed. Restored ${requiredCredits} AGL Credits to your wallet.`, "info");
+    if (addTerminalLog) {
+      addTerminalLog(
+        "info",
+        `[CREDIT ENGINE] Refunded ${requiredCredits} credits due to AI pipeline failure. Restored balance: ${restoredWallet.aglCredits} credits.`
+      );
+    }
+  };
+
+  return {
+    success: true,
+    currentCredits,
+    requiredCredits,
+    remainingCredits,
+    refund
+  };
 }

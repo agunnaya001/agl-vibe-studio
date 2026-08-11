@@ -72,6 +72,38 @@
 }
 
 /* Custom styles for terminal and visuals */
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-tooltip-fade-in {
+  animation: tooltip-fade-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#floating-ai-tooltip:hover .animate-ping {
+  animation-play-state: paused;
+}
+
+@keyframes activator-hover-pulse {
+  0% {
+    box-shadow: 0 0 0 0px rgba(255, 255, 255, 0.35), 0 10px 25px rgba(139, 92, 246, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(255, 255, 255, 0), 0 20px 35px rgba(139, 92, 246, 0.6);
+  }
+}
+
+#floating-ai-activator:hover {
+  animation: activator-hover-pulse 1.6s infinite cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .terminal-cursor {
   display: inline-block;
   width: 8px;

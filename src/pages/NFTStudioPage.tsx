@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { NFTCollection, WalletState, NFTItem } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
 import IPFSUploader from "../components/IPFSUploader";
-import BaseScanLink from "../components/BaseScanLink";
-import { Disc, Image, Sparkles, CheckCircle, Tag, Settings, Users, Plus, ShieldCheck, Upload } from "lucide-react";
+import ImageWithFallback from "../components/ImageWithFallback";
+import NFTPreviewModal from "../components/NFTPreviewModal";
+import { Disc, Image, Sparkles, CheckCircle, Tag, Settings, Users, Plus, ShieldCheck, Eye } from "lucide-react";
 
 interface NFTStudioPageProps {
   wallet: WalletState;
@@ -22,25 +23,12 @@ export default function NFTStudioPage({ wallet, collections, onRefreshNFTs, addT
   const [royaltyFee, setRoyaltyFee] = useState("5");
   const [bannerUrl, setBannerUrl] = useState("");
   const [creating, setCreating] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
-  const bannerFileRef = useRef<HTMLInputElement>(null);
+
+  // Preview State
+  const [previewCollection, setPreviewCollection] = useState<NFTCollection | null>(null);
 
   // Mint state
   const [mintingCollection, setMintingCollection] = useState<string | null>(null);
-
-  const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingBanner(true);
-    try {
-      const url = await uploadImage(file);
-      setBannerUrl(url);
-    } catch {
-      showToast("Image upload failed.", "error");
-    } finally {
-      setUploadingBanner(false);
-    }
-  };
 
   const handleCreateCollection = (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,13 +285,11 @@ export default function NFTStudioPage({ wallet, collections, onRefreshNFTs, addT
             {collections.map((coll) => (
               <div key={coll.contractAddress} className="glass-panel rounded-2xl border border-white/5 p-4 bg-zinc-900/10 space-y-4">
                 <div className="flex gap-3">
-                  <img src={coll.imageUrl} alt={coll.name} className="w-12 h-12 rounded-xl object-cover border border-white/5 shrink-0" />
+                  <ImageWithFallback src={coll.imageUrl} alt={coll.name} fallbackText={coll.symbol} className="w-12 h-12 rounded-xl object-cover border border-white/5 shrink-0" />
                   <div>
                     <h4 className="font-display font-bold text-white text-xs">{coll.name}</h4>
                     <span className="block text-[10px] font-mono text-brand-purple font-bold uppercase">{coll.symbol} Collection</span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                  <BaseScanLink value={coll.contractAddress} className="text-[8px]" />
-                </div>
+                    <span className="block text-[8px] font-mono text-zinc-500 truncate max-w-[150px]">Address: {coll.contractAddress}</span>
                   </div>
                 </div>
 
@@ -322,21 +308,41 @@ export default function NFTStudioPage({ wallet, collections, onRefreshNFTs, addT
                   </div>
                 </div>
 
-                {/* Mint action button */}
-                <button
-                  id={`mint-nft-action-${coll.contractAddress}`}
-                  onClick={() => handleMintNFT(coll.contractAddress)}
-                  disabled={mintingCollection === coll.contractAddress}
-                  className="w-full py-2 bg-brand-purple/20 hover:bg-brand-purple text-brand-purple hover:text-white border border-brand-purple/30 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{mintingCollection === coll.contractAddress ? "Minting…" : "Mint NFT Item"}</span>
-                </button>
+                {/* Action buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    id={`preview-nft-action-${coll.contractAddress}`}
+                    onClick={() => setPreviewCollection(coll)}
+                    className="py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/10 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-brand-purple" />
+                    <span>3D Inspector</span>
+                  </button>
+
+                  <button
+                    id={`mint-nft-action-${coll.contractAddress}`}
+                    onClick={() => handleMintNFT(coll.contractAddress)}
+                    disabled={mintingCollection === coll.contractAddress}
+                    className="py-2 bg-brand-purple/20 hover:bg-brand-purple text-brand-purple hover:text-white border border-brand-purple/30 text-[10px] font-bold font-mono rounded-lg transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{mintingCollection === coll.contractAddress ? "Minting..." : "Mint Item"}</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Render 3D Preview Inspector Modal */}
+      {previewCollection && (
+        <NFTPreviewModal
+          collection={previewCollection}
+          onClose={() => setPreviewCollection(null)}
+          showToast={showToast}
+        />
+      )}
 
     </div>
   );

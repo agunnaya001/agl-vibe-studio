@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Token, WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import ImageWithFallback from "../components/ImageWithFallback";
 import { 
   Settings, 
   ShieldAlert, 
@@ -18,8 +19,12 @@ import {
   Activity, 
   Check, 
   HelpCircle, 
-  ShieldCheck 
+  ShieldCheck,
+  Building2
 } from "lucide-react";
+
+import { AGL_TREASURY_ADDRESS, AGL_MULTISIG_SAFE_ADDRESS } from "../lib/aglContracts";
+import TreasuryFeeMonitorComponent from "../components/TreasuryFeeMonitorComponent";
 
 interface AdminPanelPageProps {
   wallet: WalletState;
@@ -37,10 +42,13 @@ export default function AdminPanelPage({
   showToast 
 }: AdminPanelPageProps) {
   
-  const isMasterAdmin = wallet.isConnected && wallet.address.toLowerCase() === "0x479596943e70316A0d893De1876EBeA1Ea8E4D5B".toLowerCase();
+  const isMasterAdmin = wallet.isConnected && (
+    wallet.address.toLowerCase() === AGL_TREASURY_ADDRESS.toLowerCase() ||
+    wallet.address.toLowerCase() === AGL_MULTISIG_SAFE_ADDRESS.toLowerCase()
+  );
   
-  // Tab control: "ecosystem" (system configs) or "proxy" (token upgrade proxy)
-  const [activeTab, setActiveTab] = useState<"ecosystem" | "proxy">("proxy");
+  // Tab control: "ecosystem" (system configs), "proxy" (token upgrade proxy), or "treasury" (fee auto-sweep monitor)
+  const [activeTab, setActiveTab] = useState<"ecosystem" | "proxy" | "treasury">("treasury");
 
   useEffect(() => {
     // Default master admin to ecosystem dashboard, and regular builders directly to the proxy tools
@@ -258,6 +266,18 @@ export default function AdminPanelPage({
             </button>
           )}
           <button
+            id="admin-tab-treasury"
+            onClick={() => setActiveTab("treasury")}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "treasury"
+                ? "bg-brand-purple text-white font-bold"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            Treasury Auto-Sweep
+          </button>
+          <button
             id="admin-tab-proxy"
             onClick={() => setActiveTab("proxy")}
             className={`px-4 py-2 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
@@ -271,6 +291,14 @@ export default function AdminPanelPage({
           </button>
         </div>
       </div>
+
+      {/* RENDER TREASURY AUTO-SWEEP MONITOR */}
+      {activeTab === "treasury" && (
+        <TreasuryFeeMonitorComponent
+          wallet={wallet}
+          showToast={showToast}
+        />
+      )}
 
       {/* RENDER SYSTEM ADMIN ECOSYSTEM PORTAL */}
       {activeTab === "ecosystem" && isMasterAdmin && (
@@ -363,7 +391,7 @@ export default function AdminPanelPage({
               {tokens.map((token) => (
                 <div key={token.address} className="flex justify-between items-center bg-zinc-950 p-2.5 rounded-xl border border-white/5 text-xs">
                   <div className="flex items-center gap-2">
-                    <img src={token.logoUrl} alt={token.name} className="w-6 h-6 rounded-lg object-cover" />
+                    <ImageWithFallback src={token.logoUrl} alt={token.name} fallbackText={token.symbol} className="w-6 h-6 rounded-lg object-cover" />
                     <div>
                       <span className="block text-[11px] font-bold text-zinc-200 leading-none">{token.name}</span>
                       <span className="text-[9px] font-mono text-zinc-500">{token.symbol}</span>
@@ -475,7 +503,7 @@ export default function AdminPanelPage({
                       <span className="text-zinc-200 font-bold flex items-center gap-1.5">
                         {selectedTokenObject ? (
                           <>
-                            <img src={selectedTokenObject.logoUrl} className="w-4 h-4 rounded-full object-cover" />
+                            <ImageWithFallback src={selectedTokenObject.logoUrl} alt={selectedTokenObject.symbol} fallbackText={selectedTokenObject.symbol} className="w-4 h-4 rounded-full object-cover" />
                             {selectedTokenObject.symbol}
                           </>
                         ) : (
@@ -679,7 +707,7 @@ export default function AdminPanelPage({
                   tokens.map(token => (
                     <div key={token.address} className="bg-zinc-950 p-2.5 rounded-xl border border-white/5 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <img src={token.logoUrl} className="w-5 h-5 rounded-md object-cover" />
+                        <ImageWithFallback src={token.logoUrl} alt={token.name} fallbackText={token.symbol} className="w-5 h-5 rounded-md object-cover" />
                         <div className="min-w-0">
                           <span className="block text-[10px] font-bold text-zinc-200 truncate leading-tight">{token.name}</span>
                           <span className="text-[8px] font-mono text-zinc-500 leading-none">Proxy: {token.address.slice(0, 8)}...</span>

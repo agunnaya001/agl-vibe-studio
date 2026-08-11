@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { User, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { auth, db } from "./lib/firebase";
+import { AuthHealthState, startAuthHealthSyncService, refreshAuthSessionToken } from "./lib/authSyncService";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -27,12 +28,24 @@ import AdminPanelPage from "./pages/AdminPanelPage";
 import ReferralPage from "./pages/ReferralPage";
 import GoogleDrivePage from "./pages/GoogleDrivePage";
 import GmailPage from "./pages/GmailPage";
+import GoogleFormsPage from "./pages/GoogleFormsPage";
+import TokenFactoryPage from "./pages/TokenFactoryPage";
+import TokenBurnerPage from "./pages/TokenBurnerPage";
+import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
+import StakingVaultPage from "./pages/StakingVaultPage";
+import TaskSyncPage from "./pages/TaskSyncPage";
+import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
+import OnboardingTour from "./components/OnboardingTour";
 
 // Database & Utilities
 import { AgunnayaDatabase } from "./lib/db";
-import { WalletState, Token, NFTCollection, DAO, GameFiProject, AIAgent, Activity } from "./types";
-import { TerminalLine } from "./components/TerminalLog";
-import { BrainCircuit } from "lucide-react";
+import { TreasuryFeeService } from "./lib/treasuryFeeService";
+import { AGL_TREASURY_ADDRESS } from "./lib/aglContracts";
+import { WalletState, Token, NFTCollection, DAO, GameFiProject, AIAgent, Activity, PriceAlert } from "./types";
+import TerminalLog, { TerminalLine } from "./components/TerminalLog";
+import ImageWithFallback from "./components/ImageWithFallback";
+import { getBaseProvider } from "./lib/tokenFactory";
+import { BrainCircuit, Copy, Check, QrCode, X, ShieldCheck, Rocket, BarChart3, Terminal, Zap, ChevronRight, Pin, PinOff } from "lucide-react";
 
 export default function App() {
   const [isLaunched, setIsLaunched] = useState(false);
@@ -43,11 +56,14 @@ export default function App() {
   // Modals state
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isAIDrawerOpen, setIsAIDrawerOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
-  // Firebase Auth state
+  // Firebase Auth & Session Health state
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
+  const [authHealthState, setAuthHealthState] = useState<AuthHealthState | null>(null);
 
   // Global State data
   const [wallet, setWallet] = useState<WalletState>(AgunnayaDatabase.getWallet());
@@ -57,12 +73,29 @@ export default function App() {
   const [games, setGames] = useState<GameFiProject[]>([]);
   const [agents, setAgents] = useState<AIAgent[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
 
   // Toast notifications
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
     setToast({ message, type });
+  };
+
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [isQRPopoverOpen, setIsQRPopoverOpen] = useState(false);
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const [isTerminalModalOpen, setIsTerminalModalOpen] = useState(false);
+  const [isDrawerLocked, setIsDrawerLocked] = useState(false);
+
+  const handleCopyAddress = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (wallet.address) {
+      navigator.clipboard.writeText(wallet.address);
+      setCopiedAddress(true);
+      showToast(`Wallet address copied: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`, "success");
+      setTimeout(() => setCopiedAddress(false), 2000);
+    }
   };
 
   useEffect(() => {
@@ -73,6 +106,68 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  // Global click-outside listener to close AI Drawer when clicking outside floating activator, tooltip, or drawer (unless pinned/locked)
+  useEffect(() => {
+    if (!isAIDrawerOpen || isDrawerLocked) return;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      const activator = document.getElementById("floating-ai-activator");
+      const tooltip = document.getElementById("floating-ai-tooltip");
+      const drawer = document.getElementById("ai-assistant-drawer");
+
+      const isInsideActivator = activator && activator.contains(target);
+      const isInsideTooltip = tooltip && tooltip.contains(target);
+      const isInsideDrawer = drawer && drawer.contains(target);
+
+      if (!isInsideActivator && !isInsideTooltip && !isInsideDrawer) {
+        setIsAIDrawerOpen(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleOutsideClick);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, [isAIDrawerOpen, isDrawerLocked]);
+
+  // Global click-outside listener for Quick Actions menu
+  useEffect(() => {
+    if (!isQuickActionsOpen) return;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      const activator = document.getElementById("floating-ai-activator");
+      const quickActions = document.getElementById("floating-quick-actions");
+
+      const isInsideActivator = activator && activator.contains(target);
+      const isInsideQuickActions = quickActions && quickActions.contains(target);
+
+      if (!isInsideActivator && !isInsideQuickActions) {
+        setIsQuickActionsOpen(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleOutsideClick);
+      document.addEventListener("contextmenu", handleOutsideClick);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleOutsideClick);
+      document.removeEventListener("contextmenu", handleOutsideClick);
+    };
+  }, [isQuickActionsOpen]);
 
   // Terminal Logs state
   const [terminalLogs, setTerminalLogs] = useState<TerminalLine[]>([
@@ -90,10 +185,130 @@ export default function App() {
     setGames(AgunnayaDatabase.getGameFi());
     setAgents(AgunnayaDatabase.getAgents());
     setActivities(AgunnayaDatabase.getActivities().reverse()); // newest first
+    setPriceAlerts(AgunnayaDatabase.getPriceAlerts());
   };
+
+  const handleAddPriceAlert = (alert: Omit<PriceAlert, "id" | "createdAt" | "status" | "triggeredAt">) => {
+    const newAlert = AgunnayaDatabase.addPriceAlert(alert);
+    setPriceAlerts(AgunnayaDatabase.getPriceAlerts());
+    showToast(`Price alert set for ${alert.tokenSymbol} at ${(alert.targetPrice * 1000000).toFixed(3)} μETH`, "success");
+    addTerminalLog("success", `ALERT_SET: Added alert for ${alert.tokenSymbol} ${alert.condition} ${(alert.targetPrice * 1000000).toFixed(3)} μETH.`);
+    
+    // Request permission if not granted
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  };
+
+  const handleDeletePriceAlert = async (id: string) => {
+    await AgunnayaDatabase.deletePriceAlert(id);
+    setPriceAlerts(AgunnayaDatabase.getPriceAlerts());
+    showToast("Price alert removed.", "info");
+    addTerminalLog("info", "ALERT_DELETED: Price alert removed successfully.");
+  };
+
+  // Monitor price changes and trigger alerts
+  useEffect(() => {
+    if (!tokens || tokens.length === 0 || priceAlerts.length === 0) return;
+
+    let updatedAny = false;
+    const currentAlerts = [...priceAlerts];
+
+    currentAlerts.forEach((alert) => {
+      if (alert.status !== "active") return;
+
+      const token = tokens.find(t => t.address.toLowerCase() === alert.tokenAddress.toLowerCase());
+      if (!token) return;
+
+      const currentPriceEth = token.currentPrice;
+      let triggered = false;
+
+      if (alert.condition === "above" && currentPriceEth >= alert.targetPrice) {
+        triggered = true;
+      } else if (alert.condition === "below" && currentPriceEth <= alert.targetPrice) {
+        triggered = true;
+      }
+
+      if (triggered) {
+        alert.status = "triggered";
+        alert.triggeredAt = Date.now();
+        updatedAny = true;
+
+        const targetPriceMicro = (alert.targetPrice * 1000000).toFixed(3);
+        const currentPriceMicro = (currentPriceEth * 1000000).toFixed(3);
+        const title = `🚨 Price Alert Triggered: ${alert.tokenSymbol}!`;
+        const body = `${alert.tokenSymbol} has gone ${alert.condition} your target of ${targetPriceMicro} μETH. Current: ${currentPriceMicro} μETH!`;
+
+        // Send browser notification
+        if ("Notification" in window && Notification.permission === "granted") {
+          try {
+            new Notification(title, { body });
+          } catch (e) {
+            console.warn("Iframe notification error:", e);
+          }
+        }
+
+        // Show toast notification
+        showToast(body, "success");
+
+        // Add to terminal logs
+        addTerminalLog("system", `PRICE_ALERT: ${alert.tokenSymbol} target reached! Target: ${targetPriceMicro} μETH, Current: ${currentPriceMicro} μETH.`);
+      }
+    });
+
+    if (updatedAny) {
+      setPriceAlerts(currentAlerts);
+      AgunnayaDatabase.savePriceAlerts(currentAlerts);
+    }
+  }, [tokens, priceAlerts]);
+
+  // Background Treasury Fee Monitoring & Auto-Sweep Worker Service
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const checkAndRunWorker = () => {
+      const state = TreasuryFeeService.getState();
+      if (!state.autoSweepEnabled) return;
+
+      // Simulate incoming micro-fees from protocol activity (e.g. DEX swaps, bonding curve trades, AI agent executions)
+      if (Math.random() < 0.40) {
+        const ethFee = parseFloat((Math.random() * 0.0035 + 0.0012).toFixed(5));
+        const aglFee = Math.floor(Math.random() * 120 + 30);
+        
+        const { swept, sweepLog } = TreasuryFeeService.addProtocolFees(ethFee, aglFee, "Base Mainnet Protocol Activity");
+        
+        if (swept && sweepLog) {
+          addTerminalLog(
+            "success",
+            `TREASURY_AUTO_SWEEP: Target threshold reached (${sweepLog.amountEth} ETH)! Automatically dispatched Web3 transaction (${sweepLog.txHash.slice(0, 10)}...) to Treasury Wallet (${AGL_TREASURY_ADDRESS.slice(0, 6)}...${AGL_TREASURY_ADDRESS.slice(-4)}).`
+          );
+          showToast(
+            `⚡ Automated Treasury Sweep Executed! Transferred ${sweepLog.amountEth} ETH ($${sweepLog.amountUsd.toFixed(2)}) to Treasury Wallet`,
+            "success"
+          );
+        }
+      }
+    };
+
+    const currentState = TreasuryFeeService.getState();
+    const intervalSeconds = currentState.checkIntervalSeconds || 15;
+
+    intervalId = setInterval(checkAndRunWorker, intervalSeconds * 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     refreshAllData();
+
+    // Auto-open onboarding tour on first visit if not completed yet
+    if (typeof localStorage !== "undefined" && !localStorage.getItem("agunnaya_tour_completed_v1")) {
+      setTimeout(() => {
+        setIsTourOpen(true);
+      }, 1200);
+    }
 
     // 1. Listen to Firebase auth changes
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -114,28 +329,6 @@ export default function App() {
       }
     });
 
-    // 3. Real-time Firestore activity subscription — keeps the activity feed live
-    //    Falls back gracefully if Firestore is not provisioned (the error is suppressed).
-    let unsubActivities: (() => void) | null = null;
-    try {
-      const actQ = query(collection(db, "activities"), orderBy("timestamp", "desc"), limit(50));
-      unsubActivities = onSnapshot(
-        actQ,
-        (snap) => {
-          if (snap.empty) return;
-          const firestoreActs = snap.docs.map((d) => d.data() as Activity);
-          setActivities((prev) => {
-            // Merge: firestoreActs take priority; keep any local-only items not yet synced
-            const localOnly = prev.filter((a) => !firestoreActs.find((fa) => fa.id === a.id));
-            return [...firestoreActs, ...localOnly].sort((a, b) => b.timestamp - a.timestamp);
-          });
-        },
-        () => { /* Firestore not provisioned — silently ignore */ }
-      );
-    } catch {
-      // onSnapshot setup failed (network or rules) — ignore
-    }
-
     // Check for referral code in URL search params
     const params = new URLSearchParams(window.location.search);
     const refCode = params.get("ref");
@@ -155,9 +348,29 @@ export default function App() {
       }
     }
 
+    // 3. Set up Firestore real-time listener for activities
+    const activitiesQuery = query(
+      collection(db, "activities"),
+      orderBy("timestamp", "desc"),
+      limit(50)
+    );
+    const unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
+      const activeList: Activity[] = [];
+      snapshot.forEach((doc) => {
+        activeList.push(doc.data() as Activity);
+      });
+      if (activeList.length > 0) {
+        const sorted = activeList.sort((a, b) => b.timestamp - a.timestamp);
+        setActivities(sorted);
+        localStorage.setItem("agl_activities", JSON.stringify(sorted));
+      }
+    }, (error) => {
+      console.error("Error in real-time activities subscription:", error);
+    });
+
     return () => {
       unsubscribe();
-      unsubActivities?.();
+      unsubscribeActivities();
     };
   }, []);
 
@@ -178,7 +391,10 @@ export default function App() {
     "https://www.googleapis.com/auth/gmail.compose",
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/gmail.labels"
+    "https://www.googleapis.com/auth/gmail.labels",
+    "https://www.googleapis.com/auth/forms.body",
+    "https://www.googleapis.com/auth/forms.body.readonly",
+    "https://www.googleapis.com/auth/forms.responses.readonly"
   ];
 
   const handleSignInWithGoogle = async () => {
@@ -226,6 +442,7 @@ export default function App() {
     try {
       await signOut(auth);
       setDriveAccessToken(null); // Clear in-memory token cache on signout
+      setAuthHealthState(null);
       showToast("Signed out of Google account.", "info");
       refreshAllData();
     } catch (error) {
@@ -233,12 +450,59 @@ export default function App() {
     }
   };
 
+  const handleRefreshAuthToken = async () => {
+    if (!firebaseUser) return;
+    setAuthHealthState(prev => prev ? { ...prev, isRefreshing: true } : null);
+    showToast("Refreshing Firebase Auth session token...", "info");
+    addTerminalLog("system", "AUTH_SYNC: Requesting session token refresh from Firebase Auth server...");
+
+    const result = await refreshAuthSessionToken(firebaseUser);
+    if (result.success) {
+      setAuthHealthState(result.state);
+      showToast("Firebase Auth session refreshed successfully!", "success");
+      addTerminalLog("success", `AUTH_SYNC: Session token renewed! Valid for ${result.state.expiresInMinutes ?? 60}m.`);
+    } else {
+      setAuthHealthState(result.state);
+      showToast("Session refresh failed. Please re-authenticate.", "error");
+      addTerminalLog("error", `AUTH_SYNC: Refresh failed: ${result.state.errorMessage}`);
+    }
+  };
+
+  // Background Auth Health Sync Service
+  useEffect(() => {
+    if (!firebaseUser) {
+      setAuthHealthState(null);
+      return;
+    }
+
+    const stopSync = startAuthHealthSyncService(
+      () => firebaseUser,
+      (healthState) => {
+        setAuthHealthState(healthState);
+        if (healthState.status === "nearing_expiration") {
+          addTerminalLog("system", `AUTH_SYNC WARNING: Firebase session nearing expiration (${healthState.expiresInMinutes ?? 0}m remaining).`);
+        } else if (healthState.status === "expired") {
+          addTerminalLog("error", "AUTH_SYNC ALERT: Firebase Auth session expired. Renewal required.");
+        }
+      },
+      20000 // Periodic background sync every 20 seconds
+    );
+
+    return () => {
+      stopSync();
+    };
+  }, [firebaseUser]);
+
   // Load real on-chain balances for connected wallet from Base Mainnet
   const syncWalletBalancesOnChain = async (addr: string) => {
     if (!addr) return;
+    if (!ethers.isAddress(addr)) {
+      addTerminalLog("info", `SYNC: Skipping live on-chain balance query (address ${String(addr).slice(0, 8)}... is simulated/invalid).`);
+      return;
+    }
     try {
       addTerminalLog("info", `SYNC: Querying native and AGL balances for ${addr.slice(0, 8)}... on Base Mainnet.`);
-      const baseProvider = new ethers.JsonRpcProvider("https://mainnet.base.org");
+      const baseProvider = getBaseProvider();
       const ethBalRaw = await baseProvider.getBalance(addr);
       const ethBalance = parseFloat(ethers.formatEther(ethBalRaw));
 
@@ -307,37 +571,43 @@ export default function App() {
     }
 
     if (!address) {
-      address = "0x" + Math.random().toString(16).substr(2, 40);
+      address = "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join("");
       if (type === "smart") {
-        address = "0xAA" + Math.random().toString(16).substr(2, 38);
+        address = "0xAA" + Array.from({length: 38}, () => Math.floor(Math.random()*16).toString(16)).join("");
       }
       addTerminalLog("info", `WALLET_CONNECT: Injected provider not found/rejected. Generated demo address: ${address}`);
     }
 
-    // Now query real on-chain balance using JSON-RPC provider pointing to Base Mainnet!
-    try {
-      addTerminalLog("info", "FETCH_BALANCES: Querying native and AGL balances on Base Mainnet...");
-      const baseProvider = new ethers.JsonRpcProvider("https://mainnet.base.org");
-      const ethBalRaw = await baseProvider.getBalance(address);
-      ethBalance = parseFloat(ethers.formatEther(ethBalRaw));
-
-      // Query AGL balance
+    if (ethers.isAddress(address)) {
+      // Now query real on-chain balance using JSON-RPC provider pointing to Base Mainnet!
       try {
-        const aglTokenContract = new ethers.Contract(
-          "0xea1221b4d80a89bd8c75248fae7c176bd1854698", 
-          ["function balanceOf(address) external view returns (uint256)"], 
-          baseProvider
-        );
-        const aglBalRaw = await aglTokenContract.balanceOf(address);
-        aglBalance = parseFloat(ethers.formatEther(aglBalRaw));
-      } catch (e) {
-        addTerminalLog("info", "FETCH_BALANCES: AGL token balance query failed on-chain.");
-        aglBalance = 0;
+        addTerminalLog("info", "FETCH_BALANCES: Querying native and AGL balances on Base Mainnet...");
+        const baseProvider = getBaseProvider();
+        const ethBalRaw = await baseProvider.getBalance(address);
+        ethBalance = parseFloat(ethers.formatEther(ethBalRaw));
+
+        // Query AGL balance
+        try {
+          const aglTokenContract = new ethers.Contract(
+            "0xea1221b4d80a89bd8c75248fae7c176bd1854698", 
+            ["function balanceOf(address) external view returns (uint256)"], 
+            baseProvider
+          );
+          const aglBalRaw = await aglTokenContract.balanceOf(address);
+          aglBalance = parseFloat(ethers.formatEther(aglBalRaw));
+        } catch (e) {
+          addTerminalLog("info", "FETCH_BALANCES: AGL token balance query failed on-chain.");
+          aglBalance = 0;
+        }
+      } catch (err) {
+        addTerminalLog("error", "FETCH_BALANCES: Base Mainnet RPC connection failed. Falling back to default balances.");
+        ethBalance = 0.15;
+        aglBalance = 500;
       }
-    } catch (err) {
-      addTerminalLog("error", "FETCH_BALANCES: Base Mainnet RPC connection failed. Falling back to default balances.");
-      ethBalance = 0.0;
-      aglBalance = 0;
+    } else {
+      addTerminalLog("info", "FETCH_BALANCES: Simulated wallet address layout is invalid. Skipping RPC balance query.");
+      ethBalance = 0.15;
+      aglBalance = 500;
     }
 
     const newWallet: WalletState = {
@@ -404,12 +674,14 @@ export default function App() {
 
   // Determine page metadata dynamically for Open Graph dynamic social sharing previews
   const getPageMetadata = () => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://aglstudio.xyz";
+
     if (selectedToken) {
       return {
         title: `Trade ${selectedToken.name} (${selectedToken.symbol}) | Agunnaya Labs Studio`,
         description: `Join the dynamic bonding curve for ${selectedToken.name} (${selectedToken.symbol}). Market Cap: $${Math.floor(selectedToken.marketCap).toLocaleString()} USD. Deployed securely on Base.`,
         image: "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&w=1200&q=80",
-        url: `https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?token=${selectedToken.address}`
+        url: `${baseUrl}/?token=${selectedToken.address}`
       };
     }
 
@@ -419,98 +691,119 @@ export default function App() {
           title: "Dashboard | Agunnaya Labs Studio",
           description: "Monitor your connected Base smart accounts, token creations, active yield pools, on-chain agents, and recent studio transactions.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=dashboard"
+          url: `${baseUrl}/?tab=dashboard`
         };
       case "explore":
         return {
           title: "Explore Bonding Curves | Agunnaya Labs Studio",
           description: "Discover hot decentralized assets, meme tokens, and innovative utility primitives deployed across Base Mainnet and Sepolia Sandbox.",
           image: "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=explore"
+          url: `${baseUrl}/?tab=explore`
         };
       case "ai-builder":
         return {
           title: "AI Architect & Token Launchpad | Agunnaya Labs Studio",
           description: "Describe custom smart contract logic in plain English to compile Solidity via Gemini AI or deploy new tokens to bonding curves instantly.",
           image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=ai-builder"
+          url: `${baseUrl}/?tab=ai-builder`
         };
       case "nfts":
         return {
           title: "NFT Generative Studio | Agunnaya Labs Studio",
           description: "Mint and host decentralized generative artwork collections with custom maximum supply parameters and dynamic base metadata structures.",
           image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=nfts"
+          url: `${baseUrl}/?tab=nfts`
         };
       case "daos":
         return {
           title: "Sovereign DAO Governance Builder | Agunnaya Labs Studio",
           description: "Build custom on-chain DAOs, register custom governance symbols, draft decentralization proposals, and cast weighted cryptographic votes.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=daos"
+          url: `${baseUrl}/?tab=daos`
         };
       case "gamefi":
         return {
           title: "GameFi Quest Arena | Agunnaya Labs Studio",
           description: "Unlock seasonal developer battle passes, complete on-chain missions, level up dynamic achievements, and claim native AGL token bounties.",
           image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=gamefi"
+          url: `${baseUrl}/?tab=gamefi`
         };
       case "ai-agents":
         return {
           title: "Autonomous AI Agent Studio | Agunnaya Labs Studio",
           description: "Deploy self-contained autonomous agent registry modules with specific prompt guidelines, set custom query fees, and track performance.",
           image: "https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=ai-agents"
+          url: `${baseUrl}/?tab=ai-agents`
         };
       case "defi":
         return {
           title: "AMM Token Swap & Staking | Agunnaya Labs Studio",
           description: "Perform instant low-slippage swaps between ETH and native AGL utility tokens or lock up liquidity in compounding high-yield staking vaults.",
           image: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=defi"
+          url: `${baseUrl}/?tab=defi`
         };
       case "analytics":
         return {
           title: "Real-Time Market Analytics | Agunnaya Labs Studio",
           description: "Track live trading volumes, transaction histories, price tickers, and advanced line charts powered by dynamic bonding curve calculations.",
           image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=analytics"
+          url: `${baseUrl}/?tab=analytics`
         };
       case "admin":
         return {
           title: "Factory Tuning Parameters | Agunnaya Labs Studio",
           description: "Adjust global system configurations including curve fees, AA sponsorship maximum values, and view global node performance parameters.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=admin"
+          url: `${baseUrl}/?tab=admin`
         };
       case "referrals":
         return {
           title: "Earn 20% Fee Share Rewards | Agunnaya Labs Studio",
           description: "Invite colleagues to deploy bonding curves or trade assets, and earn a massive 20% of all generated fees dynamically settled in AGL tokens.",
           image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=referrals"
+          url: `${baseUrl}/?tab=referrals`
         };
       case "agl-credits":
         return {
           title: "AGL Credits On-Chain Burn Portal | Agunnaya Labs Studio",
           description: "Permanently burn AGL tokens to purchase low-latency compute credits recorded securely on Base Mainnet.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=agl-credits"
+          url: `${baseUrl}/?tab=agl-credits`
+        };
+      case "token-burner":
+        return {
+          title: "ERC-20 Token Burner & Deflation Engine | Agunnaya Labs Studio",
+          description: "Connect your Web3 wallet, select portfolio or custom ERC-20 tokens, and execute verifiable null-address burn transactions on Base L2.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=token-burner`
+        };
+      case "staking-vault":
+        return {
+          title: "Automated AGL Staking Vaults (Base Mainnet) | Agunnaya Labs Studio",
+          description: "Lock AGL tokens in automated smart contract vaults on Base Mainnet to earn high annual yield up to 72.5% APY with real-time compounding.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=staking-vault`
         };
       case "gas-dashboard":
         return {
           title: "Paymaster Gas Sponsorship Pad | Agunnaya Labs Studio",
           description: "Request free developer gas allowances and monitor Base L2 paymaster statistics.",
           image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/?tab=gas-dashboard"
+          url: `${baseUrl}/?tab=gas-dashboard`
+        };
+      case "token-factory":
+        return {
+          title: "Token Factory Hub (Base Mainnet) | Agunnaya Labs Studio",
+          description: "Deploy custom ERC20 tokens directly on Base Mainnet via smart contract Factory. View created tokens and inspect creators.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=token-factory`
         };
       default:
         return {
           title: "Agunnaya Labs Studio - High Performance Web3 Developer Studio",
           description: "The ultimate decentralized AI studio for smart contract creation, automated bonding curves, high APY staking, and sovereign agent hosting.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
-          url: "https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/"
+          url: baseUrl
         };
     }
   };
@@ -527,6 +820,10 @@ export default function App() {
           terminalLogs={terminalLogs}
           addTerminalLog={addTerminalLog}
           showToast={showToast}
+          priceAlerts={priceAlerts}
+          onAddPriceAlert={handleAddPriceAlert}
+          onDeletePriceAlert={handleDeletePriceAlert}
+          firebaseUser={firebaseUser}
         />
       );
     }
@@ -564,6 +861,15 @@ export default function App() {
             onRefreshWallet={refreshAllData}
             addTerminalLog={addTerminalLog}
             showToast={showToast}
+          />
+        );
+      case "token-factory":
+        return (
+          <TokenFactoryPage
+            wallet={wallet}
+            showToast={showToast}
+            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            addTerminalLog={addTerminalLog}
           />
         );
       case "nfts":
@@ -620,6 +926,8 @@ export default function App() {
           <AnalyticsPage
             tokens={tokens}
             onSelectToken={(token) => setSelectedToken(token)}
+            priceAlerts={priceAlerts}
+            onDeletePriceAlert={handleDeletePriceAlert}
           />
         );
       case "admin":
@@ -652,12 +960,58 @@ export default function App() {
             setWalletState={setWallet}
           />
         );
+      case "token-burner":
+        return (
+          <TokenBurnerPage
+            wallet={wallet}
+            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            onRefreshWallet={refreshAllData}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+            tokens={tokens}
+          />
+        );
+      case "batch-transfer":
+        return (
+          <BatchTokenTransferPage
+            wallet={wallet}
+            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            onRefreshWallet={refreshAllData}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+            tokens={tokens}
+          />
+        );
+      case "treasury-monitor":
+        return (
+          <TreasuryFeeMonitorComponent
+            wallet={wallet}
+            showToast={showToast}
+          />
+        );
+      case "staking-vault":
+        return (
+          <StakingVaultPage
+            wallet={wallet}
+            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            onRefreshWallet={refreshAllData}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+          />
+        );
       case "gas-dashboard":
         return (
           <GasDashboardPage
             wallet={wallet}
             onRefreshWallet={refreshAllData}
             addTerminalLog={addTerminalLog}
+            showToast={showToast}
+          />
+        );
+      case "task-sync":
+        return (
+          <TaskSyncPage
+            wallet={wallet}
             showToast={showToast}
           />
         );
@@ -680,6 +1034,18 @@ export default function App() {
             onAuthorizeDrive={handleAuthorizeDrive}
             addTerminalLog={addTerminalLog}
             showToast={showToast}
+            wallet={wallet}
+            onRefreshWallet={refreshAllData}
+          />
+        );
+      case "google-forms":
+        return (
+          <GoogleFormsPage
+            firebaseUser={firebaseUser}
+            driveAccessToken={driveAccessToken}
+            onAuthorizeForms={handleAuthorizeDrive}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
           />
         );
       default:
@@ -700,7 +1066,7 @@ export default function App() {
           <meta property="og:title" content="Agunnaya Labs Studio - High Performance Web3 Developer Studio" />
           <meta property="og:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
           <meta property="og:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80" />
-          <meta property="og:url" content="https://ais-pre-co5l5sfwvl3kmcbjbxsv7j-290898077867.europe-west3.run.app/" />
+          <meta property="og:url" content={typeof window !== "undefined" ? window.location.origin : "https://aglstudio.xyz"} />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="Agunnaya Labs Studio - High Performance Web3 Developer Studio" />
           <meta name="twitter:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
@@ -737,6 +1103,9 @@ export default function App() {
           }} 
           isAdmin={wallet.isConnected}
           onGoHome={() => setIsLaunched(false)}
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+          onOpenTour={() => setIsTourOpen(true)}
         />
 
         {/* Main content viewport block */}
@@ -770,6 +1139,10 @@ export default function App() {
             firebaseUser={firebaseUser}
             onSignInWithGoogle={handleSignInWithGoogle}
             onSignOut={handleSignOut}
+            onOpenSidebar={() => setIsMobileSidebarOpen(true)}
+            authHealthState={authHealthState}
+            onRefreshAuthToken={handleRefreshAuthToken}
+            onOpenTour={() => setIsTourOpen(true)}
           />
 
           {/* Viewport contents scroll area */}
@@ -793,17 +1166,314 @@ export default function App() {
           </footer>
         </div>
 
-        {/* Floating AI Drawer activator */}
-        <button
-          id="floating-ai-activator"
-          onClick={() => setIsAIDrawerOpen(true)}
-          className="fixed bottom-6 right-6 p-4 rounded-full bg-brand-purple hover:bg-purple-600 text-white shadow-2xl shadow-brand-purple/40 hover:scale-105 transition-all z-40 flex items-center gap-2 group border border-white/10"
-        >
-          <BrainCircuit className="w-5 h-5 animate-pulse" />
-          <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 text-xs font-semibold font-display">
-            Prompt Advisor
-          </span>
-        </button>
+        {/* Floating AI Drawer activator & Tooltip wrapper */}
+        <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3 pointer-events-none">
+          {/* Persistent Prompt Assistant Tooltip */}
+          <div 
+            id="floating-ai-tooltip"
+            onClick={() => setIsAIDrawerOpen(true)}
+            className="bg-zinc-950/95 hover:bg-zinc-900 border border-brand-purple/40 hover:border-brand-purple text-zinc-100 text-[10px] md:text-xs font-semibold font-display px-3 py-2 rounded-xl shadow-xl shadow-black/85 flex items-center gap-2 transition-all duration-300 animate-tooltip-fade-in pointer-events-auto cursor-pointer select-none"
+            title="Open AI Studio Prompt Assistant"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-purple opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-purple"></span>
+            </span>
+            <span>Prompt Assistant</span>
+          </div>
+
+          <div
+            id="floating-ai-activator"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setIsQuickActionsOpen((prev) => !prev);
+            }}
+            className="p-1.5 rounded-full bg-brand-purple/95 hover:bg-brand-purple text-white shadow-xl shadow-brand-purple/30 hover:shadow-2xl hover:shadow-brand-purple/70 transition-all duration-300 flex items-center gap-1.5 border border-white/20 pointer-events-auto relative cursor-pointer"
+            title="Click for chat / copy / QR code • Right-click for Quick Developer Actions"
+          >
+            {/* Right-Click Quick Actions Developer Menu */}
+            {isQuickActionsOpen && (
+              <div
+                id="floating-quick-actions"
+                className="absolute bottom-full right-0 mb-3 w-72 p-2 bg-zinc-950/95 border border-purple-500/30 rounded-2xl shadow-2xl z-50 text-white font-sans backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Menu Header */}
+                <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-purple-400" />
+                    <span className="text-xs font-bold font-display tracking-wide text-white">Quick Actions</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickActionsOpen(false)}
+                    className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  {/* Deploy Contract */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedToken(null);
+                      setCurrentTab("create");
+                      setIsQuickActionsOpen(false);
+                      showToast("Navigated to Token & Contract Deployment Studio", "info");
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-purple-500/15 hover:border-purple-500/30 border border-transparent text-left transition-all group/item"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300 group-hover/item:text-purple-200 group-hover/item:scale-110 transition-all">
+                        <Rocket className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover/item:text-purple-300 transition-colors">Deploy Contract</div>
+                        <div className="text-[10px] text-zinc-400">Launch ERC-20, NFT or Bonding Curve</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover/item:text-white transition-colors" />
+                  </button>
+
+                  {/* View Analytics */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedToken(null);
+                      setCurrentTab("analytics");
+                      setIsQuickActionsOpen(false);
+                      showToast("Opened Network & Bonding Curve Analytics", "info");
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-purple-500/15 hover:border-purple-500/30 border border-transparent text-left transition-all group/item"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 group-hover/item:text-blue-200 group-hover/item:scale-110 transition-all">
+                        <BarChart3 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover/item:text-blue-300 transition-colors">View Analytics</div>
+                        <div className="text-[10px] text-zinc-400 font-sans">Live metrics & bonding curve charts</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover/item:text-white transition-colors" />
+                  </button>
+
+                  {/* Open Terminal */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTerminalModalOpen(true);
+                      setIsQuickActionsOpen(false);
+                      addTerminalLog("system", "DEVELOPER_TERMINAL: Opened interactive developer CLI console session.");
+                      showToast("Developer Terminal Opened", "info");
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-purple-500/15 hover:border-purple-500/30 border border-transparent text-left transition-all group/item"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 group-hover/item:text-emerald-200 group-hover/item:scale-110 transition-all">
+                        <Terminal className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover/item:text-emerald-300 transition-colors">Open Terminal</div>
+                        <div className="text-[10px] text-zinc-400 font-sans">Interactive CLI & event logs</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover/item:text-white transition-colors" />
+                  </button>
+
+                  {/* AI Prompt Advisor */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAIDrawerOpen(true);
+                      setIsQuickActionsOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-purple-500/15 hover:border-purple-500/30 border border-transparent text-left transition-all group/item"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 group-hover/item:text-amber-200 group-hover/item:scale-110 transition-all">
+                        <BrainCircuit className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover/item:text-amber-300 transition-colors">AI Prompt Advisor</div>
+                        <div className="text-[10px] text-zinc-400 font-sans">Multimodal Web3 AI Chat Studio</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover/item:text-white transition-colors" />
+                  </button>
+
+                  {/* Lock Drawer Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextState = !isDrawerLocked;
+                      setIsDrawerLocked(nextState);
+                      if (nextState) {
+                        setIsAIDrawerOpen(true);
+                        showToast("AI Assistant drawer locked & pinned open", "info");
+                      } else {
+                        showToast("AI Assistant drawer unlocked (auto-close active)", "info");
+                      }
+                      setIsQuickActionsOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all group/item ${
+                      isDrawerLocked
+                        ? "bg-purple-500/20 border-purple-500/40"
+                        : "hover:bg-purple-500/15 hover:border-purple-500/30 border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-1.5 rounded-lg transition-all ${
+                        isDrawerLocked
+                          ? "bg-purple-500 text-white"
+                          : "bg-purple-500/20 text-purple-300 group-hover/item:text-purple-200 group-hover/item:scale-110"
+                      }`}>
+                        {isDrawerLocked ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover/item:text-purple-300 transition-colors">
+                          {isDrawerLocked ? "Unlock AI Drawer" : "Lock AI Drawer"}
+                        </div>
+                        <div className="text-[10px] text-zinc-400 font-sans">
+                          {isDrawerLocked ? "Allow drawer to auto-close" : "Pin drawer open on screen"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`w-8 h-4 rounded-full p-0.5 transition-colors flex items-center ${
+                      isDrawerLocked ? "bg-purple-500 justify-end" : "bg-purple-950/60 justify-start"
+                    }`}>
+                      <div className="w-3 h-3 rounded-full bg-white shadow-md" />
+                    </div>
+                  </button>
+                </div>
+
+                <div className="px-3 py-1.5 mt-1 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+                  <span>Right-click menu</span>
+                  <span className="text-purple-400 font-bold">Base Mainnet</span>
+                </div>
+              </div>
+            )}
+
+            {/* Wallet QR Code Popover */}
+            {isQRPopoverOpen && wallet.address && (
+              <div 
+                className="absolute bottom-full right-0 mb-3 w-72 p-4 bg-zinc-950 border border-white/20 rounded-2xl shadow-2xl z-50 text-white font-mono animate-in fade-in slide-in-from-bottom-2 duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Popover Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-1.5">
+                    <QrCode className="w-4 h-4 text-brand-purple" />
+                    <span className="text-xs font-bold font-display text-white">Wallet Address QR</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQRPopoverOpen(false)}
+                    className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* QR Code Container */}
+                <div className="my-3 flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-900 border border-white/10">
+                  <ImageWithFallback
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(wallet.address)}&color=ffffff&bgcolor=18181b&margin=6`}
+                    alt="Wallet Address QR Code"
+                    fallbackText="QR"
+                    className="w-40 h-40 rounded-lg shadow-inner object-contain"
+                  />
+                  <span className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    {wallet.walletType === "smart" ? "AA Smart Account" : "Base Mainnet EOA"}
+                  </span>
+                </div>
+
+                {/* Address & Copy CTA */}
+                <div className="space-y-2">
+                  <div className="p-2 rounded-lg bg-zinc-900 border border-white/5 text-[10px] text-zinc-300 break-all text-center select-all">
+                    {wallet.address}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyAddress}
+                    className="w-full py-2 px-3 rounded-xl bg-brand-purple hover:bg-purple-600 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-purple/20 active:scale-98"
+                  >
+                    {copiedAddress ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span>Address Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy Address String</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Copy Address Button */}
+            {wallet.address && (
+              <button
+                type="button"
+                onClick={handleCopyAddress}
+                className="px-3 py-1.5 rounded-full bg-zinc-950/80 hover:bg-zinc-950 text-white text-xs font-mono font-semibold flex items-center gap-1.5 transition-all border border-white/10 active:scale-95 group/copy"
+                title={`Copy wallet address (${wallet.address})`}
+              >
+                {copiedAddress ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-[11px] text-emerald-400 font-bold">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-purple-200 group-hover/copy:text-white transition-colors" />
+                    <span className="text-[11px] font-bold tracking-tight">
+                      {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                    </span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* QR Code Icon Button */}
+            {wallet.address && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsQRPopoverOpen((prev) => !prev);
+                }}
+                className={`p-2 rounded-full text-white transition-all border border-white/10 active:scale-95 ${
+                  isQRPopoverOpen
+                    ? "bg-white text-brand-purple shadow-md scale-105"
+                    : "bg-zinc-950/80 hover:bg-zinc-950 text-purple-200 hover:text-white"
+                }`}
+                title="Scan QR Code of wallet address"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Prompt Advisor Drawer Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsAIDrawerOpen(true)}
+              className="p-2.5 rounded-full hover:bg-white/10 text-white flex items-center gap-2 group/ai transition-all"
+              title="Open AI Studio Prompt Assistant"
+            >
+              <BrainCircuit className="w-5 h-5 animate-pulse text-purple-200 group-hover/ai:text-white" />
+              <span className="text-xs font-semibold font-display hidden sm:inline-block">
+                Prompt Advisor
+              </span>
+            </button>
+          </div>
+        </div>
 
         {/* Drawer Panel */}
         <AIAssistantSidebar 
@@ -812,6 +1482,52 @@ export default function App() {
           wallet={wallet}
           onRefreshWallet={refreshAllData}
           showToast={showToast}
+          isLocked={isDrawerLocked}
+          onToggleLock={() => {
+            const next = !isDrawerLocked;
+            setIsDrawerLocked(next);
+            if (next) setIsAIDrawerOpen(true);
+            showToast(next ? "AI Assistant drawer locked & pinned open" : "AI Assistant drawer unlocked", "info");
+          }}
+        />
+
+        {/* Developer Terminal Console Modal Overlay */}
+        {isTerminalModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+            <div className="relative w-full max-w-4xl h-[78vh] bg-zinc-950 border border-white/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/10 bg-zinc-900/80">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+                    <Terminal className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold font-mono text-white">Developer System Terminal</h3>
+                    <p className="text-[11px] text-zinc-400 font-mono">Real-time RPC event stream & interactive Web3 CLI</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsTerminalModalOpen(false)}
+                  className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden p-2">
+                <TerminalLog logs={terminalLogs} onClear={() => setTerminalLogs([])} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Onboarding Tour Modal */}
+        <OnboardingTour
+          isOpen={isTourOpen}
+          onClose={() => setIsTourOpen(false)}
+          onSelectTab={(tab) => {
+            setSelectedToken(null);
+            setCurrentTab(tab);
+          }}
+          showToast={showToast}
         />
 
         {/* Wallet Connection Modal overlay */}
@@ -819,6 +1535,9 @@ export default function App() {
           isOpen={isWalletModalOpen}
           onClose={() => setIsWalletModalOpen(false)}
           onConnect={handleWalletConnect}
+          wallet={wallet}
+          onRefreshWallet={refreshAllData}
+          showToast={showToast}
         />
 
         {/* Toast notifications overlay */}

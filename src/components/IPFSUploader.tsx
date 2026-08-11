@@ -1,5 +1,6 @@
 import { useState, useRef, DragEvent, ChangeEvent } from "react";
 import { Upload, FileImage, ShieldCheck, RefreshCw } from "lucide-react";
+import ImageWithFallback from "./ImageWithFallback";
 
 interface IPFSUploaderProps {
   onUploadSuccess: (ipfsUrl: string) => void;
@@ -140,7 +141,7 @@ export default function IPFSUploader({
         ) : pinnedUrl ? (
           <div className="flex items-center gap-3 text-left w-full">
             <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center">
-              <img src={pinnedUrl} alt="IPFS preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <ImageWithFallback src={pinnedUrl} alt="IPFS preview" fallbackText="IPFS" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 font-mono uppercase tracking-widest mb-0.5">

@@ -1,2 +1,0 @@
-- [AGLCredits contract integration](agl-credits.md) — contract at 0x13866F31c60822Ff70684213b9727915Ddf2c183 on Base Mainnet, AGL token at 0xEA1221B4d80A89BD8C75248Fae7c176BD1854698, rate 1000 credits/AGL.
-- [index.html merge conflict recurrence](index-html-conflict.md) — git keeps reintroducing a conflict at line 30; always WriteFile the entire clean file rather than patching it.
