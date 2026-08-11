@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Sparkles, 
@@ -18,7 +18,9 @@ import {
   Coins, 
   Bot, 
   Lock,
-  RefreshCw
+  RefreshCw,
+  Save,
+  Trash2
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceDot } from "recharts";
 import { proposeDeploymentAI, AIDeploymentProposal } from "../lib/gemini";
@@ -72,12 +74,27 @@ export default function AIDeploymentWizardModal({
   addTerminalLog
 }: AIDeploymentWizardModalProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [promptInput, setPromptInput] = useState("");
+  const [promptInput, setPromptInput] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("agl_ai_wizard_prompt_draft") || "";
+    }
+    return "";
+  });
   const [selectedCategory, setSelectedCategory] = useState("auto");
   const [targetNetwork, setTargetNetwork] = useState<"mainnet" | "sepolia">("mainnet");
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [synthesisStage, setSynthesisStage] = useState(0);
   const [proposal, setProposal] = useState<AIDeploymentProposal | null>(null);
+
+  // Auto-save prompt draft to localStorage whenever promptInput changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (promptInput.trim()) {
+      localStorage.setItem("agl_ai_wizard_prompt_draft", promptInput);
+    } else {
+      localStorage.removeItem("agl_ai_wizard_prompt_draft");
+    }
+  }, [promptInput]);
   
   // Interactive tuning state (Step 3)
   const [activeTab, setActiveTab] = useState<"curve" | "contract" | "security">("curve");
@@ -248,12 +265,35 @@ export default function AIDeploymentWizardModal({
             {step === 1 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 font-display uppercase tracking-wider flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-300 font-display uppercase tracking-wider flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-brand-purple" /> Describe Your Token & Curve Vision
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-mono">Gemini 3.5 Flash Powered</span>
-                  </label>
+                    </label>
+                    {promptInput.trim() ? (
+                      <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
+                        <span className="flex items-center gap-1 text-purple-400 font-medium">
+                          <Save className="w-3 h-3 text-purple-400 animate-pulse" />
+                          <span>Draft auto-saved</span>
+                        </span>
+                        <button
+                          type="button"
+                          id="clear-wizard-prompt-draft-btn"
+                          onClick={() => {
+                            setPromptInput("");
+                            if (typeof window !== "undefined") {
+                              localStorage.removeItem("agl_ai_wizard_prompt_draft");
+                            }
+                          }}
+                          className="hover:text-red-400 text-zinc-500 transition-colors flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" />
+                          <span>Clear</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-zinc-400 font-mono">Gemini 3.5 Flash Powered</span>
+                    )}
+                  </div>
                   <textarea
                     rows={4}
                     value={promptInput}

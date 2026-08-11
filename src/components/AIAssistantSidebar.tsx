@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bot, Send, BrainCircuit, X, MessageSquare, Zap, Coins, Pin, PinOff } from "lucide-react";
+import { Bot, Send, BrainCircuit, X, MessageSquare, Zap, Coins, Pin, PinOff, Save, Trash2 } from "lucide-react";
 import { chatWithAgentAI } from "../lib/gemini";
 import { WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
@@ -28,8 +28,23 @@ export default function AIAssistantSidebar({
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
     { role: "assistant", content: "Greetings! I am the Agunnaya Labs AI Assistant. Ask me anything about building dApps, deploying on Base, staking, or modeling bonding curve mathematics." }
   ]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("agl_ai_drawer_prompt_draft") || "";
+    }
+    return "";
+  });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Auto-save prompt draft to localStorage whenever input changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (input.trim()) {
+      localStorage.setItem("agl_ai_drawer_prompt_draft", input);
+    } else {
+      localStorage.removeItem("agl_ai_drawer_prompt_draft");
+    }
+  }, [input]);
 
   const predefinedCategories = [
     {
@@ -298,6 +313,30 @@ export default function AIAssistantSidebar({
               ))}
             </div>
           </div>
+
+          {/* Draft Auto-Save Indicator */}
+          {input.trim() && (
+            <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono px-1">
+              <span className="flex items-center gap-1 text-purple-400 font-medium">
+                <Save className="w-3 h-3 text-purple-400 animate-pulse" />
+                <span>Draft auto-saved</span>
+              </span>
+              <button
+                type="button"
+                id="clear-ai-drawer-draft-btn"
+                onClick={() => {
+                  setInput("");
+                  if (typeof window !== "undefined") {
+                    localStorage.removeItem("agl_ai_drawer_prompt_draft");
+                  }
+                }}
+                className="hover:text-red-400 text-zinc-500 transition-colors flex items-center gap-0.5 cursor-pointer"
+              >
+                <Trash2 className="w-2.5 h-2.5" />
+                <span>Clear draft</span>
+              </button>
+            </div>
+          )}
 
           {/* Form Input */}
           <form 
