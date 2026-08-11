@@ -1,4 +1,11 @@
 import { WalletState, Token, NFTCollection, DAO, GameFiProject, AIAgent, Activity } from "../types";
+import { AgunnayaDatabase } from "../lib/db";
+import ImageWithFallback from "../components/ImageWithFallback";
+import TransactionHistoryTable from "../components/TransactionHistoryTable";
+import ActivityFeed from "../components/ActivityFeed";
+import { useState, useMemo } from "react";
+import TaskSummaryWidget from "../components/TaskSummaryWidget";
+import DailyMissionsWidget from "../components/DailyMissionsWidget";
 import { 
   Briefcase, 
   Layers, 
@@ -9,7 +16,12 @@ import {
   ShieldCheck, 
   Compass, 
   Award,
-  FlameKindling
+  FlameKindling,
+  ArrowUpDown,
+  TrendingUp,
+  Calendar,
+  Droplets,
+  Filter
 } from "lucide-react";
 
 interface DashboardPageProps {
@@ -31,10 +43,45 @@ export default function DashboardPage({
   userDAOs, 
   userGameFi, 
   userAgents,
-  activities,
+  activities: initialActivities,
   onOpenConnect,
   onSelectTab
 }: DashboardPageProps) {
+  const [localActivities, setLocalActivities] = useState<Activity[]>(initialActivities);
+
+  // Sorting state for created tokens list
+  type TokenSortOption = "marketCap" | "launchDate" | "liquidity";
+  const [tokenSortBy, setTokenSortBy] = useState<TokenSortOption>("marketCap");
+  const [tokenScope, setTokenScope] = useState<"myCreated" | "all">("myCreated");
+
+  const handleRefreshActivities = () => {
+    const fresh = AgunnayaDatabase.getActivities();
+    setLocalActivities(fresh);
+  };
+
+  const myCreatedTokensCount = userTokens.filter(t => t.creator === wallet.address).length;
+
+  const sortedTokens = useMemo(() => {
+    let list = tokenScope === "myCreated" 
+      ? userTokens.filter(t => t.creator === wallet.address)
+      : userTokens;
+
+    // Fallback: if tokenScope is "myCreated" and user has no created tokens yet, fallback to userTokens so sorting is always interactive
+    if (tokenScope === "myCreated" && list.length === 0) {
+      list = userTokens;
+    }
+
+    return [...list].sort((a, b) => {
+      if (tokenSortBy === "marketCap") {
+        return (b.marketCap || 0) - (a.marketCap || 0);
+      } else if (tokenSortBy === "launchDate") {
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      } else if (tokenSortBy === "liquidity") {
+        return (b.reserveEth || 0) - (a.reserveEth || 0);
+      }
+      return 0;
+    });
+  }, [userTokens, wallet.address, tokenScope, tokenSortBy]);
   
   if (!wallet.isConnected) {
     return (
@@ -59,6 +106,8 @@ export default function DashboardPage({
       </div>
     );
   }
+
+  const tokenBalances = wallet.address ? AgunnayaDatabase.getTokenBalances(wallet.address) : {};
 
   // Calculate some mock totals
   const myCreatedProjectsCount = 
@@ -123,9 +172,13 @@ export default function DashboardPage({
           </div>
           <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-xs">
             <span className="text-zinc-500">Status:</span>
-            <span className="font-bold text-emerald-400 flex items-center gap-1 font-mono">
-              <FlameKindling className="w-3.5 h-3.5" /> Sponsored Active
-            </span>
+            <button
+              id="dashboard-manage-gas-btn"
+              onClick={() => onSelectTab("gas-dashboard")}
+              className="font-bold text-emerald-400 flex items-center gap-1 font-mono hover:text-brand-purple transition-colors bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 hover:border-brand-purple/30 hover:bg-brand-purple/10"
+            >
+              <FlameKindling className="w-3.5 h-3.5 animate-pulse" /> Manage & Faucet
+            </button>
           </div>
         </div>
 
@@ -155,80 +208,182 @@ export default function DashboardPage({
         </div>
       </div>
 
+      {/* Daily Missions & Bonus Credits Progress Tracker */}
+      <DailyMissionsWidget 
+        userAddress={wallet.address} 
+        onNavigateTab={onSelectTab}
+        onRewardClaimed={handleRefreshActivities}
+      />
+
       {/* Main split sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Token Holdings and Deployed Registry */}
         <div className="lg:col-span-2 space-y-6">
-          {/* My Custom Deployed Contracts */}
-          <div className="glass-panel rounded-2xl border border-white/5 p-6 bg-zinc-900/20">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold font-display uppercase tracking-wider text-white">My Deployed Contracts</h3>
-              <button 
-                id="dash-launch-prompt"
-                onClick={() => onSelectTab("ai-builder")}
-                className="text-[10px] text-brand-purple hover:text-white bg-brand-purple/10 border border-brand-purple/20 px-3 py-1 rounded-lg font-mono font-bold transition-all"
-              >
-                + Deploy New
-              </button>
+          {/* Created Tokens & Deployed Contracts Registry */}
+          <div className="glass-panel rounded-2xl border border-white/5 p-6 bg-zinc-900/20 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+              <div>
+                <h3 className="text-sm font-bold font-display uppercase tracking-wider text-white flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-brand-purple" /> Created Tokens & Contracts
+                </h3>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  Organize and track tokens on Base sorted by market cap, launch date, or liquidity pool size.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Scope Filter Tabs */}
+                <div className="flex items-center p-1 rounded-xl bg-zinc-950 border border-white/10 text-xs font-mono">
+                  <button
+                    type="button"
+                    id="token-scope-mycreated-btn"
+                    onClick={() => setTokenScope("myCreated")}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      tokenScope === "myCreated"
+                        ? "bg-brand-purple text-white font-bold shadow"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    My Created ({myCreatedTokensCount})
+                  </button>
+                  <button
+                    type="button"
+                    id="token-scope-all-btn"
+                    onClick={() => setTokenScope("all")}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                      tokenScope === "all"
+                        ? "bg-brand-purple text-white font-bold shadow"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    All Base ({userTokens.length})
+                  </button>
+                </div>
+
+                {/* Sorting Dropdown */}
+                <div className="flex items-center gap-1.5 bg-zinc-950 border border-white/10 rounded-xl px-2.5 py-1.5 font-mono text-xs">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-brand-purple shrink-0" />
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase hidden sm:inline">Sort:</span>
+                  <select
+                    id="dashboard-token-sort-select"
+                    value={tokenSortBy}
+                    onChange={(e) => setTokenSortBy(e.target.value as TokenSortOption)}
+                    className="bg-transparent text-white font-mono text-xs focus:outline-none cursor-pointer pr-1"
+                  >
+                    <option value="marketCap" className="bg-zinc-900 text-white">Market Cap (High → Low)</option>
+                    <option value="launchDate" className="bg-zinc-900 text-white">Launch Date (Newest First)</option>
+                    <option value="liquidity" className="bg-zinc-900 text-white">Liquidity Pool Size (High → Low)</option>
+                  </select>
+                </div>
+
+                <button 
+                  id="dash-launch-prompt"
+                  onClick={() => onSelectTab("ai-builder")}
+                  className="text-[10px] text-brand-purple hover:text-white bg-brand-purple/10 border border-brand-purple/20 px-3 py-1.5 rounded-xl font-mono font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                >
+                  + Deploy New
+                </button>
+              </div>
             </div>
 
-            {myCreatedProjectsCount === 0 ? (
-              <div className="text-center py-10 border border-dashed border-white/5 rounded-xl">
-                <Compass className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                <p className="text-xs text-zinc-400">You haven't deployed any custom contracts yet.</p>
-                <p className="text-[10px] text-zinc-600 mt-1">Use the AI Architect or Launchpad to deploy on Base.</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                {userTokens.filter(t => t.creator === wallet.address).map((t) => (
-                  <div key={t.address} className="flex justify-between items-center p-3 bg-zinc-950 rounded-xl border border-white/5">
+            {/* List of Sorted Tokens */}
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {sortedTokens.map((t) => (
+                <div key={t.address} className="p-3.5 bg-zinc-950/80 rounded-xl border border-white/5 hover:border-brand-purple/30 transition-all space-y-2.5">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img src={t.logoUrl} alt={t.name} className="w-8 h-8 rounded-lg object-cover" />
+                      <ImageWithFallback src={t.logoUrl} alt={t.name} fallbackText={t.symbol} className="w-9 h-9 rounded-xl object-cover border border-white/10" />
                       <div>
-                        <span className="block text-xs font-semibold text-white">{t.name} ({t.symbol})</span>
-                        <span className="block text-[9px] font-mono text-zinc-500">Token Contract · {t.address.slice(0, 8)}...</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white font-display">{t.name}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono text-[9px] font-bold">
+                            ${t.symbol}
+                          </span>
+                          {t.creator === wallet.address && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-bold">
+                              Created by You
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-mono text-zinc-500 block mt-0.5">
+                          Contract: {t.address.slice(0, 8)}...{t.address.slice(-6)}
+                        </span>
                       </div>
                     </div>
+
                     <div className="text-right">
-                      <span className="block text-xs font-mono text-emerald-400">{(t.supply / 1000000).toFixed(2)}M Minted</span>
-                      <span className="block text-[9px] text-zinc-500 font-mono">Market Cap: {t.marketCap.toFixed(2)} ETH</span>
+                      <span className="block text-xs font-mono font-bold text-emerald-400">
+                        {(t.supply / 1000000).toFixed(2)}M Minted
+                      </span>
+                      <span className="block text-[10px] text-zinc-400 font-mono">
+                        Price: {t.currentPrice.toFixed(6)} ETH
+                      </span>
                     </div>
                   </div>
-                ))}
-                {userDAOs.filter(d => d.creator === wallet.address).map((d) => (
-                  <div key={d.contractAddress} className="flex justify-between items-center p-3 bg-zinc-950 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="block text-xs font-semibold text-white">{d.name} DAO ({d.symbol})</span>
-                        <span className="block text-[9px] font-mono text-zinc-500">Governance · {d.contractAddress.slice(0, 8)}...</span>
-                      </div>
+
+                  {/* Key Metrics Row for Sorting Verification */}
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5 text-[10px] font-mono">
+                    <div className="p-2 rounded-lg bg-zinc-900/90 border border-white/5 flex items-center justify-between">
+                      <span className="text-zinc-500 text-[9px] uppercase flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3 text-emerald-400" /> Market Cap
+                      </span>
+                      <span className="text-white font-bold">{t.marketCap.toFixed(2)} ETH</span>
                     </div>
-                    <div className="text-right">
-                      <span className="block text-xs font-mono text-white">{d.memberCount} Members</span>
-                      <span className="block text-[9px] text-zinc-500 font-mono">Treasury: {d.treasuryBalanceEth} ETH</span>
+
+                    <div className="p-2 rounded-lg bg-zinc-900/90 border border-white/5 flex items-center justify-between">
+                      <span className="text-zinc-500 text-[9px] uppercase flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-blue-400" /> Launch Date
+                      </span>
+                      <span className="text-zinc-200 font-bold">
+                        {new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
                     </div>
-                  </div>
-                ))}
-                {userAgents.filter(a => a.creator === wallet.address).map((a) => (
-                  <div key={a.id} className="flex justify-between items-center p-3 bg-zinc-950 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <img src={a.avatarUrl} alt={a.name} className="w-8 h-8 rounded-lg object-cover" />
-                      <div>
-                        <span className="block text-xs font-semibold text-white">{a.name} ({a.symbol})</span>
-                        <span className="block text-[9px] font-mono text-zinc-500">Autonomous Agent · SENT_CORE</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-xs font-mono text-brand-purple">{a.queryCount} Queries Executed</span>
-                      <span className="block text-[9px] text-zinc-500 font-mono">Revenue: {a.lifetimeRevenueEth.toFixed(3)} ETH</span>
+
+                    <div className="p-2 rounded-lg bg-zinc-900/90 border border-white/5 flex items-center justify-between">
+                      <span className="text-zinc-500 text-[9px] uppercase flex items-center gap-1">
+                        <Droplets className="w-3 h-3 text-purple-400" /> Liquidity Pool
+                      </span>
+                      <span className="text-brand-purple font-bold">{t.reserveEth.toFixed(3)} ETH</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+
+              {/* Other Deployed Assets (DAOs & AI Agents) */}
+              {userDAOs.filter(d => d.creator === wallet.address).map((d) => (
+                <div key={d.contractAddress} className="flex justify-between items-center p-3 bg-zinc-950 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-white">{d.name} DAO ({d.symbol})</span>
+                      <span className="block text-[9px] font-mono text-zinc-500">Governance · {d.contractAddress.slice(0, 8)}...</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-xs font-mono text-white">{d.memberCount} Members</span>
+                    <span className="block text-[9px] text-zinc-500 font-mono">Treasury: {d.treasuryBalanceEth} ETH</span>
+                  </div>
+                </div>
+              ))}
+
+              {userAgents.filter(a => a.creator === wallet.address).map((a) => (
+                <div key={a.id} className="flex justify-between items-center p-3 bg-zinc-950 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <ImageWithFallback src={a.avatarUrl} alt={a.name} fallbackText={a.symbol} className="w-8 h-8 rounded-lg object-cover" />
+                    <div>
+                      <span className="block text-xs font-semibold text-white">{a.name} ({a.symbol})</span>
+                      <span className="block text-[9px] font-mono text-zinc-500">Autonomous Agent · SENT_CORE</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-xs font-mono text-brand-purple">{a.queryCount} Queries Executed</span>
+                    <span className="block text-[9px] text-zinc-500 font-mono">Revenue: {a.lifetimeRevenueEth.toFixed(3)} ETH</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Wallet holdings grids */}
@@ -238,19 +393,25 @@ export default function DashboardPage({
               <h3 className="text-xs font-bold font-display uppercase tracking-wider text-zinc-400 mb-3 flex items-center gap-1.5">
                 <Coins className="w-4 h-4 text-brand-purple" /> Token Assets
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
                 <div className="flex justify-between items-center p-2.5 bg-black/30 rounded-xl border border-white/5 text-xs">
-                  <span className="font-bold text-white font-mono">AGL Token</span>
-                  <span className="font-mono text-zinc-300">{wallet.aglTokenBalance.toLocaleString()} AGL</span>
+                  <span className="font-bold text-white font-mono font-display">AGL Token</span>
+                  <span className="font-mono text-zinc-300">{wallet.aglTokenBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} AGL</span>
                 </div>
-                <div className="flex justify-between items-center p-2.5 bg-black/30 rounded-xl border border-white/5 text-xs">
-                  <span className="font-bold text-white font-mono">CHAD Meme</span>
-                  <span className="font-mono text-zinc-300">0 CHAD</span>
-                </div>
-                <div className="flex justify-between items-center p-2.5 bg-black/30 rounded-xl border border-white/5 text-xs">
-                  <span className="font-bold text-white font-mono">BAIC Core</span>
-                  <span className="font-mono text-zinc-300">0 BAIC</span>
-                </div>
+                {userTokens.filter(t => t.symbol !== "AGL").map(t => {
+                  const bal = tokenBalances[t.address.toLowerCase()] || 0;
+                  const isPreset = t.symbol === "CHAD" || t.symbol === "BAIC";
+                  if (!isPreset && bal <= 0) return null;
+                  return (
+                    <div key={t.address} className="flex justify-between items-center p-2.5 bg-black/30 rounded-xl border border-white/5 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        {t.logoUrl && <ImageWithFallback src={t.logoUrl} alt={t.symbol} fallbackText={t.symbol} className="w-4 h-4 rounded-full object-cover" />}
+                        <span className="font-bold text-white font-mono">{t.symbol}</span>
+                      </div>
+                      <span className="font-mono text-zinc-300">{bal.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t.symbol}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -267,7 +428,7 @@ export default function DashboardPage({
                 <div className="space-y-2">
                   {userNFTs.map(n => n.items.map(item => (
                     <div key={item.id} className="flex items-center gap-2.5 p-2 bg-black/30 rounded-xl border border-white/5 text-xs">
-                      <img src={item.imageUrl} alt={item.name} className="w-7 h-7 rounded object-cover" />
+                      <ImageWithFallback src={item.imageUrl} alt={item.name} fallbackText={n.name} className="w-7 h-7 rounded object-cover" />
                       <div>
                         <span className="block font-bold text-white">{item.name}</span>
                         <span className="block text-[8px] text-zinc-500 font-mono">{n.name} · #{item.id}</span>
@@ -280,36 +441,17 @@ export default function DashboardPage({
           </div>
         </div>
 
-        {/* Recent Platform activity logs */}
-        <div className="glass-panel rounded-2xl border border-white/5 p-6 bg-zinc-900/20 flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold font-display uppercase tracking-wider text-white mb-4 flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-brand-purple" /> Global Activity Log
-            </h3>
-            <div className="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
-              {activities.slice(0, 6).map((act) => (
-                <div key={act.id} className="text-xs border-b border-white/5 pb-3">
-                  <div className="flex items-center justify-between mb-1 font-mono text-[9px] text-zinc-500">
-                    <span className="uppercase text-brand-purple">{act.type}</span>
-                    <span>{new Date(act.timestamp).toLocaleTimeString()}</span>
-                  </div>
-                  <p className="text-zinc-200 leading-normal">{act.details}</p>
-                  <span className="block text-[9px] font-mono text-zinc-600 truncate mt-1">User: {act.user}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="pt-4 border-t border-white/5 mt-4 text-center">
-            <button 
-              id="dash-view-analytics"
-              onClick={() => onSelectTab("analytics")}
-              className="text-[10px] font-mono text-brand-blue hover:text-white font-bold transition-all"
-            >
-              Analyze Base Statistics →
-            </button>
-          </div>
-        </div>
+        {/* Recent Platform activity logs from Firestore */}
+        <ActivityFeed onViewAll={() => onSelectTab("analytics")} />
       </div>
+
+      {/* Detailed Paginated Transaction History Ledger */}
+      <TransactionHistoryTable 
+        activities={localActivities.length > 0 ? localActivities : initialActivities} 
+        onRefresh={handleRefreshActivities}
+      />
+
+      <TaskSummaryWidget onNavigateToTasks={() => onSelectTab("task-sync")} />
     </div>
   );
 }

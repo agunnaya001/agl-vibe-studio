@@ -1,3 +1,11 @@
+export interface PreFlightCheckItem {
+  id: string;
+  label: string;
+  category: "Identity" | "Liquidity & Gas" | "Wallet" | "Security & Parameters";
+  status: "pass" | "warn" | "fail";
+  message: string;
+}
+
 export interface SocialLinks {
   website?: string;
   twitter?: string;
@@ -25,6 +33,7 @@ export interface Token {
   vestingWeeks: number;
   referralRewardsPct: number;
   createdAt: number; // Timestamp
+  implementation?: string; // Proxy implementation address
 }
 
 export interface NFTItem {
@@ -137,8 +146,13 @@ export interface AIAgent {
   lifetimeRevenueEth: number;
   queryCount: number;
   systemPrompt: string;
+  tone?: "professional" | "witty" | "concise" | "friendly" | "analytical";
+  responseLength?: "short" | "medium" | "long";
+  personalityBehaviors?: string[];
   avatarUrl: string;
   aglRewardDiscounts: boolean;
+  backedByAglLiquidity?: boolean;
+  aglLiquidityBoosted?: number;
   chatHistory: Array<{ role: "user" | "assistant"; content: string }>;
   createdAt: number;
 }
@@ -155,6 +169,19 @@ export interface StakingPool {
   lockPeriodDays: number;
 }
 
+export interface SubAccount {
+  id: string;
+  label: string;
+  address: string;
+  walletType: "metamask" | "coinbase" | "walletconnect" | "smart";
+  balanceEth: number;
+  aglTokenBalance: number;
+  aglCredits: number;
+  isSmartAccount: boolean;
+  isActive: boolean;
+  createdAt: number;
+}
+
 export interface WalletState {
   isConnected: boolean;
   address: string;
@@ -163,11 +190,14 @@ export interface WalletState {
   isSmartAccount: boolean;
   sponsoredGasEth: number; // Mock AA gas sponsorship
   aglTokenBalance: number; // Native utility token Agunnaya Labs Token
+  aglCredits: number; // Computational credits earned via on-chain AGL burning
+  aglLiquidityStaked?: number;
+  subAccounts?: SubAccount[];
 }
 
 export interface Activity {
   id: string;
-  type: "buy" | "sell" | "create" | "mint" | "vote" | "stake" | "achievement" | "deployment" | "referral";
+  type: "buy" | "sell" | "create" | "mint" | "vote" | "stake" | "achievement" | "deployment" | "referral" | "burn";
   tokenSymbol: string;
   tokenAddress: string;
   user: string;
@@ -194,3 +224,136 @@ export interface ReferralPayout {
   rewardAgl: number;
   timestamp: number;
 }
+
+export interface PriceAlert {
+  id: string;
+  userId: string;
+  tokenAddress: string;
+  tokenSymbol: string;
+  targetPrice: number; // Spot price in ETH
+  condition: "above" | "below";
+  status: "active" | "triggered";
+  createdAt: number;
+  triggeredAt: number | null;
+}
+
+export interface AgentServiceConnection {
+  id: string;
+  providerName: string;
+  issuer: string;
+  description: string;
+  connectedAt: number;
+  capabilities: Array<{
+    name: string;
+    description: string;
+    approvalStrength: "session" | "webauthn" | "always";
+  }>;
+  status: "active" | "revoked";
+}
+
+export interface BatchTransferRecord {
+  id: string;
+  txHash: string;
+  tokenSymbol: string;
+  tokenAddress: string;
+  totalAmount: number;
+  recipientCount: number;
+  recipients: Array<{ address: string; amount: number; txHash?: string }>;
+  senderAddress: string;
+  timestamp: number;
+  status: "completed" | "failed" | "partial";
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: "pending" | "completed" | "in-progress";
+  priority: "low" | "medium" | "high";
+  dueDate: number;
+  createdAt: number;
+}
+
+export interface MCPTool {
+  name: string;
+  description: string;
+  inputSchema?: Record<string, any>;
+  mcpServerId?: string;
+}
+
+export interface MCPServer {
+  id: string;
+  name: string;
+  type: "stdio" | "sse" | "http";
+  endpoint: string;
+  status: "connected" | "disconnected" | "testing";
+  latencyMs: number;
+  description: string;
+  category: "search" | "crypto" | "database" | "developer" | "ai" | "workspace";
+  capabilities: string[];
+  tools: MCPTool[];
+  connectedAt: number;
+  icon?: string;
+  version?: string;
+}
+
+export interface AGLLiquidityPair {
+  id: string;
+  pairSymbol: string; // e.g. "AGL/ETH", "AGL/USDC"
+  tokenA: { symbol: string; name: string; address: string; logoUrl?: string };
+  tokenB: { symbol: string; name: string; address: string; logoUrl?: string };
+  reserveA: number; // Reserve of Token A (AGL)
+  reserveB: number; // Reserve of Token B
+  totalSupplyLP: number;
+  volume24hUsd: number;
+  apr: number; // % yield APY
+  fee03PctCollectedEth: number;
+  isVerified: boolean;
+  createdAt: number;
+}
+
+export interface AGLPollOption {
+  id: string;
+  label: string;
+  votes: number;
+  voters: string[];
+}
+
+export interface AGLPoll {
+  id: string;
+  title: string;
+  description: string;
+  category: "pair" | "fee" | "grant" | "param";
+  pairSymbol?: string;
+  options: AGLPollOption[];
+  totalVotes: number;
+  status: "active" | "passed" | "expired";
+  endTime: number;
+  creator: string;
+  createdAt: number;
+}
+
+export interface DailyMission {
+  id: string;
+  title: string;
+  description: string;
+  category: "trade" | "deploy" | "stake" | "social" | "checkin" | "form";
+  creditReward: number;
+  targetCount: number;
+  currentProgress: number;
+  completed: boolean;
+  claimed: boolean;
+  iconName: string;
+}
+
+export interface UserProfile {
+  userId: string;
+  email?: string;
+  address?: string;
+  totalCreditsEarned: number;
+  streakDays: number;
+  lastCheckinDate: string; // YYYY-MM-DD
+  dailyMissions: DailyMission[];
+  updatedAt: number;
+}
+

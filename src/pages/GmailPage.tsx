@@ -23,6 +23,9 @@ import {
 import { GmailService, GmailMessageSummary, GmailLabel } from "../lib/gmailService";
 import { AgunnayaDatabase } from "../lib/db";
 import { User } from "firebase/auth";
+import { WalletState } from "../types";
+import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
+import InsufficientCreditsModal from "../components/InsufficientCreditsModal";
 
 interface GmailPageProps {
   firebaseUser: User | null;
@@ -30,6 +33,8 @@ interface GmailPageProps {
   onAuthorizeDrive: () => void;
   addTerminalLog: (type: "system" | "success" | "error" | "info", text: string) => void;
   showToast: (message: string, type: "success" | "error" | "info") => void;
+  wallet?: WalletState;
+  onRefreshWallet?: () => void;
 }
 
 export default function GmailPage({
@@ -38,6 +43,8 @@ export default function GmailPage({
   onAuthorizeDrive,
   addTerminalLog,
   showToast,
+  wallet,
+  onRefreshWallet
 }: GmailPageProps) {
   // Gmail state
   const [emails, setEmails] = useState<GmailMessageSummary[]>([]);
@@ -47,6 +54,10 @@ export default function GmailPage({
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLabel, setSelectedLabel] = useState<string>("INBOX");
+
+  // Insufficient Credits Modal State
+  const [insufficientCreditsModalOpen, setInsufficientCreditsModalOpen] = useState(false);
+  const [creditsModalData, setCreditsModalData] = useState({ featureName: "", required: 0, available: 0 });
 
   // Compose State
   const [isComposing, setIsComposing] = useState(false);
@@ -214,8 +225,29 @@ export default function GmailPage({
       return;
     }
 
+    let creditResult: any = null;
+    if (wallet && showToast) {
+      creditResult = validateAndConsumeCredits({
+        wallet,
+        onRefreshWallet: onRefreshWallet || (() => {}),
+        requiredCredits: CREDIT_COSTS.EMAIL_DRAFT,
+        featureName: "AI Email Assistant",
+        showToast,
+        addTerminalLog,
+        onRequestCreditsModal: (featureName, required, available) => {
+          setCreditsModalData({ featureName, required, available });
+          setInsufficientCreditsModalOpen(true);
+        }
+      });
+
+      if (!creditResult.success) {
+        setIsDrafting(false);
+        return;
+      }
+    }
+
     setIsDrafting(true);
-    addTerminalLog("info", `GEMINI_API: Contacting server to draft email utilizing model [gemini-3.5-flash]...`);
+    addTerminalLog("info", `GEMINI_API: Contacting server to draft email utilizing model [gemini-3.6-flash]...`);
 
     const selectedAgent = activeAgents.find(a => a.id === selectedAgentId);
 
@@ -257,8 +289,9 @@ export default function GmailPage({
       addTerminalLog("success", `GEMINI_API: Email payload compiled successfully in-context.`);
     } catch (error) {
       console.error(error);
+      if (creditResult) creditResult.refund();
       addTerminalLog("error", "GEMINI_ERROR: Draft writing failure. Model pipeline returned 500.");
-      showToast("AI drafting failed.", "error");
+      showToast("AI drafting failed. Your credits have been refunded.", "error");
     } finally {
       setIsDrafting(false);
     }
@@ -687,6 +720,17 @@ export default function GmailPage({
         </div>
       )}
 
+      {/* Insufficient Credits Modal */}
+      <InsufficientCreditsModal
+        isOpen={insufficientCreditsModalOpen}
+        onClose={() => setInsufficientCreditsModalOpen(false)}
+        featureName={creditsModalData.featureName}
+        requiredCredits={creditsModalData.required}
+        availableCredits={creditsModalData.available}
+        onNavigateToCredits={() => {
+          window.location.href = "/?tab=agl-credits";
+        }}
+      />
     </div>
   );
 }

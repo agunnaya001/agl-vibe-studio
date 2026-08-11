@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { WalletState, ReferralRecord, ReferralPayout } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import ViralSocialPromotionComponent from "../components/ViralSocialPromotionComponent";
 import { 
   Users, 
   Gift, 
@@ -372,6 +373,13 @@ export default function ReferralPage({
             </div>
 
           </div>
+
+          {/* VIRAL SOCIAL MEDIA & AD CAMPAIGN SUITE */}
+          <ViralSocialPromotionComponent
+            userRefCode={record.code}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+          />
 
           {/* HOW IT WORKS / GUIDANCE */}
           <div className="p-6 rounded-2xl border border-white/5 bg-zinc-900/10 space-y-4">

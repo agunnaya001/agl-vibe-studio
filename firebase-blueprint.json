@@ -149,12 +149,82 @@
         "claimedRewardsAgl": { "type": "number" }
       },
       "required": ["code", "ownerAddress", "totalReferredCount", "totalFeesGeneratedEth", "unclaimedRewardsAgl", "claimedRewardsAgl"]
+    },
+    "PriceAlert": {
+      "title": "PriceAlert",
+      "description": "User-defined token price target alerts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "tokenAddress": { "type": "string" },
+        "tokenSymbol": { "type": "string" },
+        "targetPrice": { "type": "number" },
+        "condition": { "type": "string", "enum": ["above", "below"] },
+        "status": { "type": "string", "enum": ["active", "triggered"] },
+        "createdAt": { "type": "number" },
+        "triggeredAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "tokenAddress", "tokenSymbol", "targetPrice", "condition", "status", "createdAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Developer task tracking in TaskSync",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "in-progress"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "dueDate": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "title", "description", "status", "priority", "createdAt"]
+    },
+    "AgentServiceConnection": {
+      "title": "AgentServiceConnection",
+      "description": "Service connections for AI agents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "providerName": { "type": "string" },
+        "issuer": { "type": "string" },
+        "description": { "type": "string" },
+        "connectedAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "revoked"] }
+      },
+      "required": ["id", "providerName", "connectedAt", "status"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document tracking daily missions and bonus AGL credits",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "totalCreditsEarned": { "type": "number" },
+        "streakDays": { "type": "number" },
+        "lastCheckinDate": { "type": "string" },
+        "dailyMissions": { "type": "array" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "updatedAt"]
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document tracking daily missions and bonus AGL credits"
+    },
     "/tokens/{address}": {
       "schema": { "$ref": "#/entities/Token" },
       "description": "Database-backed registry for dynamic bonding curve tokens"
+    },
+    "/price_alerts/{id}": {
+      "schema": { "$ref": "#/entities/PriceAlert" },
+      "description": "A collection of price targets and criteria set by users"
     },
     "/nfts/{contractAddress}": {
       "schema": { "$ref": "#/entities/NFTCollection" },
@@ -183,6 +253,28 @@
     "/referrals/{ownerAddress}": {
       "schema": { "$ref": "#/entities/ReferralRecord" },
       "description": "Active affiliate invite links"
+    },
+    "/sessions/{id}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "prompt": { "type": "string" },
+          "projectType": { "type": "string" },
+          "updatedAt": { "type": "number" },
+          "aiResult": { "type": "object" }
+        },
+        "required": ["id", "prompt", "projectType", "updatedAt"]
+      },
+      "description": "Real-time backed developer session history for AI Builder state recovery"
+    },
+    "/tasks/{id}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Developer task collection"
+    },
+    "/service_connections/{id}": {
+      "schema": { "$ref": "#/entities/AgentServiceConnection" },
+      "description": "Agent service connections registry"
     }
   }
 }

@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import agunnayaLogo from "../assets/images/agunnaya_logo_1782747905258.jpg";
+import agunnayaBanner from "../assets/images/agunnaya_banner_1782747920246.jpg";
 import { Sparkles, ArrowRight, ShieldCheck, Zap, Coins, Bot, Globe, ChevronDown, CheckCircle, Mail } from "lucide-react";
 
 interface LandingPageProps {
@@ -9,7 +11,6 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [heroTitleHovered, setHeroTitleHovered] = useState(false);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,14 +84,14 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
 
       {/* Navigation Header */}
       <nav className="relative z-10 max-w-7xl mx-auto px-6 h-20 flex items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-2 group cursor-pointer hover:opacity-80 transition-opacity">
+        <div className="flex items-center gap-2">
           <img
-            src="/assets/images/app-icon-interactive.png"
-            alt="Agunnaya Labs"
-            className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-blue-500/20 border border-white/10 group-hover:shadow-purple-500/30 transition-all"
+            src={agunnayaLogo}
+            alt="AL"
+            className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-blue-500/20 border border-white/10"
             referrerPolicy="no-referrer"
           />
-          <span className="font-display font-bold text-xl tracking-tight group-hover:text-brand-blue transition-colors">
+          <span className="font-display font-bold text-xl tracking-tight">
             Agunnaya <span className="bg-gradient-to-r from-[#0052FF] to-[#A855F7] bg-clip-text text-transparent">Labs</span>
           </span>
         </div>
@@ -111,18 +112,9 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
           <span>Next-Generation AI Web3 Creation Engine</span>
         </div>
         
-        <h1 
-          className="text-4xl md:text-6xl font-display font-bold tracking-tight max-w-3xl mx-auto leading-none transition-all duration-500 cursor-pointer group"
-          onMouseEnter={() => setHeroTitleHovered(true)}
-          onMouseLeave={() => setHeroTitleHovered(false)}
-        >
-          <span className={`inline-block bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent transition-all duration-300 ${heroTitleHovered ? 'scale-110' : 'scale-100'}`}>
-            Build. Launch. Scale.
-          </span>
-          <br />
-          <span className={`inline-block bg-gradient-to-r from-[#0052FF] to-[#A855F7] bg-clip-text text-transparent transition-all duration-300 ${heroTitleHovered ? 'drop-shadow-[0_0_20px_rgba(139,92,246,0.6)]' : ''}`}>
-            On Base Mainnet.
-          </span>
+        <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight max-w-3xl mx-auto leading-none bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+          Build. Launch. Scale.<br />
+          <span className="bg-gradient-to-r from-[#0052FF] to-[#A855F7] bg-clip-text">On Base Mainnet.</span>
         </h1>
 
         <p className="text-zinc-400 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
@@ -147,10 +139,10 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
         </div>
 
         {/* Premium 3D Workspace Banner Showcase */}
-        <div className="relative mt-12 mx-auto max-w-4xl rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(139,92,246,0.12)] bg-gradient-to-b from-zinc-900 to-zinc-950 p-1.5 group">
+        <div className="relative mt-12 mx-auto max-w-4xl rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(139,92,246,0.12)] bg-zinc-950/40 p-1.5 group">
           <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-10 pointer-events-none"></div>
           <img
-            src="/assets/images/agunnaya_banner.png"
+            src={agunnayaBanner}
             alt="Agunnaya Labs Studio 3D Developer Workspace"
             className="w-full h-auto rounded-xl object-cover transition-transform duration-700 group-hover:scale-[1.01]"
             referrerPolicy="no-referrer"
@@ -167,40 +159,6 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
           ))}
         </div>
       </header>
-
-      {/* Social Proof - Token & Market Data */}
-      <section className="max-w-7xl mx-auto px-6 py-12 border-t border-white/5">
-        <div className="bg-gradient-to-r from-[#0052FF]/10 to-[#A855F7]/10 rounded-2xl border border-white/5 p-8 md:p-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="space-y-2">
-              <p className="text-2xl md:text-3xl font-mono font-bold text-[#0052FF]">$15.71M</p>
-              <p className="text-xs text-zinc-400">AGL Token Market Cap</p>
-              <p className="text-[10px] text-zinc-500 mt-2">CHONK9K on Uniswap V4 Base</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl md:text-3xl font-mono font-bold text-[#A855F7]">$45.2M+</p>
-              <p className="text-xs text-zinc-400">Total Value Locked</p>
-              <p className="text-[10px] text-zinc-500 mt-2">Across all deployed protocols</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-2xl md:text-3xl font-mono font-bold text-emerald-400">24.8K+</p>
-              <p className="text-xs text-zinc-400">Smart Contracts Deployed</p>
-              <p className="text-[10px] text-zinc-500 mt-2">All audited and verified</p>
-            </div>
-          </div>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs">
-            <a href="https://dextools.io" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-all flex items-center gap-2">
-              <Globe className="w-3.5 h-3.5" />
-              View on DexTools
-            </a>
-            <span className="text-zinc-600">•</span>
-            <a href="#" className="text-zinc-400 hover:text-white transition-all flex items-center gap-2">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Audited Contracts
-            </a>
-          </div>
-        </div>
-      </section>
 
       {/* Bento Grid Features Showcase */}
       <section id="features-section" className="max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
@@ -349,9 +307,9 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <img
-                src="/assets/images/app-icon-interactive.png"
-                alt="Agunnaya Labs"
-                className="w-8 h-8 rounded-lg object-cover border border-white/10 hover:shadow-lg hover:shadow-brand-purple/20 transition-shadow"
+                src={agunnayaLogo}
+                alt="AL"
+                className="w-8 h-8 rounded-lg object-cover border border-white/10"
                 referrerPolicy="no-referrer"
               />
               <span className="font-display font-bold text-lg tracking-tight">

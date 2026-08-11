@@ -1,6 +1,6 @@
 {
   "name": "Agunnaya Labs Studio",
   "description": "An AI-powered Web3 builder and launchpad where anyone can create, launch, manage, and scale blockchain applications and tokens on Base without writing smart contracts.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone", "geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
