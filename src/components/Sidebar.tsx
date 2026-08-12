@@ -29,7 +29,8 @@ import {
   Search,
   ChevronRight,
   Filter,
-  SlidersHorizontal
+  SlidersHorizontal,
+  CheckCircle2
 } from "lucide-react";
 
 interface SidebarProps {
@@ -78,8 +79,8 @@ export default function Sidebar({
   };
 
   const handleTouchEnd = () => {
-    // If swiped more than 50px left, close the sidebar
-    if (swipeOffset < -50 && onClose) {
+    // If swiped more than 40px left, trigger close
+    if (swipeOffset < -40 && onClose) {
       onClose();
     }
     setTouchStartX(null);
@@ -143,6 +144,10 @@ export default function Sidebar({
     menuItems.push({ id: "admin", label: "Admin Panel", icon: Settings, category: "Administration", description: "Platform Controls & Analytics" });
   }
 
+  // Active Menu Item for Persistent Context Indicator
+  const activeMenuItem = menuItems.find(item => item.id === currentTab) || menuItems[0];
+  const ActiveIcon = activeMenuItem.icon;
+
   // Simplified Core Items for Mobile View
   const simplifiedCoreIds = [
     "landing",
@@ -174,6 +179,9 @@ export default function Sidebar({
   // Group items by category for detailed list
   const categories = Array.from(new Set(filteredMenuItems.map(item => item.category)));
 
+  // Dynamic backdrop opacity during drag
+  const backdropOpacity = isSwiping ? Math.max(0.1, 1 + swipeOffset / 250) : 1;
+
   return (
     <>
       {/* Mobile Backdrop Overlay */}
@@ -181,8 +189,8 @@ export default function Sidebar({
         <div 
           id="sidebar-backdrop"
           onClick={onClose}
-          className="fixed inset-0 bg-black/70 backdrop-blur-md z-40 md:hidden transition-opacity duration-300 animate-fade-in"
-          style={{ touchAction: "none" }}
+          style={{ opacity: backdropOpacity, touchAction: "none" }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 md:hidden transition-opacity duration-300 animate-fade-in"
         />
       )}
 
@@ -193,30 +201,33 @@ export default function Sidebar({
         onTouchEnd={handleTouchEnd}
         style={{
           transform: isOpen && swipeOffset < 0 ? `translateX(${swipeOffset}px)` : undefined,
-          transition: isSwiping ? "none" : undefined,
+          transition: isSwiping ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
           touchAction: "pan-y"
         }}
-        className={`w-72 md:w-64 border-r border-white/10 bg-[#0a0a0a] flex flex-col justify-between shrink-0 h-screen sticky top-0 overflow-y-auto overscroll-contain transition-transform duration-300 ease-in-out z-50
-          fixed md:sticky md:translate-x-0 shadow-2xl md:shadow-none
+        className={`w-[82vw] sm:w-80 md:w-64 border-r border-white/10 bg-[#0a0a0a] flex flex-col justify-between shrink-0 h-screen sticky top-0 overflow-y-auto overscroll-contain z-50
+          fixed md:sticky md:translate-x-0 shadow-2xl md:shadow-none md:rounded-none rounded-r-3xl
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
         <div>
-          {/* Mobile Swipe Handle Header */}
-          <div className="md:hidden py-1.5 px-4 flex items-center justify-between bg-zinc-950 border-b border-white/5 select-none">
+          {/* Mobile Slide-Over Drag Handle Header */}
+          <div className="md:hidden py-2 px-4 flex items-center justify-between bg-zinc-950/90 border-b border-white/5 select-none sticky top-0 z-10 backdrop-blur-md">
             <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400">
               <span className="w-2 h-2 rounded-full bg-brand-purple animate-ping" />
-              <span>Swipe left to close</span>
+              <span>Swipe left to slide back</span>
             </div>
-            <div className="w-12 h-1 bg-zinc-700/80 rounded-full" />
+            <div className="w-10 h-1 bg-zinc-700/80 rounded-full" />
             <button
               id="close-sidebar-mobile-pill"
               onClick={onClose}
-              className="p-1 rounded-md text-zinc-400 hover:text-white bg-white/5 text-[10px] font-mono"
+              className="p-1 px-2 rounded-lg text-zinc-300 hover:text-white bg-white/10 text-[10px] font-mono font-bold"
             >
-              Close
+              Close ✕
             </button>
           </div>
+
+          {/* Mobile Pull Edge Handle Visual Cue */}
+          <div className="md:hidden absolute right-1.5 top-1/2 -translate-y-1/2 h-14 w-1 rounded-full bg-white/20 pointer-events-none" />
 
           {/* Brand Logo & Tagline */}
           <div className="h-16 flex items-center justify-between px-5 border-b border-white/10 bg-[#0a0a0a]/80">
@@ -250,6 +261,35 @@ export default function Sidebar({
             <span className="text-emerald-400 font-mono font-bold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> 100% Online
             </span>
+          </div>
+
+          {/* PERSISTENT TAB INDICATOR (Current active context pinned at top) */}
+          <div 
+            id="persistent-tab-indicator"
+            className="mx-3 my-2.5 p-3 rounded-2xl bg-gradient-to-r from-brand-purple/20 via-purple-900/10 to-zinc-900/60 border border-brand-purple/40 shadow-lg shadow-brand-purple/10 space-y-1.5 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-wider text-brand-purple">
+                <span className="w-2 h-2 rounded-full bg-brand-purple animate-ping" />
+                <span>Active Context</span>
+              </div>
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-brand-purple/30 border border-brand-purple/50 text-purple-200 font-bold">
+                {activeMenuItem.category}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-brand-purple text-white shadow-md shadow-brand-purple/30 shrink-0">
+                <ActiveIcon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-display font-bold text-xs text-white truncate flex items-center gap-1.5">
+                  <span>{activeMenuItem.label}</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                </div>
+                <p className="text-[10px] text-zinc-400 truncate mt-0.5">{activeMenuItem.description}</p>
+              </div>
+            </div>
           </div>
 
           {/* Mobile Search & Simplified Navigation Bar */}
@@ -305,7 +345,7 @@ export default function Sidebar({
               </div>
             </div>
 
-            {/* Mobile Category Filters (Visible when in Full Directory mode or on Mobile) */}
+            {/* Mobile Category Filters */}
             {(mobileViewMode === "all" || searchQuery !== "") && (
               <div className="flex items-center gap-1 overflow-x-auto pb-1 pt-1 font-mono text-[10px] scrollbar-none">
                 {[
@@ -358,20 +398,23 @@ export default function Sidebar({
                       onClick={handleItemClick}
                       className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-medium transition-all text-left min-h-[48px] border cursor-pointer ${
                         isActive
-                          ? "bg-brand-purple/20 border-brand-purple/50 text-white shadow-md shadow-purple-500/10"
+                          ? "bg-brand-purple/20 border-brand-purple/50 text-white shadow-md shadow-purple-500/10 font-bold ring-1 ring-brand-purple/30"
                           : "bg-zinc-900/60 border-white/5 hover:border-white/20 text-zinc-300 hover:text-white"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-xl ${
-                          isActive ? "bg-brand-purple text-white" : "bg-black/40 text-brand-purple border border-white/5"
+                          isActive ? "bg-brand-purple text-white shadow-md shadow-purple-500/30" : "bg-black/40 text-brand-purple border border-white/5"
                         }`}>
                           <IconComp className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="font-bold text-xs text-white flex items-center gap-1.5">
                             <span>{item.label}</span>
-                            {item.highlight && (
+                            {isActive && (
+                              <span className="px-1.5 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-400 font-mono font-bold uppercase">Active</span>
+                            )}
+                            {item.highlight && !isActive && (
                               <span className="w-1.5 h-1.5 rounded-full bg-brand-purple animate-pulse" />
                             )}
                           </div>
@@ -418,21 +461,28 @@ export default function Sidebar({
                           id={`sidebar-item-${item.id}`}
                           key={item.id}
                           onClick={handleItemClick}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-left relative group min-h-[42px] cursor-pointer ${
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-left relative group min-h-[42px] cursor-pointer ${
                             isActive
-                              ? "bg-zinc-900 text-white border-l-2 border-brand-purple shadow-sm shadow-brand-purple/5 font-bold"
+                              ? "bg-gradient-to-r from-brand-purple/20 via-brand-purple/10 to-transparent text-white border-l-4 border-brand-purple font-bold shadow-sm shadow-brand-purple/10"
                               : "text-zinc-400 hover:bg-white/5 hover:text-white"
                           }`}
                         >
-                          {item.highlight && !isActive && (
-                            <span className="absolute right-3 top-3 w-2 h-2 rounded-full bg-brand-purple animate-pulse"></span>
-                          )}
-                          <IconComp className={`w-4 h-4 shrink-0 transition-colors ${
-                            isActive ? "text-brand-purple" : "text-zinc-500 group-hover:text-zinc-300"
-                          }`} />
-                          <div className="flex flex-col">
-                            <span>{item.label}</span>
+                          <div className="flex items-center gap-3">
+                            <IconComp className={`w-4 h-4 shrink-0 transition-colors ${
+                              isActive ? "text-brand-purple" : "text-zinc-500 group-hover:text-zinc-300"
+                            }`} />
+                            <span className="truncate">{item.label}</span>
                           </div>
+
+                          {isActive ? (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-brand-purple/30 text-purple-200 border border-brand-purple/40">
+                              ACTIVE
+                            </span>
+                          ) : (
+                            item.highlight && (
+                              <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse shrink-0" />
+                            )
+                          )}
                         </button>
                       );
                     })}
@@ -487,4 +537,5 @@ export default function Sidebar({
     </>
   );
 }
+
 

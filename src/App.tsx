@@ -322,12 +322,16 @@ export default function App() {
     });
 
     // 2. Perform initial community sync from Firestore
-    AgunnayaDatabase.syncAllFromFirestore().then((success) => {
-      if (success) {
-        addTerminalLog("success", "CLOUD SYNC: Community database updated from Firestore!");
-        refreshAllData();
-      }
-    });
+    AgunnayaDatabase.syncAllFromFirestore()
+      .then((success) => {
+        if (success) {
+          addTerminalLog("success", "CLOUD SYNC: Community database updated from Firestore!");
+          refreshAllData();
+        }
+      })
+      .catch((err) => {
+        console.warn("[Firestore Sync] Connection passive, operating with local state:", err?.message || err);
+      });
 
     // Check for referral code in URL search params
     const params = new URLSearchParams(window.location.search);

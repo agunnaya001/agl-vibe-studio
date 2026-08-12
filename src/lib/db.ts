@@ -444,8 +444,8 @@ const DEFAULT_WALLET: WalletState = {
 // PERSISTENCE WRAPPER
 export class AgunnayaDatabase {
   static async saveToFirestore(collectionName: string, docId: string, data: any) {
-    if (!auth.currentUser) {
-      // Passive local-only mode when not signed in with Google
+    if (!auth.currentUser || (typeof navigator !== "undefined" && !navigator.onLine)) {
+      // Passive local-only mode when not signed in with Google or device is offline
       return;
     }
     try {
@@ -462,9 +462,20 @@ export class AgunnayaDatabase {
   }
 
   static async syncAllFromFirestore() {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      console.log("[Firestore Sync] Device is offline. Operating in local state mode.");
+      return false;
+    }
     try {
+      const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 3000): Promise<T> => {
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Firestore sync request timed out")), timeoutMs)
+        );
+        return Promise.race([promise, timeout]);
+      };
+
       // 1. Sync Tokens
-      const tokenSnap = await getDocs(collection(db, "tokens"));
+      const tokenSnap = await withTimeout(getDocs(collection(db, "tokens")));
       if (!tokenSnap.empty) {
         const firestoreTokens: Token[] = [];
         tokenSnap.forEach(doc => firestoreTokens.push(doc.data() as Token));
@@ -482,7 +493,7 @@ export class AgunnayaDatabase {
       }
 
       // 2. Sync NFTs
-      const nftsSnap = await getDocs(collection(db, "nfts"));
+      const nftsSnap = await withTimeout(getDocs(collection(db, "nfts")));
       if (!nftsSnap.empty) {
         const firestoreNFTs: NFTCollection[] = [];
         nftsSnap.forEach(doc => firestoreNFTs.push(doc.data() as NFTCollection));
@@ -500,7 +511,7 @@ export class AgunnayaDatabase {
       }
 
       // 3. Sync DAOs
-      const daosSnap = await getDocs(collection(db, "daos"));
+      const daosSnap = await withTimeout(getDocs(collection(db, "daos")));
       if (!daosSnap.empty) {
         const firestoreDAOs: DAO[] = [];
         daosSnap.forEach(doc => firestoreDAOs.push(doc.data() as DAO));
@@ -518,7 +529,7 @@ export class AgunnayaDatabase {
       }
 
       // 4. Sync GameFi
-      const gamefiSnap = await getDocs(collection(db, "gamefi"));
+      const gamefiSnap = await withTimeout(getDocs(collection(db, "gamefi")));
       if (!gamefiSnap.empty) {
         const firestoreGamefi: GameFiProject[] = [];
         gamefiSnap.forEach(doc => firestoreGamefi.push(doc.data() as GameFiProject));
@@ -536,7 +547,7 @@ export class AgunnayaDatabase {
       }
 
       // 5. Sync Agents
-      const agentsSnap = await getDocs(collection(db, "agents"));
+      const agentsSnap = await withTimeout(getDocs(collection(db, "agents")));
       if (!agentsSnap.empty) {
         const firestoreAgents: AIAgent[] = [];
         agentsSnap.forEach(doc => firestoreAgents.push(doc.data() as AIAgent));
@@ -554,7 +565,7 @@ export class AgunnayaDatabase {
       }
 
       // 6. Sync Staking
-      const stakingSnap = await getDocs(collection(db, "staking"));
+      const stakingSnap = await withTimeout(getDocs(collection(db, "staking")));
       if (!stakingSnap.empty) {
         const firestoreStaking: StakingPool[] = [];
         stakingSnap.forEach(doc => firestoreStaking.push(doc.data() as StakingPool));
@@ -572,7 +583,7 @@ export class AgunnayaDatabase {
       }
 
       // 7. Sync Activities
-      const actSnap = await getDocs(collection(db, "activities"));
+      const actSnap = await withTimeout(getDocs(collection(db, "activities")));
       if (!actSnap.empty) {
         const firestoreAct: Activity[] = [];
         actSnap.forEach(doc => firestoreAct.push(doc.data() as Activity));
@@ -590,7 +601,7 @@ export class AgunnayaDatabase {
       }
 
       // 8. Sync Referrals
-      const refSnap = await getDocs(collection(db, "referrals"));
+      const refSnap = await withTimeout(getDocs(collection(db, "referrals")));
       if (!refSnap.empty) {
         const firestoreRef: ReferralRecord[] = [];
         refSnap.forEach(doc => firestoreRef.push(doc.data() as ReferralRecord));
@@ -609,7 +620,7 @@ export class AgunnayaDatabase {
 
       // 9. Sync Price Alerts
       if (auth.currentUser) {
-        const alertsSnap = await getDocs(collection(db, "price_alerts"));
+        const alertsSnap = await withTimeout(getDocs(collection(db, "price_alerts")));
         if (!alertsSnap.empty) {
           const firestoreAlerts: PriceAlert[] = [];
           alertsSnap.forEach(doc => firestoreAlerts.push(doc.data() as PriceAlert));
@@ -629,8 +640,8 @@ export class AgunnayaDatabase {
       }
 
       return true;
-    } catch (err) {
-      console.error("Firestore initial sync failed:", err);
+    } catch (err: any) {
+      console.warn("[Firestore Sync] Offline or connection timeout, using local storage state:", err?.message || err);
       return false;
     }
   }
