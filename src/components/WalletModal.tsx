@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Wallet, Shield, Zap, Key, Plus, Copy, Check, Edit2, Trash2, ArrowRightLeft, Coins, Database, RefreshCw, CheckCircle2, UserCheck, Bot } from "lucide-react";
+import { Wallet, Shield, Zap, Key, Plus, Copy, Check, Edit2, Trash2, ArrowRightLeft, Coins, Database, RefreshCw, CheckCircle2, UserCheck, Bot, Cpu } from "lucide-react";
 import { WalletState, SubAccount } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import { CoinbaseSmartWalletInspectorModal } from "./CoinbaseSmartWalletInspectorModal";
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function WalletModal({
   const [activeTab, setActiveTab] = useState<"subaccounts" | "providers" | "transfer">("subaccounts");
   const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const [showSmartWalletModal, setShowSmartWalletModal] = useState(false);
 
   // New sub-account form state
   const [isAddingSubAccount, setIsAddingSubAccount] = useState(false);
@@ -320,17 +322,28 @@ export default function WalletModal({
           {/* TAB 1: SUB-ACCOUNTS MANAGER */}
           {activeTab === "subaccounts" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs font-semibold text-zinc-300">
                   Select active account or manage sub-accounts:
                 </span>
-                <button
-                  onClick={() => setIsAddingSubAccount(!isAddingSubAccount)}
-                  className="px-3 py-1.5 rounded-lg bg-brand-purple/20 hover:bg-brand-purple/30 text-brand-purple border border-brand-purple/40 text-xs font-bold font-mono transition-all flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  {isAddingSubAccount ? "Cancel" : "Add Sub-Account"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSmartWalletModal(true)}
+                    className="px-2.5 py-1.5 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/40 text-[11px] font-bold font-mono transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Cpu className="w-3.5 h-3.5 text-purple-400" />
+                    Smart Account ABI
+                  </button>
+
+                  <button
+                    onClick={() => setIsAddingSubAccount(!isAddingSubAccount)}
+                    className="px-3 py-1.5 rounded-lg bg-brand-purple/20 hover:bg-brand-purple/30 text-brand-purple border border-brand-purple/40 text-xs font-bold font-mono transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {isAddingSubAccount ? "Cancel" : "Add Sub-Account"}
+                  </button>
+                </div>
               </div>
 
               {/* Add Sub-Account Form */}
@@ -754,6 +767,13 @@ export default function WalletModal({
           </p>
         </div>
       </div>
+
+      {/* COINBASE SMART WALLET ABI INSPECTOR */}
+      <CoinbaseSmartWalletInspectorModal
+        isOpen={showSmartWalletModal}
+        onClose={() => setShowSmartWalletModal(false)}
+        showToast={showToast}
+      />
     </div>
   );
 }

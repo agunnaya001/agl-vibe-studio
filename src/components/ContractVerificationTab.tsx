@@ -31,6 +31,7 @@ import {
   VerificationResult 
 } from "../lib/contractVerification";
 import { WalletState } from "../types";
+import { CoinbaseSmartWalletInspectorModal } from "./CoinbaseSmartWalletInspectorModal";
 
 export interface OnChainTokenItem {
   address: string;
@@ -78,6 +79,7 @@ export const ContractVerificationTab: React.FC<ContractVerificationTabProps> = (
   
   // View states
   const [showSourceModal, setShowSourceModal] = useState<boolean>(false);
+  const [showSmartWalletModal, setShowSmartWalletModal] = useState<boolean>(false);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [copiedArgs, setCopiedArgs] = useState<boolean>(false);
   const [searchFilter, setSearchFilter] = useState<string>("");
@@ -326,6 +328,15 @@ export const ContractVerificationTab: React.FC<ContractVerificationTabProps> = (
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              id="btn-inspect-coinbase-smart-wallet-abi"
+              onClick={() => setShowSmartWalletModal(true)}
+              className="px-4 py-2.5 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/40 text-purple-200 hover:text-white text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-purple-500/10"
+            >
+              <Cpu className="w-4 h-4 text-purple-400" />
+              <span>Coinbase Smart Wallet ABI</span>
+            </button>
+
             <button
               id="btn-view-solidity-source"
               onClick={() => setShowSourceModal(true)}
@@ -891,6 +902,13 @@ export const ContractVerificationTab: React.FC<ContractVerificationTabProps> = (
           </div>
         </div>
       )}
+
+      {/* COINBASE SMART WALLET ABI INSPECTOR MODAL */}
+      <CoinbaseSmartWalletInspectorModal
+        isOpen={showSmartWalletModal}
+        onClose={() => setShowSmartWalletModal(false)}
+        showToast={showToast}
+      />
 
     </div>
   );

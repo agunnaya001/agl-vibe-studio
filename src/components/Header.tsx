@@ -5,6 +5,7 @@ import { AuthHealthState } from "../lib/authSyncService";
 import { ensureCorrectChain, getChainNameFromId } from "../lib/tokenFactory";
 import { aglSdk } from "../lib/aglSdk";
 import ImageWithFallback from "./ImageWithFallback";
+import OfflineIndicator from "./OfflineIndicator";
 
 interface HeaderProps {
   wallet: WalletState;
@@ -190,6 +191,11 @@ export default function Header({
           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981] group-hover:bg-brand-purple group-hover:shadow-[0_0_8px_rgba(139,92,246,0.6)]"></span>
           <span className="text-[10px] font-bold">GAS: 0.01 gwei</span>
         </button>
+
+        {/* Offline & Service Worker Status Indicator */}
+        <div className="hidden sm:block">
+          <OfflineIndicator />
+        </div>
       </div>
 
       {/* Global Search Component */}

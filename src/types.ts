@@ -62,6 +62,20 @@ export interface NFTCollection {
   createdAt: number;
 }
 
+export interface ProposalComment {
+  id: string;
+  author: string;
+  text: string;
+  timestamp: number;
+}
+
+export interface ProposalVoter {
+  address: string;
+  support: boolean;
+  weight: number;
+  timestamp: number;
+}
+
 export interface Proposal {
   id: string;
   title: string;
@@ -72,6 +86,14 @@ export interface Proposal {
   votesAgainst: number;
   endTime: number; // Timestamp
   executed: boolean;
+  category?: "treasury" | "parameter" | "upgrade" | "general";
+  requestedEth?: number;
+  recipientAddress?: string;
+  quorumThreshold?: number;
+  comments?: ProposalComment[];
+  voters?: ProposalVoter[];
+  executionTxHash?: string;
+  createdAt?: number;
 }
 
 export interface DAO {

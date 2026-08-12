@@ -241,7 +241,20 @@ const SEED_DAOS: DAO[] = [
         votesFor: 852000,
         votesAgainst: 12000,
         endTime: Date.now() + 5 * 24 * 60 * 60 * 1000,
-        executed: false
+        executed: false,
+        category: "treasury",
+        requestedEth: 5.0,
+        recipientAddress: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
+        quorumThreshold: 500000,
+        createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+        comments: [
+          {
+            id: "c-1",
+            author: "0x8123...4567",
+            text: "Fully support this! Memefest will bring huge volume to our bonding curve pools.",
+            timestamp: Date.now() - 3600000
+          }
+        ]
       },
       {
         id: "prop-2",
@@ -252,10 +265,66 @@ const SEED_DAOS: DAO[] = [
         votesFor: 1200000,
         votesAgainst: 5000,
         endTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
-        executed: true
+        executed: false, // Ready to execute!
+        category: "upgrade",
+        requestedEth: 2.0,
+        recipientAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698",
+        quorumThreshold: 500000,
+        createdAt: Date.now() - 6 * 24 * 60 * 60 * 1000,
+        comments: [
+          {
+            id: "c-2",
+            author: "0x3123...9876",
+            text: "Quorum reached! Ready for executive multi-sig execution.",
+            timestamp: Date.now() - 86400000
+          }
+        ]
+      },
+      {
+        id: "prop-3",
+        title: "Lower Proposal Voting Quorum Threshold to 250k AGL",
+        description: "Adjust governance voting parameters to enable smaller token holders to pass community initiatives faster.",
+        creator: "0x4123456789012345678901234567890123456789",
+        status: "Active",
+        votesFor: 320000,
+        votesAgainst: 150000,
+        endTime: Date.now() + 3 * 24 * 60 * 60 * 1000,
+        executed: false,
+        category: "parameter",
+        quorumThreshold: 400000,
+        createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000
       }
     ],
     createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000
+  },
+  {
+    contractAddress: "0x8888000000000000000000000000000000008888",
+    name: "Sovereign AI Agents Collective",
+    symbol: "SAAC",
+    description: "Decentralized autonomous organization governing autonomous AI agents, prompt vaults, and automated trading bots on Base L2.",
+    creator: "0x1111222233334444555566667777888899990000",
+    governanceTokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698",
+    treasuryBalanceEth: 12.8,
+    memberCount: 89,
+    proposals: [
+      {
+        id: "prop-4",
+        title: "Fund Autonomous AI Agent Compute Server Pool",
+        description: "Grant 3 ETH from SAAC treasury to fund high-throughput server compute for autonomous market making agents.",
+        creator: "0x2222333344445555666677778888999900001111",
+        status: "Active",
+        votesFor: 640000,
+        votesAgainst: 80000,
+        endTime: Date.now() + 4 * 24 * 60 * 60 * 1000,
+        executed: false,
+        category: "treasury",
+        requestedEth: 3.0,
+        recipientAddress: "0x2222333344445555666677778888999900001111",
+        quorumThreshold: 300000,
+        createdAt: Date.now() - 12 * 3600 * 1000
+      }
+    ],
+    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000
   }
 ];
 
