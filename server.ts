@@ -1032,6 +1032,11 @@ app.get("/api/basescan/status", async (req, res) => {
 });
 
 
+// 404 Handler for missing /api endpoints
+app.use("/api/*", (req, res) => {
+  res.status(404).json({ error: "API endpoint not found", path: req.originalUrl });
+});
+
 // Vite Middleware & Static Asset Serving Setup
 const startServer = async () => {
   if (process.env.NODE_ENV !== "production") {

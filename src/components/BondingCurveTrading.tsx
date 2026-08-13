@@ -64,6 +64,10 @@ export default function BondingCurveTrading({
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [copiedContract, setCopiedContract] = useState<boolean>(false);
   
+  // Auto-Execute State
+  const [isAutoExecute, setIsAutoExecute] = useState<boolean>(false);
+  const [autoExecuteLog, setAutoExecuteLog] = useState<string>("");
+  
   // Real-time calculated outputs
   const [estimatedOutput, setEstimatedOutput] = useState<number>(0);
   const [priceImpact, setPriceImpact] = useState<number>(0);
@@ -400,6 +404,44 @@ export default function BondingCurveTrading({
     }
   };
 
+  // Auto-Execute Interval Poller
+  useEffect(() => {
+    if (!isAutoExecute) {
+      setAutoExecuteLog("");
+      return;
+    }
+
+    const num = parseFloat(amountInput) || 0;
+    if (!wallet.isConnected) {
+      setAutoExecuteLog("Poller waiting: Connect wallet first...");
+      return;
+    }
+
+    if (num <= 0) {
+      setAutoExecuteLog("Poller waiting: Enter valid input amount...");
+      return;
+    }
+
+    if (isExecuting) {
+      setAutoExecuteLog("Processing curve execution on Base L2...");
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setAutoExecuteLog(`Poller Active: Impact ${priceImpact.toFixed(2)}% vs Limit ≤ ${slippage.toFixed(2)}%`);
+
+      if (priceImpact <= slippage) {
+        addTerminalLog("success", `[AUTO-EXECUTE TRIGGERED] Target condition met (${priceImpact.toFixed(2)}% Impact ≤ ${slippage}% Limit). Executing curve swap...`);
+        showToast(`[Auto-Execute] Target condition met (${priceImpact.toFixed(2)}% ≤ ${slippage}%). Executing swap automatically!`, "info");
+
+        setIsAutoExecute(false);
+        handleExecuteCurveTrade({ preventDefault: () => {} } as React.FormEvent);
+      }
+    }, 2000);
+
+    return () => clearInterval(intervalId);
+  }, [isAutoExecute, amountInput, mode, slippage, priceImpact, wallet.isConnected, isExecuting]);
+
   const spotPriceMicroEth = (token.currentPrice * 1000000).toFixed(3);
   const nextSpotPriceMicroEth = (nextSpotPrice * 1000000).toFixed(3);
 
@@ -571,30 +613,111 @@ export default function BondingCurveTrading({
         </div>
 
         {/* SLIPPAGE SETTINGS */}
-        <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/5 space-y-2">
+        <div id="bonding-curve-slippage-panel" className="p-3.5 rounded-2xl bg-zinc-900/60 border border-white/5 space-y-2">
           <div className="flex justify-between items-center text-xs font-mono">
-            <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+            <span className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 font-display">
               <Sliders className="w-3.5 h-3.5 text-blue-400" />
               Slippage Tolerance Limit
             </span>
-            <span className="text-white font-bold">{slippage.toFixed(1)}%</span>
+            <span className="text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-500/20">
+              {slippage % 1 === 0 ? `${slippage.toFixed(0)}%` : `${slippage.toFixed(1)}%`}
+            </span>
           </div>
           <div className="flex gap-2">
-            {[0.5, 1.0, 3.0, 5.0].map((val) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => { setSlippage(val); setCustomSlippage(""); }}
-                className={`flex-1 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
-                  slippage === val && !customSlippage
-                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                    : "bg-zinc-900/50 text-zinc-400 hover:text-white border border-transparent"
+            {[0.5, 1, 3].map((val) => {
+              const isActive = slippage === val && !customSlippage;
+              const label = val === 1 ? "1%" : `${val}%`;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => { setSlippage(val); setCustomSlippage(""); }}
+                  className={`flex-1 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm"
+                      : "bg-zinc-900/50 text-zinc-400 hover:text-white border border-white/5"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+            <div className="relative flex-1">
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="50"
+                placeholder="Custom %"
+                value={customSlippage}
+                onChange={(e) => {
+                  setCustomSlippage(e.target.value);
+                  const num = parseFloat(e.target.value);
+                  if (num > 0) setSlippage(Math.min(50, num));
+                }}
+                className={`w-full bg-zinc-900/50 text-center py-1.5 rounded-xl text-[10px] font-mono text-zinc-300 focus:outline-none border placeholder-zinc-600 transition-all ${
+                  customSlippage ? "border-blue-500 text-blue-300 font-bold bg-blue-950/20" : "border-white/5 focus:border-blue-500/50"
                 }`}
-              >
-                {val}%
-              </button>
-            ))}
+              />
+            </div>
           </div>
+        </div>
+
+        {/* AUTO-EXECUTE PANEL WITH INTERVAL POLLER */}
+        <div id="bonding-curve-auto-execute-panel" className={`p-3.5 rounded-2xl border transition-all space-y-2 ${
+          isAutoExecute 
+            ? "bg-blue-950/30 border-blue-500/40 shadow-lg shadow-blue-500/10" 
+            : "bg-zinc-900/60 border-white/5 hover:border-white/10"
+        }`}>
+          <div className="flex items-center justify-between">
+            <label htmlFor="bonding-curve-auto-execute-checkbox" className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                id="bonding-curve-auto-execute-checkbox"
+                type="checkbox"
+                checked={isAutoExecute}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setIsAutoExecute(checked);
+                  if (checked) {
+                    showToast(`Auto-Execute armed! Interval poller polling every 2s for target impact ≤ ${slippage}%.`, "info");
+                    addTerminalLog("info", `[AUTO-EXECUTE ARMED] Poller active. Swap triggers automatically when Price Impact ≤ ${slippage}%.`);
+                  } else {
+                    showToast("Auto-Execute disarmed.", "info");
+                    addTerminalLog("info", "[AUTO-EXECUTE DISARMED] Poller stopped.");
+                  }
+                }}
+                className="w-4 h-4 rounded accent-blue-500 cursor-pointer"
+              />
+              <span className="text-[11px] font-bold font-display text-white flex items-center gap-1.5">
+                <Zap className={`w-3.5 h-3.5 ${isAutoExecute ? "text-blue-400 animate-pulse" : "text-zinc-400"}`} />
+                Auto-Execute Swap
+              </span>
+            </label>
+
+            <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+              isAutoExecute 
+                ? "bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse" 
+                : "bg-zinc-800 text-zinc-400 border-white/5"
+            }`}>
+              {isAutoExecute ? "ARMED (2s Poller)" : "MANUAL MODE"}
+            </span>
+          </div>
+
+          <p className="text-[10px] text-zinc-400 font-sans">
+            Interval poller checks price impact every 2s and triggers execution immediately once limit condition (≤ {slippage}%) is met.
+          </p>
+
+          {isAutoExecute && (
+            <div className="py-2 px-3 rounded-xl bg-blue-950/50 border border-blue-500/30 text-[10px] font-mono text-blue-300 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 font-bold">
+                <RefreshCw className="w-3 h-3 text-blue-400 animate-spin" />
+                Interval Poller Active
+              </span>
+              <span className="text-[9px] text-blue-200 truncate max-w-[180px]">
+                {autoExecuteLog || "Monitoring..."}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* REAL-TIME CURVE OUTPUT ESTIMATIONS */}

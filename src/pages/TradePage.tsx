@@ -38,7 +38,11 @@ import {
   Flame,
   Check,
   ShieldCheck,
-  Layers
+  Layers,
+  Zap,
+  Clock,
+  RefreshCw,
+  Play
 } from "lucide-react";
 
 interface TradePageProps {
@@ -81,6 +85,11 @@ export default function TradePage({
   const [gasMode, setGasMode] = useState<"standard" | "fast" | "instant">("fast");
   const [tokenBalance, setTokenBalance] = useState<number>(0);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  // Auto-Execute State & Poller
+  const [isAutoExecute, setIsAutoExecute] = useState<boolean>(false);
+  const [autoExecuteStatus, setAutoExecuteStatus] = useState<"idle" | "polling" | "executing">("idle");
+  const [autoExecuteLog, setAutoExecuteLog] = useState<string>("");
 
   // Load user token balance dynamically
   const refreshLocalTokenBalance = () => {
@@ -405,6 +414,77 @@ export default function TradePage({
       }, 1500);
     }
   };
+
+  // Auto-Execute Interval Poller
+  useEffect(() => {
+    if (!isAutoExecute) {
+      setAutoExecuteStatus("idle");
+      setAutoExecuteLog("");
+      return;
+    }
+
+    const num = parseFloat(inputVal) || 0;
+    if (!wallet.isConnected) {
+      setAutoExecuteStatus("polling");
+      setAutoExecuteLog("Poller waiting: Connect wallet first...");
+      return;
+    }
+
+    if (num <= 0) {
+      setAutoExecuteStatus("polling");
+      setAutoExecuteLog("Poller waiting: Enter valid trade amount...");
+      return;
+    }
+
+    if (tradeLoading) {
+      setAutoExecuteStatus("executing");
+      setAutoExecuteLog("Processing trade execution on Base L2...");
+      return;
+    }
+
+    setAutoExecuteStatus("polling");
+
+    // Interval poller running every 2 seconds
+    const intervalId = setInterval(() => {
+      const currentImpact = getPriceImpact();
+      const targetSlippage = slippage;
+
+      setAutoExecuteLog(
+        `Poller Active: Current Impact ${currentImpact.toFixed(2)}% vs Limit ≤ ${targetSlippage.toFixed(2)}%`
+      );
+
+      // Condition: Price impact within slippage tolerance threshold
+      if (currentImpact <= targetSlippage) {
+        addTerminalLog(
+          "success",
+          `[AUTO-EXECUTE TRIGGERED] Target condition satisfied (${currentImpact.toFixed(2)}% Impact ≤ ${targetSlippage}% Limit). Executing instant swap...`
+        );
+        showToast(
+          `[Auto-Execute] Target condition met (${currentImpact.toFixed(2)}% ≤ ${targetSlippage}%). Executing swap automatically!`,
+          "info"
+        );
+
+        setIsAutoExecute(false);
+        setAutoExecuteStatus("executing");
+        clearInterval(intervalId);
+
+        // Execute swap immediately
+        handleConfirmAndExecuteTrade();
+      }
+    }, 2000);
+
+    return () => clearInterval(intervalId);
+  }, [
+    isAutoExecute,
+    inputVal,
+    tradeMode,
+    slippage,
+    wallet.isConnected,
+    wallet.balanceEth,
+    tokenBalance,
+    token.supply,
+    tradeLoading
+  ]);
 
   return (
     <div id="trading-workspace-root" className="space-y-6 animate-fade-in">
@@ -801,61 +881,145 @@ export default function TradePage({
                   </div>
                 </div>
 
-                {/* Slippage Tolerance Panel */}
-                <div className="space-y-1.5 bg-zinc-900/30 p-3 rounded-xl border border-white/5">
+                {/* Slippage Tolerance Selector Panel */}
+                <div id="slippage-tolerance-selector-panel" className="space-y-2 bg-zinc-900/40 p-3.5 rounded-xl border border-white/10 shadow-inner">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider flex items-center gap-1 font-display">
-                      <Settings className="w-3.5 h-3.5 text-zinc-500" />
+                    <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider flex items-center gap-1.5 font-display">
+                      <Settings className="w-3.5 h-3.5 text-purple-400" />
                       Slippage Tolerance
                     </span>
-                    <span className="text-[10px] font-mono font-bold text-zinc-400">
-                      {slippage.toFixed(1)}%
+                    <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                      {slippage % 1 === 0 ? `${slippage.toFixed(0)}%` : `${slippage.toFixed(1)}%`}
                     </span>
                   </div>
+
                   <div className="flex gap-1.5">
-                    {[0.5, 1.0, 3.0].map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => {
-                          setSlippage(val);
-                          setCustomSlippage("");
-                        }}
-                        className={`flex-1 py-1 rounded-md text-[10px] font-mono font-bold transition-all ${
-                          slippage === val && !customSlippage
-                            ? "bg-brand-purple/20 text-brand-purple border border-brand-purple/30 font-extrabold"
-                            : "bg-zinc-900/40 text-zinc-500 hover:text-zinc-300 border border-transparent"
-                        }`}
-                      >
-                        {val}%
-                      </button>
-                    ))}
+                    {[0.5, 1, 3].map((val) => {
+                      const isActive = slippage === val && !customSlippage;
+                      const label = val === 1 ? "1%" : `${val}%`;
+                      return (
+                        <button
+                          key={val}
+                          id={`slippage-option-${val.toString().replace(".", "-")}`}
+                          type="button"
+                          onClick={() => {
+                            setSlippage(val);
+                            setCustomSlippage("");
+                          }}
+                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-brand-purple text-white shadow-md shadow-brand-purple/20 border border-purple-400/50"
+                              : "bg-zinc-900/80 text-zinc-400 hover:text-white border border-white/5 hover:border-white/20"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+
+                    {/* Custom Slippage Input */}
                     <div className="relative flex-1">
                       <input
+                        id="custom-slippage-tolerance-input"
                         type="number"
                         step="0.1"
                         min="0.1"
                         max="50"
-                        placeholder="Custom"
+                        placeholder="Custom %"
                         value={customSlippage}
                         onChange={(e) => {
                           setCustomSlippage(e.target.value);
                           const num = parseFloat(e.target.value);
                           if (num > 0) setSlippage(Math.min(50, num));
                         }}
-                        className="w-full bg-zinc-900/40 text-center py-1 rounded-md text-[10px] font-mono text-zinc-300 focus:outline-none border border-white/5 placeholder-zinc-600 focus:border-brand-purple/30"
+                        className={`w-full bg-zinc-900/80 text-center py-1.5 rounded-lg text-[10px] font-mono text-zinc-200 focus:outline-none border transition-all placeholder-zinc-600 ${
+                          customSlippage ? "border-brand-purple text-purple-300 font-bold bg-purple-950/20" : "border-white/5 focus:border-brand-purple/50"
+                        }`}
                       />
                     </div>
                   </div>
+
                   {slippage < 0.5 && (
                     <p className="text-[9px] text-rose-400 font-mono leading-tight flex items-center gap-1 mt-1">
-                      <Info className="w-3 h-3 flex-shrink-0" /> Low slippage: Trade might revert.
+                      <Info className="w-3 h-3 flex-shrink-0" /> Low slippage tolerance: Order may revert during price volatility.
                     </p>
                   )}
                   {slippage > 5.0 && (
                     <p className="text-[9px] text-amber-400 font-mono leading-tight flex items-center gap-1 mt-1">
-                      <Info className="w-3 h-3 flex-shrink-0" /> High slippage: High sandwich / frontrunning risk.
+                      <Info className="w-3 h-3 flex-shrink-0" /> High slippage: Higher exposure to MEV sandwich bots.
                     </p>
+                  )}
+                </div>
+
+                {/* Auto-Execute Trade Panel with Interval Poller */}
+                <div id="auto-execute-trade-panel" className={`p-3.5 rounded-xl border transition-all space-y-2.5 ${
+                  isAutoExecute 
+                    ? "bg-amber-950/20 border-amber-500/40 shadow-lg shadow-amber-500/5" 
+                    : "bg-zinc-900/40 border-white/5 hover:border-white/10"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="auto-execute-checkbox" className="flex items-center gap-2 cursor-pointer select-none">
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          id="auto-execute-checkbox"
+                          type="checkbox"
+                          checked={isAutoExecute}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setIsAutoExecute(checked);
+                            if (checked) {
+                              showToast(`Auto-Execute armed! Polling interval active for target slippage ≤ ${slippage}%.`, "info");
+                              addTerminalLog("info", `[AUTO-EXECUTE ARMED] Poller started (2s interval). Will execute swap when Price Impact ≤ ${slippage}%.`);
+                            } else {
+                              showToast("Auto-Execute disarmed.", "info");
+                              addTerminalLog("info", "[AUTO-EXECUTE DISARMED] Poller stopped.");
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <div className={`w-5 h-5 rounded-md border transition-all flex items-center justify-center ${
+                          isAutoExecute 
+                            ? "bg-amber-500 border-amber-400 text-black shadow-sm" 
+                            : "bg-zinc-900 border-white/20 text-transparent hover:border-white/40"
+                        }`}>
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                      </div>
+                      
+                      <span className="text-[11px] font-bold font-display text-white flex items-center gap-1.5">
+                        <Zap className={`w-3.5 h-3.5 ${isAutoExecute ? "text-amber-400 animate-pulse" : "text-zinc-400"}`} />
+                        Auto-Execute Swap on Condition
+                      </span>
+                    </label>
+
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                      isAutoExecute 
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse" 
+                        : "bg-zinc-800 text-zinc-400 border-white/5"
+                    }`}>
+                      {isAutoExecute ? "ARMED & POLLING" : "MANUAL MODE"}
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-zinc-400 leading-snug font-sans">
+                    Triggers swap automatically via interval poller (every 2s) once price impact is within target slippage limit (<span className="text-purple-300 font-mono font-bold">≤ {slippage}%</span>).
+                  </p>
+
+                  {isAutoExecute && (
+                    <div className="py-2 px-3 rounded-lg bg-amber-950/40 border border-amber-500/30 text-[10px] font-mono text-amber-300 space-y-1">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <RefreshCw className="w-3 h-3 text-amber-400 animate-spin" />
+                          Interval Poller Active (2000ms)
+                        </span>
+                        <span className="text-[9px] text-amber-400/80">
+                          Target: Impact ≤ {slippage}%
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-amber-200/90 truncate">
+                        {autoExecuteLog || "Initializing price condition monitoring..."}
+                      </div>
+                    </div>
                   )}
                 </div>
 

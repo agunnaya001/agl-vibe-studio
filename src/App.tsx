@@ -36,6 +36,7 @@ import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
 import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
 import OnboardingTour from "./components/OnboardingTour";
+import NotFoundPage from "./components/NotFoundPage";
 
 // Database & Utilities
 import { AgunnayaDatabase } from "./lib/db";
@@ -333,8 +334,14 @@ export default function App() {
         console.warn("[Firestore Sync] Connection passive, operating with local state:", err?.message || err);
       });
 
-    // Check for referral code in URL search params
+    // Check for referral code and tab parameter in URL search params
     const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam) {
+      setCurrentTab(tabParam);
+      setIsLaunched(true);
+    }
+
     const refCode = params.get("ref");
     if (refCode) {
       AgunnayaDatabase.setActiveReferrer(refCode);
@@ -812,6 +819,17 @@ export default function App() {
     }
   };
 
+  // Centralized Tab Navigation Helper with URL syncing
+  const handleTabChange = (tab: string) => {
+    setSelectedToken(null);
+    setCurrentTab(tab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
+
   // Render proper views
   const renderTabContent = () => {
     if (selectedToken) {
@@ -1053,7 +1071,20 @@ export default function App() {
           />
         );
       default:
-        return <div>Tab not found</div>;
+        return (
+          <NotFoundPage
+            requestedTab={currentTab}
+            onNavigate={(tab) => {
+              setSelectedToken(null);
+              setCurrentTab(tab);
+              if (typeof window !== "undefined") {
+                const url = new URL(window.location.href);
+                url.searchParams.set("tab", tab);
+                window.history.replaceState({}, "", url.toString());
+              }
+            }}
+          />
+        );
     }
   };
 
@@ -1101,10 +1132,7 @@ export default function App() {
         {/* Side Navigation bar */}
         <Sidebar 
           currentTab={selectedToken ? "explore" : currentTab} 
-          onSelectTab={(tab) => {
-            setSelectedToken(null);
-            setCurrentTab(tab);
-          }} 
+          onSelectTab={handleTabChange} 
           isAdmin={wallet.isConnected}
           onGoHome={() => setIsLaunched(false)}
           isOpen={isMobileSidebarOpen}
@@ -1136,10 +1164,7 @@ export default function App() {
               setSelectedToken(token);
               setCurrentTab("explore");
             }}
-            onSelectTab={(tab) => {
-              setSelectedToken(null);
-              setCurrentTab(tab);
-            }}
+            onSelectTab={handleTabChange}
             firebaseUser={firebaseUser}
             onSignInWithGoogle={handleSignInWithGoogle}
             onSignOut={handleSignOut}
@@ -1222,8 +1247,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedToken(null);
-                      setCurrentTab("create");
+                      handleTabChange("ai-builder");
                       setIsQuickActionsOpen(false);
                       showToast("Navigated to Token & Contract Deployment Studio", "info");
                     }}

@@ -30,7 +30,7 @@ export interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     id: "step-welcome",
-    tabId: "home",
+    tabId: "dashboard",
     title: "Welcome to Agunnaya Studio",
     subtitle: "Full-Stack Web3 & AI Developer Hub",
     description: "Agunnaya Studio is a full-stack platform built on Base L2. Easily deploy smart contracts, launch meme & utility tokens, stake AGL for yield, and monitor automated protocol fees.",
@@ -72,7 +72,7 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "step-dex",
-    tabId: "dex",
+    tabId: "defi",
     title: "DEX Aggregator & Bonding Curves",
     subtitle: "Optimal Swaps & Liquidity Pools",
     description: "Trade tokens across Uniswap V3, Aerodrome, and Agunnaya Bonding Curves with minimum slippage and automated 0.3% protocol fee route to Treasury.",
@@ -100,7 +100,7 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "step-sdk",
-    tabId: "agunnaya-sdk",
+    tabId: "referrals",
     title: "Agunnaya SDK & Viral Growth",
     subtitle: "@agunnaya/sdk & Referral Rewards",
     description: "Integrate the official Agunnaya SDK into your dApps and share referral links to earn bonus AGL compute credits whenever friends deploy or swap.",
