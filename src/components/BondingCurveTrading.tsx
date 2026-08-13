@@ -39,6 +39,7 @@ import {
   fetchUserTokenBalance,
   burnTokensOnChain
 } from "../lib/tokenFactory";
+import RealTimeGasEstimator from "./RealTimeGasEstimator";
 
 interface BondingCurveTradingProps {
   token: Token;
@@ -719,6 +720,16 @@ export default function BondingCurveTrading({
             </div>
           )}
         </div>
+
+        {/* REAL-TIME GAS PRICE ESTIMATOR (ETHERSCAN V2 API) */}
+        <RealTimeGasEstimator
+          tradeAmount={amountInput}
+          tradeMode={mode}
+          tokenPriceEth={token.currentPrice}
+          tokenSymbol={token.symbol}
+          compact={false}
+          showToast={showToast}
+        />
 
         {/* REAL-TIME CURVE OUTPUT ESTIMATIONS */}
         <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-2 font-mono text-xs">

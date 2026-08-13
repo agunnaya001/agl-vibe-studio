@@ -135,6 +135,27 @@ const SEED_TOKENS: Token[] = [
     createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000
   },
   {
+    address: "0x3b855F88CB93aA642EaEB13F59987C552Fc614b5",
+    name: "Arena Token",
+    symbol: "ARENA",
+    description: "Official gameplay and tournament token on Base Mainnet. Powers the Arena battle system, PvP tournament wagers, champion upgrades, and marketplace settlements.",
+    creator: "0x67817157Dd6E5945ac2fAf1a822e7f1dE26C698E",
+    creatorFeesEarned: 8.95,
+    currentPrice: BASE_PRICE + SLOPE * 16200000,
+    supply: 16200000,
+    maxSupply: 1000000000,
+    marketCap: (BASE_PRICE + SLOPE * 16200000) * 16200000,
+    reserveEth: getReserveAtSupply(16200000),
+    volume24h: 18.64,
+    category: "gamefi",
+    logoUrl: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    socials: { website: "https://basescan.org/address/0x3b855F88CB93aA642EaEB13F59987C552Fc614b5" },
+    isVerified: true,
+    vestingWeeks: 2,
+    referralRewardsPct: 3,
+    createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000
+  },
+  {
     address: "0x345678901234567890123456789012345678EF01",
     name: "Base AI Core",
     symbol: "BAIC",
@@ -179,6 +200,60 @@ const SEED_TOKENS: Token[] = [
 ];
 
 const SEED_NFTS: NFTCollection[] = [
+  {
+    contractAddress: "0x68f08b005b09B0F7D07E1c0B5CDe18E43CE2486A",
+    name: "Arena Champions",
+    symbol: "ACHAMP",
+    description: "Official gaming NFT collection on Base Mainnet. Battle-ready champions with on-chain attributes, combat attack, defense, agile stats, and PvP tournament access.",
+    creator: "0x67817157Dd6E5945ac2fAf1a822e7f1dE26C698E",
+    mintPrice: 0.025,
+    currentSupply: 620,
+    maxSupply: 5000,
+    royaltyFee: 4,
+    isRevealed: true,
+    isVerified: true,
+    imageUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=500&auto=format&fit=crop&q=80",
+    socials: { website: "https://basescan.org/address/0x68f08b005b09B0F7D07E1c0B5CDe18E43CE2486A" },
+    items: [
+      {
+        id: 1,
+        name: "Cyber Warlord #104",
+        description: "Heavy vanguard champion with hyper-dense titanium armor and plasma blade.",
+        imageUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=500&auto=format&fit=crop&q=80",
+        traits: [
+          { trait_type: "Class", value: "Warrior" },
+          { trait_type: "Power", value: "94" },
+          { trait_type: "Defense", value: "88" },
+          { trait_type: "Special", value: "Plasma Cleave" }
+        ]
+      },
+      {
+        id: 2,
+        name: "Neon Valkyrie #212",
+        description: "High-agility striker specialized in speed blitz combos and critical strikes.",
+        imageUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=500&auto=format&fit=crop&q=80",
+        traits: [
+          { trait_type: "Class", value: "Assassin" },
+          { trait_type: "Power", value: "91" },
+          { trait_type: "Speed", value: "98" },
+          { trait_type: "Special", value: "Sonic Strike" }
+        ]
+      },
+      {
+        id: 3,
+        name: "Chrono Archmage #089",
+        description: "Mystic champion harnessing time distortion fields to weaken opponent defenses.",
+        imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80",
+        traits: [
+          { trait_type: "Class", value: "Mage" },
+          { trait_type: "Power", value: "96" },
+          { trait_type: "Mana", value: "100" },
+          { trait_type: "Special", value: "Time Singularity" }
+        ]
+      }
+    ],
+    createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000
+  },
   {
     contractAddress: "0x789012345678901234567890123456789012CDEF",
     name: "Agunnaya Genesis Keys",
@@ -662,7 +737,19 @@ export class AgunnayaDatabase {
   }
 
   static getTokens(): Token[] {
-    return this.safeParse<Token[]>("agl_tokens", SEED_TOKENS);
+    const tokens = this.safeParse<Token[]>("agl_tokens", SEED_TOKENS);
+    // Ensure all critical seed tokens (like AGL and ARENA) exist
+    let updated = false;
+    SEED_TOKENS.forEach(st => {
+      if (!tokens.some(t => t.address.toLowerCase() === st.address.toLowerCase())) {
+        tokens.push(st);
+        updated = true;
+      }
+    });
+    if (updated) {
+      localStorage.setItem("agl_tokens", JSON.stringify(tokens));
+    }
+    return tokens;
   }
 
   static saveTokens(tokens: Token[]) {
@@ -673,7 +760,18 @@ export class AgunnayaDatabase {
   }
 
   static getNFTs(): NFTCollection[] {
-    return this.safeParse<NFTCollection[]>("agl_nfts", SEED_NFTS);
+    const nfts = this.safeParse<NFTCollection[]>("agl_nfts", SEED_NFTS);
+    let updated = false;
+    SEED_NFTS.forEach(sn => {
+      if (!nfts.some(n => n.contractAddress.toLowerCase() === sn.contractAddress.toLowerCase())) {
+        nfts.push(sn);
+        updated = true;
+      }
+    });
+    if (updated) {
+      localStorage.setItem("agl_nfts", JSON.stringify(nfts));
+    }
+    return nfts;
   }
 
   static saveNFTs(nfts: NFTCollection[]) {

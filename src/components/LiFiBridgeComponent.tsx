@@ -25,6 +25,8 @@ interface LiFiBridgeProps {
   onRefreshWallet: () => void;
   addTerminalLog: (type: "info" | "success" | "error" | "buy" | "sell" | "system", message: string) => void;
   showToast: (message: string, type: "success" | "error" | "info") => void;
+  targetToken?: { symbol: string; name: string; address: string; logoUrl?: string };
+  compact?: boolean;
 }
 
 interface LifiChain {
@@ -55,6 +57,14 @@ const STANDARD_ERC20_ABI = [
   "function name() view returns (string)"
 ];
 
+const BASE_COMMON_TOKENS = [
+  { symbol: "ETH", name: "Ether", address: "0x0000000000000000000000000000000000000000", decimals: 18, logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png" },
+  { symbol: "USDC", name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, logo: "https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png" },
+  { symbol: "USDT", name: "Tether USD", address: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2", decimals: 6, logo: "https://assets.coingecko.com/coins/images/325/small/Tether.png" },
+  { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", decimals: 18, logo: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?w=100&auto=format&fit=crop&q=80" },
+  { symbol: "ARENA", name: "Arena Token", address: "0x3b855F88CB93aA642EaEB13F59987C552Fc614b5", decimals: 18, logo: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80" }
+];
+
 const SUPPORTED_CHAINS: LifiChain[] = [
   { id: 8453, key: "bas", name: "Base Mainnet", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/base.png", coin: "ETH" },
   { id: 1, key: "eth", name: "Ethereum Mainnet", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/ethereum.png", coin: "ETH" },
@@ -65,19 +75,27 @@ const SUPPORTED_CHAINS: LifiChain[] = [
   { id: 43114, key: "ava", name: "Avalanche C-Chain", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/avalanche.png", coin: "AVAX" }
 ];
 
-const COMMON_TOKENS = [
-  { symbol: "ETH", name: "Ether", address: "0x0000000000000000000000000000000000000000", decimals: 18, logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png" },
-  { symbol: "USDC", name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, logo: "https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png" },
-  { symbol: "USDT", name: "Tether USD", address: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2", decimals: 6, logo: "https://assets.coingecko.com/coins/images/325/small/Tether.png" },
-  { symbol: "AGL", name: "Agunnaya Token", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", decimals: 18, logo: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?w=100&auto=format&fit=crop&q=80" }
-];
+export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTerminalLog, showToast, targetToken, compact }: LiFiBridgeProps) {
+  // Compute available tokens including targetToken
+  const availableTokens = React.useMemo(() => {
+    const list = [...BASE_COMMON_TOKENS];
+    if (targetToken && !list.some(t => t.symbol.toUpperCase() === targetToken.symbol.toUpperCase())) {
+      list.push({
+        symbol: targetToken.symbol,
+        name: targetToken.name,
+        address: targetToken.address,
+        decimals: 18,
+        logo: targetToken.logoUrl || "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=100&auto=format&fit=crop&q=80"
+      });
+    }
+    return list;
+  }, [targetToken]);
 
-export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTerminalLog, showToast }: LiFiBridgeProps) {
   // State
   const [fromChainId, setFromChainId] = useState<number>(1); // Ethereum Mainnet
   const [toChainId, setToChainId] = useState<number>(8453); // Base Mainnet
   const [fromTokenSymbol, setFromTokenSymbol] = useState<string>("ETH");
-  const [toTokenSymbol, setToTokenSymbol] = useState<string>("AGL");
+  const [toTokenSymbol, setToTokenSymbol] = useState<string>(targetToken?.symbol || "ETH");
   const [fromAmount, setFromAmount] = useState<string>("0.05");
 
   // Route & Quote State
@@ -120,8 +138,8 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
     setQuoteError(null);
 
     try {
-      const fromToken = COMMON_TOKENS.find(t => t.symbol === fromTokenSymbol);
-      const toToken = COMMON_TOKENS.find(t => t.symbol === toTokenSymbol);
+      const fromToken = availableTokens.find(t => t.symbol === fromTokenSymbol);
+      const toToken = availableTokens.find(t => t.symbol === toTokenSymbol);
 
       const parsedAmount = ethers.parseUnits(fromAmount, fromToken?.decimals || 18).toString();
 
@@ -180,7 +198,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
     } finally {
       setLoadingQuote(false);
     }
-  }, [fromChainId, toChainId, fromTokenSymbol, toTokenSymbol, fromAmount, wallet.address, addTerminalLog]);
+  }, [fromChainId, toChainId, fromTokenSymbol, toTokenSymbol, fromAmount, wallet.address, addTerminalLog, availableTokens]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -251,8 +269,8 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
         setBridgeStatus("Fetching signed transaction payload from LI.FI route solver...");
         addTerminalLog("info", `LIFI_BRIDGE: Requesting live route quote from LI.FI API for user ${userAddress}...`);
 
-        const fromTokenObj = COMMON_TOKENS.find(t => t.symbol === fromTokenSymbol);
-        const toTokenObj = COMMON_TOKENS.find(t => t.symbol === toTokenSymbol);
+        const fromTokenObj = availableTokens.find(t => t.symbol === fromTokenSymbol);
+        const toTokenObj = availableTokens.find(t => t.symbol === toTokenSymbol);
         const parsedAmountWei = ethers.parseUnits(fromAmount, fromTokenObj?.decimals || 18).toString();
 
         const queryParams = new URLSearchParams({
@@ -360,7 +378,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
   const getChainName = (id: number) => SUPPORTED_CHAINS.find(c => c.id === id)?.name || `Chain #${id}`;
 
   const formattedToAmount = quoteData?.estimate?.toAmount 
-    ? (parseFloat(ethers.formatUnits(quoteData.estimate.toAmount, COMMON_TOKENS.find(t => t.symbol === toTokenSymbol)?.decimals || 18))).toFixed(4)
+    ? (parseFloat(ethers.formatUnits(quoteData.estimate.toAmount, availableTokens.find(t => t.symbol === toTokenSymbol)?.decimals || 18))).toFixed(4)
     : "0.00";
 
   return (
@@ -491,7 +509,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
                   onChange={(e) => setFromTokenSymbol(e.target.value)}
                   className="w-full bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-purple font-mono cursor-pointer"
                 >
-                  {COMMON_TOKENS.map(t => (
+                  {availableTokens.map(t => (
                     <option key={t.symbol} value={t.symbol}>{t.symbol} - {t.name}</option>
                   ))}
                 </select>
@@ -568,7 +586,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
                   onChange={(e) => setToTokenSymbol(e.target.value)}
                   className="w-full bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-purple font-mono cursor-pointer"
                 >
-                  {COMMON_TOKENS.map(t => (
+                  {availableTokens.map(t => (
                     <option key={t.symbol} value={t.symbol}>{t.symbol} - {t.name}</option>
                   ))}
                 </select>

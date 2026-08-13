@@ -50,6 +50,7 @@ export interface DexQuote {
 const SUPPORTED_TOKENS = [
   { symbol: "ETH", name: "Ethereum", icon: "https://assets.coingecko.com/coins/images/279/large/ethereum.png", address: "0x0000000000000000000000000000000000000000", decimals: 18, priceUsd: 3250 },
   { symbol: "AGL", name: "Agunnaya Labs Token", icon: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80", address: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698", decimals: 18, priceUsd: 0.1625 },
+  { symbol: "ARENA", name: "Arena Gaming Token", icon: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=120&q=80", address: "0x3b855F88CB93aA642EaEB13F59987C552Fc614b5", decimals: 18, priceUsd: 0.0845 },
   { symbol: "USDC", name: "USD Coin (Base)", icon: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, priceUsd: 1.00 },
   { symbol: "AERO", name: "Aerodrome Token", icon: "https://assets.coingecko.com/coins/images/31745/large/aerodrome.png", address: "0x940181a94A35A4569E4529A3CDfB74e38FD98631", decimals: 18, priceUsd: 1.25 },
   { symbol: "cbETH", name: "Coinbase Wrapped Staked ETH", icon: "https://assets.coingecko.com/coins/images/27008/large/cbeth.png", address: "0x2Ae3F1Ec7F1F5012A27a5d3f112702170bA3b400", decimals: 18, priceUsd: 3510 }

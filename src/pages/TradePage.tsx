@@ -6,6 +6,8 @@ import BondingCurveAnalytics from "../components/BondingCurveAnalytics";
 import BondingCurveTrading from "../components/BondingCurveTrading";
 import TokenSecurityAudit from "../components/TokenSecurityAudit";
 import LiquidityDepthChart from "../components/LiquidityDepthChart";
+import LiFiBridgeComponent from "../components/LiFiBridgeComponent";
+import RealTimeGasEstimator from "../components/RealTimeGasEstimator";
 import TerminalLog, { TerminalLine } from "../components/TerminalLog";
 import ImageWithFallback from "../components/ImageWithFallback";
 import TradeConfirmationModal from "../components/TradeConfirmationModal";
@@ -36,6 +38,7 @@ import {
   Settings,
   Info,
   Flame,
+  Fuel,
   Check,
   ShieldCheck,
   Layers,
@@ -73,11 +76,11 @@ export default function TradePage({
   firebaseUser
 }: TradePageProps) {
   const [tradeMode, setTradeMode] = useState<"buy" | "sell">("buy");
-  const [tradingInterface, setTradingInterface] = useState<"bondingContract" | "quickSwap">("bondingContract");
+  const [tradingInterface, setTradingInterface] = useState<"bondingContract" | "quickSwap" | "bridge">("bondingContract");
   const [inputVal, setInputVal] = useState("");
   const [estimatedOutput, setEstimatedOutput] = useState(0);
   const [tradeLoading, setTradeLoading] = useState(false);
-  const [chartView, setChartView] = useState<"bonding" | "analytics" | "depth" | "gecko" | "audit">("bonding");
+  const [chartView, setChartView] = useState<"bonding" | "analytics" | "depth" | "gecko" | "audit" | "bridge" | "gas">("bonding");
 
   // Premium trading utility states
   const [slippage, setSlippage] = useState<number>(1.0);
@@ -646,6 +649,32 @@ export default function TradePage({
                     <ShieldCheck className="w-3.5 h-3.5" />
                     Security Audit
                   </button>
+                  <button
+                    id="chart-mode-bridge"
+                    type="button"
+                    onClick={() => setChartView("bridge")}
+                    className={`px-3 py-1.5 rounded-md text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 ${
+                      chartView === "bridge"
+                        ? "bg-gradient-to-r from-brand-purple to-purple-600 text-white shadow-md font-extrabold"
+                        : "text-zinc-500 hover:text-purple-300"
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                    Bridge Assets (LI.FI)
+                  </button>
+                  <button
+                    id="chart-mode-gas"
+                    type="button"
+                    onClick={() => setChartView("gas")}
+                    className={`px-3 py-1.5 rounded-md text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 ${
+                      chartView === "gas"
+                        ? "bg-[#0052FF] text-white shadow-md font-extrabold"
+                        : "text-zinc-500 hover:text-blue-300"
+                    }`}
+                  >
+                    <Fuel className="w-3.5 h-3.5 text-blue-400" />
+                    Gas Oracle (Etherscan V2)
+                  </button>
                 </div>
               </div>
 
@@ -683,9 +712,36 @@ export default function TradePage({
               />
             ) : chartView === "audit" ? (
               <TokenSecurityAudit 
-                token={token}
+                token={token} 
                 showToast={showToast}
               />
+            ) : chartView === "gas" ? (
+              <div className="space-y-4">
+                <RealTimeGasEstimator
+                  tradeAmount={inputVal}
+                  tradeMode={tradeMode}
+                  tokenPriceEth={token.currentPrice}
+                  tokenSymbol={token.symbol}
+                  compact={false}
+                  showToast={showToast}
+                />
+              </div>
+            ) : chartView === "bridge" ? (
+              <div className="space-y-4">
+                <LiFiBridgeComponent
+                  wallet={wallet}
+                  onRefreshWallet={onRefreshWallet}
+                  addTerminalLog={addTerminalLog}
+                  showToast={showToast}
+                  targetToken={{
+                    symbol: token.symbol,
+                    name: token.name,
+                    address: token.address,
+                    logoUrl: token.logoUrl
+                  }}
+                  compact={false}
+                />
+              </div>
             ) : (
               <div className="w-full h-[450px] rounded-2xl overflow-hidden border border-white/10 bg-black relative shadow-2xl">
                 {/* Embedded GeckoTerminal Live Chart */}
@@ -725,34 +781,62 @@ export default function TradePage({
         <div className="space-y-6">
           
           {/* Trading Interface Selector Tabs */}
-          <div className="flex bg-zinc-950 p-1 rounded-2xl border border-white/10 shadow-lg">
+          <div className="flex bg-zinc-950 p-1 rounded-2xl border border-white/10 shadow-lg gap-1">
             <button
               type="button"
               onClick={() => setTradingInterface("bondingContract")}
-              className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-2 rounded-xl text-[11px] font-bold font-display transition-all flex items-center justify-center gap-1 ${
                 tradingInterface === "bondingContract"
                   ? "bg-[#0052FF] text-white shadow-md"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Bonding Curve Contract</span>
+              <Sparkles className="w-3 h-3 text-amber-300" />
+              <span>Bonding Curve</span>
             </button>
             <button
               type="button"
               onClick={() => setTradingInterface("quickSwap")}
-              className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold font-display transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-2 rounded-xl text-[11px] font-bold font-display transition-all flex items-center justify-center gap-1 ${
                 tradingInterface === "quickSwap"
                   ? "bg-brand-purple text-white shadow-md"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-300" />
+              <ArrowLeftRight className="w-3 h-3 text-emerald-300" />
               <span>Quick Swap</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTradingInterface("bridge")}
+              className={`flex-1 py-2 px-2 rounded-xl text-[11px] font-bold font-display transition-all flex items-center justify-center gap-1 ${
+                tradingInterface === "bridge"
+                  ? "bg-gradient-to-r from-brand-purple to-purple-600 text-white shadow-md font-extrabold"
+                  : "text-zinc-400 hover:text-purple-300"
+              }`}
+            >
+              <Globe className="w-3 h-3 text-purple-300 animate-pulse" />
+              <span>Bridge (LI.FI)</span>
             </button>
           </div>
 
-          {tradingInterface === "bondingContract" ? (
+          {tradingInterface === "bridge" ? (
+            <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-zinc-950 space-y-4">
+              <LiFiBridgeComponent
+                wallet={wallet}
+                onRefreshWallet={onRefreshWallet}
+                addTerminalLog={addTerminalLog}
+                showToast={showToast}
+                targetToken={{
+                  symbol: token.symbol,
+                  name: token.name,
+                  address: token.address,
+                  logoUrl: token.logoUrl
+                }}
+                compact={true}
+              />
+            </div>
+          ) : tradingInterface === "bondingContract" ? (
             <BondingCurveTrading
               token={token}
               wallet={wallet}
@@ -1034,45 +1118,15 @@ export default function TradePage({
                   </span>
                 </div>
 
-                {/* Gas / Speed Settings Panel */}
-                <div className="space-y-1.5 bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider flex items-center gap-1 font-display">
-                      <Flame className="w-3.5 h-3.5 text-zinc-500" />
-                      Transaction Speed (Gas)
-                    </span>
-                    <span className="text-[10px] font-mono font-bold text-zinc-400">
-                      {wallet.isSmartAccount ? "AA Sponsored" : `${gasMode === "standard" ? "0.0001" : gasMode === "fast" ? "0.0002" : "0.0004"} ETH`}
-                    </span>
-                  </div>
-                  {wallet.isSmartAccount ? (
-                    <div className="py-2 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[9px] text-emerald-400 font-mono leading-normal">
-                      ⚡ **Account Abstraction Active!** Gas fees are 100% sponsored by Agunnaya Labs Relayer.
-                    </div>
-                  ) : (
-                    <div className="flex gap-1.5">
-                      {[
-                        { mode: "standard", label: "Std", gwei: "~15 Gwei" },
-                        { mode: "fast", label: "Fast", gwei: "~25 Gwei" },
-                        { mode: "instant", label: "Instant", gwei: "~50 Gwei" }
-                      ].map((g) => (
-                        <button
-                          key={g.mode}
-                          type="button"
-                          onClick={() => setGasMode(g.mode as any)}
-                          className={`flex-1 py-1 rounded-md text-[10px] font-mono font-bold transition-all flex flex-col items-center cursor-pointer ${
-                            gasMode === g.mode
-                              ? "bg-brand-blue/20 text-brand-blue border border-brand-blue/30 font-extrabold"
-                              : "bg-zinc-900/40 text-zinc-500 hover:text-zinc-300 border border-transparent"
-                          }`}
-                        >
-                          <span>{g.label}</span>
-                          <span className="text-[8px] opacity-60 font-medium">{g.gwei}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Etherscan V2 Real-Time Gas Price Estimator & Congestion Tracker */}
+                <RealTimeGasEstimator
+                  tradeAmount={inputVal}
+                  tradeMode={tradeMode}
+                  tokenPriceEth={token.currentPrice}
+                  tokenSymbol={token.symbol}
+                  compact={false}
+                  showToast={showToast}
+                />
 
                 {/* Real-time estimation outputs and Web3 fee telemetry */}
                 <div className="bg-zinc-900/60 p-3.5 rounded-xl border border-white/5 space-y-2 text-xs font-mono">
@@ -1298,36 +1352,77 @@ export default function TradePage({
             {tokenAlerts.length > 0 && (
               <div className="border-t border-white/5 pt-3 space-y-2">
                 <span className="block text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Active Alerts ({tokenAlerts.length})</span>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                  {tokenAlerts.map((alert) => (
-                    <div key={alert.id} className="flex justify-between items-center p-2 rounded-lg bg-zinc-950/60 border border-white/5 text-[10px] font-mono">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-[8px] font-bold px-1 py-0.2 rounded uppercase ${
-                            alert.condition === "above" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                          }`}>
-                            {alert.condition === "above" ? "Above" : "Below"}
-                          </span>
-                          <span className="text-white font-bold">{(alert.targetPrice * 1000000).toFixed(3)} μETH</span>
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                  {tokenAlerts.map((alert) => {
+                    const currentSpotUeth = token.currentPrice * 1000000;
+                    const targetUeth = alert.targetPrice * 1000000;
+                    const diffPct = currentSpotUeth > 0 ? ((targetUeth - currentSpotUeth) / currentSpotUeth) * 100 : 0;
+                    const alertStrokeColor = alert.condition === "above" ? "#10b981" : "#f43f5e";
+
+                    return (
+                      <div key={alert.id} className="flex justify-between items-center gap-2 p-2.5 rounded-xl bg-zinc-950/70 border border-white/5 text-[10px] font-mono hover:border-white/10 transition-all">
+                        {/* Target info & status */}
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                              alert.condition === "above" 
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                                : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                            }`}>
+                              {alert.condition === "above" ? "Above ↑" : "Below ↓"}
+                            </span>
+                            <span className="text-white font-bold">{targetUeth.toFixed(3)} μETH</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[8px] text-zinc-500 flex-wrap">
+                            <span>Set: {new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className={diffPct >= 0 ? "text-emerald-400/80" : "text-rose-400/80"}>
+                              ({diffPct >= 0 ? `+${diffPct.toFixed(1)}%` : `${diffPct.toFixed(1)}%`} target)
+                            </span>
+                            {alert.status === "triggered" && alert.triggeredAt && (
+                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-1 rounded animate-pulse">Triggered!</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[8px] text-zinc-500">
-                          <span>Set: {new Date(alert.createdAt).toLocaleTimeString()}</span>
-                          {alert.status === "triggered" && alert.triggeredAt && (
-                            <span className="text-emerald-500 font-bold">Triggered!</span>
-                          )}
-                        </div>
+
+                        {/* Mini Sparkline Chart Visualization (Recharts) */}
+                        {sparklineData.length > 0 && (
+                          <div className="w-20 sm:w-24 h-7 bg-zinc-900/90 rounded-lg px-1 py-0.5 border border-white/5 flex flex-col justify-center flex-shrink-0" title={`Recent ${token.symbol} Price Trend Sparkline`}>
+                            <div className="w-full h-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={sparklineData}>
+                                  <defs>
+                                    <linearGradient id={`alertSparklineGrad-${alert.id}`} x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor={alertStrokeColor} stopOpacity={0.4} />
+                                      <stop offset="100%" stopColor={alertStrokeColor} stopOpacity={0.05} />
+                                    </linearGradient>
+                                  </defs>
+                                  <Area
+                                    type="monotone"
+                                    dataKey="price"
+                                    stroke={alertStrokeColor}
+                                    strokeWidth={1.5}
+                                    fill={`url(#alertSparklineGrad-${alert.id})`}
+                                    dot={false}
+                                    isAnimationActive={false}
+                                  />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Delete Alert Button */}
+                        <button
+                          type="button"
+                          onClick={() => onDeletePriceAlert(alert.id)}
+                          className="p-1.5 rounded-lg hover:bg-rose-500/10 text-zinc-500 hover:text-rose-400 transition-all flex-shrink-0 cursor-pointer"
+                          title="Delete Alert"
+                        >
+                          <Trash className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => onDeletePriceAlert(alert.id)}
-                        className="p-1.5 rounded-md hover:bg-white/5 text-zinc-500 hover:text-rose-500 transition-all"
-                        title="Delete Alert"
-                      >
-                        <Trash className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

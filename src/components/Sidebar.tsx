@@ -127,7 +127,7 @@ export default function Sidebar({
     { id: "token-factory", label: "Token Factory (Base)", icon: Database, category: "Assets & Creation", highlight: true, description: "Deploy ERC-20 Tokens" },
     { id: "nfts", label: "NFT Studio", icon: Disc, category: "Assets & Creation", description: "Collections & Mints" },
     { id: "daos", label: "DAO Governance", icon: Users, category: "Assets & Creation", highlight: true, description: "Proposals & Voting" },
-    { id: "gamefi", label: "GameFi Arena", icon: Gamepad2, category: "Assets & Creation", description: "Game Rewards & Badges" },
+    { id: "gamefi", label: "Arena Gaming & PvP Hub", icon: Gamepad2, category: "Assets & Creation", highlight: true, description: "Champion NFTs, Marketplace & PvP" },
     { id: "ai-agents", label: "AI Agent Studio", icon: Bot, category: "Assets & Creation", description: "Deploy AI Web3 Assistants" },
     { id: "defi", label: "Staking & Swaps", icon: Coins, category: "DeFi Tools", description: "DeFi Liquidity Swaps" },
     { id: "staking-vault", label: "Automated Staking Vaults", icon: Landmark, category: "DeFi Tools", highlight: true, description: "Earn Passive Staking Rewards" },

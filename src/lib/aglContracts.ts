@@ -22,6 +22,77 @@ export const AGL_TREASURY_ADDRESS = "0x725615639B760DAa64b3e794AA49B5A9a8A7632E"
 // 6. Safe Wallet Multi-Sign Address
 export const AGL_MULTISIG_SAFE_ADDRESS = "0x51546D5f9B66EcE7b6b91FA09D5b4aFF648D1e2d";
 
+// 7. Base Mainnet Arena Ecosystem Contracts
+export const ARENA_MARKETPLACE_ADDRESS = "0x67817157Dd6E5945ac2fAf1a822e7f1dE26C698E";
+export const ARENA_TOKEN_ADDRESS = "0x3b855F88CB93aA642EaEB13F59987C552Fc614b5";
+export const ARENA_CHAMPION_NFT_ADDRESS = "0x68f08b005b09B0F7D07E1c0B5CDe18E43CE2486A";
+export const ARENA_BATTLE_ADDRESS = "0xF6fc2B6a306B626548ca9dF25B31a22D0f8971CF";
+export const ARENA_PVP_ADDRESS = "0xd0C4Af12E95f9590e7314D079C58597771E57533";
+
+export interface BaseEcosystemContractInfo {
+  name: string;
+  symbol?: string;
+  address: string;
+  purpose: string;
+  category: "DeFi & Utility" | "Gaming & PvP" | "NFT Marketplace" | "Core Protocol";
+  basescanUrl: string;
+  isVerified: boolean;
+}
+
+export const BASE_MAINNET_ECOSYSTEM_CONTRACTS: BaseEcosystemContractInfo[] = [
+  {
+    name: "AGL Token",
+    symbol: "AGL",
+    address: AGL_TOKEN_ADDRESS,
+    purpose: "Native platform utility token for AI compute, fee discounts, and governance",
+    category: "DeFi & Utility",
+    basescanUrl: `https://basescan.org/address/${AGL_TOKEN_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "ArenaToken",
+    symbol: "ARENA",
+    address: ARENA_TOKEN_ADDRESS,
+    purpose: "Gaming & tournament token for arena battles, champion upgrades, and marketplace settlements",
+    category: "Gaming & PvP",
+    basescanUrl: `https://basescan.org/address/${ARENA_TOKEN_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "ArenaChampion",
+    symbol: "ACHAMP",
+    address: ARENA_CHAMPION_NFT_ADDRESS,
+    purpose: "ERC-721 Gaming NFT collection representing battle champions with on-chain traits and stats",
+    category: "Gaming & PvP",
+    basescanUrl: `https://basescan.org/address/${ARENA_CHAMPION_NFT_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "ArenaMarketplace",
+    address: ARENA_MARKETPLACE_ADDRESS,
+    purpose: "Decentralized NFT trading platform for champions, weapons, and in-game artifacts",
+    category: "NFT Marketplace",
+    basescanUrl: `https://basescan.org/address/${ARENA_MARKETPLACE_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "ArenaBattle",
+    address: ARENA_BATTLE_ADDRESS,
+    purpose: "On-chain battle execution system, matchmaking engine, and combat calculation logic",
+    category: "Gaming & PvP",
+    basescanUrl: `https://basescan.org/address/${ARENA_BATTLE_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "ArenaPVP",
+    address: ARENA_PVP_ADDRESS,
+    purpose: "Decentralized PvP tournament brackets, entry stake escrows, and prize pool distribution",
+    category: "Gaming & PvP",
+    basescanUrl: `https://basescan.org/address/${ARENA_PVP_ADDRESS}`,
+    isVerified: true
+  }
+];
+
 /**
  * Complete, untruncated ABI for AGLTOKEN.sol (ERC-20 + Burn + Mint + Vesting)
  */
