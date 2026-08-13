@@ -245,8 +245,11 @@ export default function StakingComponent({
         setUserPositions(fetchedPositions);
       } else {
         // Sandbox Simulation Mode using localStorage persistence
-        const cached = localStorage.getItem("agl_staking_positions");
-        let positionsList: StakingPosition[] = cached ? JSON.parse(cached) : [];
+        let positionsList: StakingPosition[] = [];
+        try {
+          const cached = localStorage.getItem("agl_staking_positions");
+          if (cached) positionsList = JSON.parse(cached);
+        } catch {}
 
         // Calculate dynamic live rewards in Sandbox
         const updatedList = positionsList.map((pos) => {

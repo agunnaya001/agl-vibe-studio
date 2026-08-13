@@ -26,6 +26,37 @@ function getAIClient(): GoogleGenAI {
   });
 }
 
+// Robust JSON parse helper with markdown block stripper and delimiter extractor
+function safeParseJson<T = any>(raw: string | undefined | null, fallback: T): T {
+  if (!raw || typeof raw !== "string" || !raw.trim()) return fallback;
+  let cleaned = raw.trim();
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+  cleaned = cleaned.trim();
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1)) as T;
+      } catch {}
+    }
+    const firstBracket = cleaned.indexOf("[");
+    const lastBracket = cleaned.lastIndexOf("]");
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      try {
+        return JSON.parse(cleaned.substring(firstBracket, lastBracket + 1)) as T;
+      } catch {}
+    }
+    return fallback;
+  }
+}
+
 // AI Builder endpoint
 app.post("/api/ai/build", async (req, res) => {
   const { prompt, type, accessControl } = req.body;
@@ -91,7 +122,9 @@ Format the output strictly as JSON.`;
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    const parsed = safeParseJson(text, null);
+    if (!parsed) throw new Error("Could not parse AI project JSON");
+    res.json(parsed);
   } catch (error: any) {
     console.warn("AI Build Fallback Triggered:", error?.message || error);
     const cleanName = prompt.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("") || "Agunnaya";
@@ -182,7 +215,9 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    const parsed = safeParseJson(text, null);
+    if (!parsed) throw new Error("Could not parse AI proposal JSON");
+    res.json(parsed);
   } catch (error: any) {
     console.warn("AI Propose Deployment Fallback Triggered:", error?.message || error);
     const promptReq = req.body.prompt || "Web3 Utility Token";
@@ -299,7 +334,9 @@ User Custom Directives/Preferences: "${customDirectives || "Maximize yield while
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    const parsed = safeParseJson(text, null);
+    if (!parsed) throw new Error("Could not parse AI rebalance JSON");
+    res.json(parsed);
   } catch (error: any) {
     console.warn("AI Portfolio Rebalancer Fallback Triggered:", error?.message || error);
     res.json({
@@ -552,7 +589,11 @@ User instruction/guideline for response: ${prompt}`
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    const parsed = safeParseJson(text, {
+      subject: "Agunnaya Labs Studio Project Update",
+      body: "<p>Hello,<br/>Here is the latest update regarding your Web3 deployment on Base.</p>"
+    });
+    res.json(parsed);
   } catch (error: any) {
     console.error("AI Email Draft Error:", error);
     res.status(500).json({ error: error.message || "Could not generate email draft." });

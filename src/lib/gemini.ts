@@ -16,6 +16,18 @@ export interface AIProjectResult {
   launchChecklist: string[];
 }
 
+async function safeFetchJson<T = any>(response: Response): Promise<T> {
+  const text = await response.text();
+  if (!text || !text.trim()) {
+    throw new Error(`Empty response received from server (${response.status})`);
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch (err: any) {
+    throw new Error(`Malformed JSON response (${response.status}): ${err?.message || err}`);
+  }
+}
+
 export async function generateProjectAI(prompt: string, type: string, accessControl: string = "Ownable"): Promise<AIProjectResult> {
   const response = await fetch("/api/ai/build", {
     method: "POST",
@@ -26,11 +38,15 @@ export async function generateProjectAI(prompt: string, type: string, accessCont
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Failed to generate project. Code: ${response.status}`);
+    let errMsg = `Failed to generate project. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  return response.json();
+  return safeFetchJson<AIProjectResult>(response);
 }
 
 export async function chatWithAgentAI(
@@ -46,11 +62,15 @@ export async function chatWithAgentAI(
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Autonomous agent system link broken. Code: ${response.status}`);
+    let errMsg = `Autonomous agent system link broken. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  const result = await response.json();
+  const result = await safeFetchJson<{ content: string }>(response);
   return result.content;
 }
 
@@ -79,11 +99,15 @@ export async function chatWithAgentAdvancedAI(
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Autonomous agent advanced cognitive link broken. Code: ${response.status}`);
+    let errMsg = `Autonomous agent advanced cognitive link broken. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  return response.json();
+  return safeFetchJson<{ content: string; groundingMetadata?: any }>(response);
 }
 
 export async function transcribeAudioAI(audioBytes: string, mimeType?: string): Promise<string> {
@@ -96,11 +120,15 @@ export async function transcribeAudioAI(audioBytes: string, mimeType?: string): 
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Audio transcription module failed. Code: ${response.status}`);
+    let errMsg = `Audio transcription module failed. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  const result = await response.json();
+  const result = await safeFetchJson<{ transcription: string }>(response);
   return result.transcription;
 }
 
@@ -114,11 +142,15 @@ export async function generateImageAI(prompt: string, aspectRatio?: string, imag
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Image generator module rejected task. Code: ${response.status}`);
+    let errMsg = `Image generator module rejected task. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  const result = await response.json();
+  const result = await safeFetchJson<{ imageUrl: string }>(response);
   return result.imageUrl;
 }
 
@@ -132,11 +164,15 @@ export async function generateVideoStartAI(prompt: string, aspectRatio?: string,
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Temporal video rendering start failed. Code: ${response.status}`);
+    let errMsg = `Temporal video rendering start failed. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  const result = await response.json();
+  const result = await safeFetchJson<{ operationName: string }>(response);
   return result.operationName;
 }
 
@@ -150,11 +186,15 @@ export async function pollVideoStatusAI(operationName: string): Promise<boolean>
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Video status query offline. Code: ${response.status}`);
+    let errMsg = `Video status query offline. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  const result = await response.json();
+  const result = await safeFetchJson<{ done: boolean }>(response);
   return result.done;
 }
 
@@ -168,11 +208,15 @@ export async function optimizeSystemPromptAI(prompt: string): Promise<string> {
   });
 
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Failed to optimize prompt. Code: ${response.status}`);
+    let errMsg = `Failed to optimize prompt. Code: ${response.status}`;
+    try {
+      const err = await safeFetchJson(response);
+      if (err?.error) errMsg = err.error;
+    } catch {}
+    throw new Error(errMsg);
   }
 
-  const result = await response.json();
+  const result = await safeFetchJson<{ optimizedPrompt: string }>(response);
   return result.optimizedPrompt;
 }
 
@@ -210,11 +254,15 @@ export async function proposeDeploymentAI(prompt: string, categoryPreference?: s
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || `Failed to generate deployment proposal. Code: ${response.status}`);
+      let errMsg = `Failed to generate deployment proposal. Code: ${response.status}`;
+      try {
+        const err = await safeFetchJson(response);
+        if (err?.error) errMsg = err.error;
+      } catch {}
+      throw new Error(errMsg);
     }
 
-    return await response.json();
+    return await safeFetchJson<AIDeploymentProposal>(response);
   } catch (err: any) {
     console.warn("Using fallback AI synthesis for proposal:", err.message);
     const cleanedPrompt = prompt.trim();
@@ -332,11 +380,15 @@ export async function rebalancePortfolioAI(
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || `Failed to rebalance portfolio. Code: ${response.status}`);
+      let errMsg = `Failed to rebalance portfolio. Code: ${response.status}`;
+      try {
+        const err = await safeFetchJson(response);
+        if (err?.error) errMsg = err.error;
+      } catch {}
+      throw new Error(errMsg);
     }
 
-    return await response.json();
+    return await safeFetchJson<AIPortfolioRebalanceResult>(response);
   } catch (err: any) {
     console.warn("Using fallback AI synthesis for portfolio rebalance:", err.message);
     const totalVal = portfolio.totalUsdValue || 500;

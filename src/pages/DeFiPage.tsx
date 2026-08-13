@@ -274,12 +274,12 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
         setUserPositions(fetchedPositions);
       } else {
         // Sandbox Simulation Mode (Durable persistence in local storage)
-        const cached = localStorage.getItem("agl_staking_positions");
-        if (cached) {
-          setUserPositions(JSON.parse(cached));
-        } else {
-          setUserPositions([]);
-        }
+        let positions: any[] = [];
+        try {
+          const cached = localStorage.getItem("agl_staking_positions");
+          if (cached) positions = JSON.parse(cached);
+        } catch {}
+        setUserPositions(positions);
         setUserAllowance(ethers.parseEther("1000000000")); // simulate unlimited approval in sandbox
       }
       setLoadingUserStaking(false);

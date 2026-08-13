@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Sparkles, 
   TrendingUp, 
@@ -60,8 +60,17 @@ export default function AIPortfolioRebalancer({
   const aglPriceUsd = 0.16;
 
   // Staked positions from local storage or default estimation
-  const savedPositionsStr = typeof window !== "undefined" ? localStorage.getItem("agl_staking_positions") : null;
-  const savedPositions = savedPositionsStr ? JSON.parse(savedPositionsStr) : [];
+  const savedPositions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("agl_staking_positions");
+      if (!saved) return [];
+      return JSON.parse(saved);
+    } catch (e) {
+      console.warn("Could not parse saved staking positions:", e);
+      return [];
+    }
+  }, []);
   const totalStakedAgl = savedPositions.reduce((acc: number, pos: any) => acc + (pos.withdrawn ? 0 : Number(pos.amount || 0)), 0);
 
   const ethUsdValue = wallet.balanceEth * ethPriceUsd;
@@ -156,8 +165,11 @@ export default function AIPortfolioRebalancer({
           };
           AgunnayaDatabase.saveWallet(updatedWallet);
 
-          const existingStr = localStorage.getItem("agl_staking_positions");
-          const existing = existingStr ? JSON.parse(existingStr) : [];
+          let existing: any[] = [];
+          try {
+            const existingStr = localStorage.getItem("agl_staking_positions");
+            if (existingStr) existing = JSON.parse(existingStr);
+          } catch {}
           const newPos = {
             id: Date.now(),
             amount: amtAgl,
