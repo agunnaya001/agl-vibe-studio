@@ -860,10 +860,11 @@ export default function App() {
             userDAOs={daos}
             userGameFi={games}
             userAgents={agents}
-            activities={activities}
-            onOpenConnect={() => setIsWalletModalOpen(true)}
-            onSelectTab={(tab) => setCurrentTab(tab)}
-          />
+  activities={activities}
+  onOpenConnect={() => setIsWalletModalOpen(true)}
+  onSelectTab={(tab) => setCurrentTab(tab)}
+  addTerminalLog={addTerminalLog}
+  />
         );
       case "explore":
         return (

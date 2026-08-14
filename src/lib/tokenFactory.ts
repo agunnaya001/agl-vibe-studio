@@ -424,3 +424,96 @@ export async function burnTokensOnChain(
   }
 }
 
+export interface OnChainHolding {
+  address: string;
+  name: string;
+  symbol: string;
+  balance: string;
+  balanceNum: number;
+  isCreator: boolean;
+}
+
+export interface WalletPortfolio {
+  nativeEth: string;
+  nativeEthNum: number;
+  holdings: OnChainHolding[];
+  createdCount: number;
+  scannedTokenCount: number;
+}
+
+/**
+ * Reads a wallet's real Base Mainnet portfolio directly from the Token Factory registry.
+ * Fetches the native ETH balance, then scans every factory-deployed token for a non-zero
+ * balance held by the wallet and flags tokens the wallet itself created. Read-only: uses the
+ * public RPC failover pool, so it works without an injected wallet provider.
+ */
+export async function fetchWalletPortfolio(
+  userAddress: string,
+  maxScan: number = 40
+): Promise<WalletPortfolio> {
+  const empty: WalletPortfolio = {
+    nativeEth: "0",
+    nativeEthNum: 0,
+    holdings: [],
+    createdCount: 0,
+    scannedTokenCount: 0
+  };
+
+  if (!userAddress || !ethers.isAddress(userAddress)) {
+    return empty;
+  }
+
+  // Native ETH balance via read-only RPC failover
+  const nativeEthNum = await executeRpcCall(async (provider) => {
+    const raw = await provider.getBalance(userAddress);
+    return parseFloat(ethers.formatEther(raw));
+  }, 0);
+
+  const tokens = await fetchOnChainTokens();
+  const scanList = tokens.slice(0, Math.max(0, maxScan));
+
+  const results = await Promise.all(
+    scanList.map(async (tokenAddress) => {
+      const [balRes, creator] = await Promise.all([
+        fetchUserTokenBalance(tokenAddress, userAddress),
+        fetchTokenCreator(tokenAddress).catch(() => "")
+      ]);
+      const balanceNum = parseFloat(balRes.balance || "0") || 0;
+      const isCreator = !!creator && creator.toLowerCase() === userAddress.toLowerCase();
+
+      if (balanceNum <= 0 && !isCreator) {
+        return null;
+      }
+
+      let name = balRes.symbol;
+      try {
+        const meta = await fetchTokenMetadataOnChain(tokenAddress);
+        name = meta.name || balRes.symbol;
+      } catch {
+        // Keep symbol as display name fallback
+      }
+
+      const holding: OnChainHolding = {
+        address: tokenAddress,
+        name,
+        symbol: balRes.symbol,
+        balance: balRes.balance || "0",
+        balanceNum,
+        isCreator
+      };
+      return holding;
+    })
+  );
+
+  const holdings = results.filter((h): h is OnChainHolding => h !== null);
+  holdings.sort((a, b) => b.balanceNum - a.balanceNum);
+
+  return {
+    nativeEth: nativeEthNum.toFixed(6),
+    nativeEthNum,
+    holdings,
+    createdCount: holdings.filter((h) => h.isCreator).length,
+    scannedTokenCount: scanList.length
+  };
+}
+
