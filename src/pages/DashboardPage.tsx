@@ -6,6 +6,7 @@ import ActivityFeed from "../components/ActivityFeed";
 import { useState, useMemo } from "react";
 import TaskSummaryWidget from "../components/TaskSummaryWidget";
 import DailyMissionsWidget from "../components/DailyMissionsWidget";
+import OnChainPortfolioPanel from "../components/OnChainPortfolioPanel";
 import { 
   Briefcase, 
   Layers, 
@@ -34,6 +35,7 @@ interface DashboardPageProps {
   activities: Activity[];
   onOpenConnect: () => void;
   onSelectTab: (tab: string) => void;
+  addTerminalLog?: (type: "info" | "success" | "error" | "buy" | "sell" | "system", text: string) => void;
 }
 
 export default function DashboardPage({ 
@@ -45,7 +47,8 @@ export default function DashboardPage({
   userAgents,
   activities: initialActivities,
   onOpenConnect,
-  onSelectTab
+  onSelectTab,
+  addTerminalLog
 }: DashboardPageProps) {
   const [localActivities, setLocalActivities] = useState<Activity[]>(initialActivities);
 
@@ -207,6 +210,9 @@ export default function DashboardPage({
           </div>
         </div>
       </div>
+
+      {/* Live On-Chain Portfolio (real Base Mainnet balances) */}
+      <OnChainPortfolioPanel wallet={wallet} addTerminalLog={addTerminalLog} />
 
       {/* Daily Missions & Bonus Credits Progress Tracker */}
       <DailyMissionsWidget 
