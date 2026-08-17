@@ -1,19 +1,14 @@
 # 🌌 Agunnaya Labs Studio
 
 <div align="center">
-  <img src="./public/banner.jpg" alt="Agunnaya Labs Studio Banner" width="100%" style="border-radius: 16px; margin-bottom: 16px; max-height: 420px; object-fit: cover;" />
+  <img src="public/banner.jpg" alt="Agunnaya Labs Studio Banner" width="100%" style="border-radius: 16px; margin-bottom: 16px; max-height: 420px; object-fit: cover;" />
 
-  <table align="center" style="border: none; background: transparent;">
-    <tr style="border: none; background: transparent;">
-      <td align="center" style="border: none; padding-right: 12px;">
-        <img src="./public/logo.jpg" alt="Agunnaya Labs Logo" width="72" height="72" style="border-radius: 16px; border: 2px solid rgba(0, 82, 255, 0.4); box-shadow: 0 0 20px rgba(0, 82, 255, 0.3);" />
-      </td>
-      <td align="left" style="border: none;">
-        <h2 style="margin: 0; padding: 0; color: #FFFFFF; font-family: sans-serif;">Agunnaya Labs Studio (v2.5)</h2>
-        <p style="margin: 4px 0 0 0; color: #A1A1AA; font-size: 13px;">The AI-Powered Web3 Developer Studio, Token Launchpad & Autonomous Cloud Hub on Base</p>
-      </td>
-    </tr>
-  </table>
+  <p align="center">
+    <img src="public/logo.jpg" alt="Agunnaya Labs Logo" width="80" height="80" style="border-radius: 16px; border: 2px solid rgba(0, 82, 255, 0.5); box-shadow: 0 0 20px rgba(0, 82, 255, 0.3);" />
+  </p>
+
+  <h2 style="margin: 0; padding: 0; color: #FFFFFF; font-family: sans-serif;">Agunnaya Labs Studio (v2.5)</h2>
+  <p style="margin: 4px 0 0 0; color: #A1A1AA; font-size: 14px;">The AI-Powered Web3 Developer Studio, Token Launchpad & Autonomous Cloud Hub on Base</p>
 
   <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; margin-bottom: 20px;">
     <img src="https://img.shields.io/badge/Ecosystem-Base_Mainnet-0052FF?style=for-the-badge&logo=base&logoColor=white" alt="Base Ecosystem" />
@@ -247,7 +242,7 @@ Run and build the project locally or in container environments using standard np
 ---
 
 <div align="center">
-  <img src="./public/logo.jpg" alt="Agunnaya Labs" width="48" height="48" style="border-radius: 12px; margin-bottom: 8px;" />
+  <img src="public/logo.jpg" alt="Agunnaya Labs" width="48" height="48" style="border-radius: 12px; margin-bottom: 8px;" />
   <h3 style="margin: 0; color: #FFFFFF;">✨ Agunnaya Labs Studio — Production Ready ✨</h3>
   <p style="color: #A1A1AA; font-size: 12px;">Built for high performance, modular security, and seamless developer user experience on Base Mainnet.</p>
 </div>
