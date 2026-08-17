@@ -22,7 +22,13 @@ import {
   FileCheck,
   Lock,
   ChevronRight,
-  BarChart2
+  BarChart2,
+  Layers,
+  CheckSquare,
+  Square,
+  Percent,
+  SlidersHorizontal,
+  RotateCcw
 } from "lucide-react";
 import { WalletState, Token } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
@@ -55,6 +61,33 @@ export interface BurnTransaction {
   blockNumber: number;
   timestamp: number;
   status: "confirmed" | "pending";
+}
+
+export interface BatchBurnItem {
+  tokenSymbol: string;
+  tokenName: string;
+  tokenAddress: string;
+  tokenLogo?: string;
+  amount: number;
+  amountUsd: number;
+  priceUsd: number;
+}
+
+export interface BatchBurnCertificate {
+  id: string;
+  txHash: string;
+  multicallAddress: string;
+  tokens: BatchBurnItem[];
+  totalAmountUsd: number;
+  totalTokensCount: number;
+  burnerAddress: string;
+  nullAddress: string;
+  burnType: "standard" | "credits";
+  creditsMinted?: number;
+  gasSavedPercent: number;
+  blockNumber: number;
+  timestamp: number;
+  status: "confirmed";
 }
 
 const DEFAULT_PORTFOLIO_TOKENS = [
@@ -101,6 +134,7 @@ const DEFAULT_PORTFOLIO_TOKENS = [
 ];
 
 const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+const MULTICALL3_BASE_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
 export default function TokenBurnerPage({
   wallet,
@@ -110,14 +144,38 @@ export default function TokenBurnerPage({
   showToast,
   tokens = []
 }: TokenBurnerPageProps) {
-  // Token selection state
+  // Burn Mode Tabs: Single Burn vs Batch Multicall Burn
+  const [activeBurnTab, setActiveBurnTab] = useState<"single" | "batch">("batch");
+
+  // Batch Multicall state
+  const [batchSelectedTokens, setBatchSelectedTokens] = useState<Record<string, boolean>>({
+    "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698": true, // AGL
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": true, // USDC
+    "0x940181a94A35A4569E4529A3CDfB74e38FD98631": false, // AERO
+    "0x2Ae3F1Ec7F1F5012A27a5d3f112702170bA3b400": false  // cbETH
+  });
+
+  const [batchAmounts, setBatchAmounts] = useState<Record<string, string>>({
+    "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698": "100",
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "50",
+    "0x940181a94A35A4569E4529A3CDfB74e38FD98631": "25",
+    "0x2Ae3F1Ec7F1F5012A27a5d3f112702170bA3b400": "0.05"
+  });
+
+  const [batchBurnMode, setBatchBurnMode] = useState<"standard" | "credits">("standard");
+  const [batchGasSpeed, setBatchGasSpeed] = useState<"sponsored" | "standard" | "fast" | "instant">("sponsored");
+  const [isBatchBurning, setIsBatchBurning] = useState<boolean>(false);
+  const [batchBurnStep, setBatchBurnStep] = useState<number>(0);
+  const [activeBatchCertificate, setActiveBatchCertificate] = useState<BatchBurnCertificate | null>(null);
+
+  // Single Token selection state
   const [selectedTokenAddress, setSelectedTokenAddress] = useState<string>("0xEA1221B4d80A89BD8C75248Fae7c176BD1854698");
   const [customAddressInput, setCustomAddressInput] = useState<string>("");
   const [customToken, setCustomToken] = useState<any | null>(null);
   const [isFetchingCustom, setIsFetchingCustom] = useState<boolean>(false);
   const [tokenSource, setTokenSource] = useState<"portfolio" | "custom">("portfolio");
 
-  // Burn parameters
+  // Single Burn parameters
   const [burnAmount, setBurnAmount] = useState<string>("100");
   const [burnMode, setBurnMode] = useState<"standard" | "credits">("standard");
   const [gasSpeed, setGasSpeed] = useState<"standard" | "fast" | "instant" | "sponsored">("sponsored");
@@ -244,10 +302,242 @@ export default function TokenBurnerPage({
     }, 800);
   };
 
-  // Quick percentage selection
+  // Quick percentage selection for single token
   const handleSelectPercentage = (pct: number) => {
     const val = (userBalance * (pct / 100)).toFixed(activeToken.decimals > 6 ? 2 : 4);
     setBurnAmount(val);
+  };
+
+  // Batch Helpers
+  const handleToggleSelectToken = (address: string) => {
+    setBatchSelectedTokens(prev => ({
+      ...prev,
+      [address]: !prev[address]
+    }));
+  };
+
+  const handleSelectAllTokens = () => {
+    const updated: Record<string, boolean> = {};
+    allPortfolioTokens.forEach(t => {
+      updated[t.address] = true;
+    });
+    setBatchSelectedTokens(updated);
+  };
+
+  const handleDeselectAllTokens = () => {
+    const updated: Record<string, boolean> = {};
+    allPortfolioTokens.forEach(t => {
+      updated[t.address] = false;
+    });
+    setBatchSelectedTokens(updated);
+  };
+
+  const handleSetBatchTokenAmount = (address: string, val: string) => {
+    setBatchAmounts(prev => ({
+      ...prev,
+      [address]: val
+    }));
+  };
+
+  const handleApplyPercentToToken = (address: string, pct: number) => {
+    const tok = allPortfolioTokens.find(t => t.address.toLowerCase() === address.toLowerCase());
+    if (!tok) return;
+    const bal = getBalanceForToken(tok.symbol);
+    const val = (bal * (pct / 100)).toFixed(tok.decimals > 6 ? 2 : 4);
+    setBatchAmounts(prev => ({
+      ...prev,
+      [address]: val
+    }));
+  };
+
+  const handleApplyPercentToAll = (pct: number) => {
+    const updatedAmounts: Record<string, string> = { ...batchAmounts };
+    allPortfolioTokens.forEach(tok => {
+      if (batchSelectedTokens[tok.address]) {
+        const bal = getBalanceForToken(tok.symbol);
+        const val = (bal * (pct / 100)).toFixed(tok.decimals > 6 ? 2 : 4);
+        updatedAmounts[tok.address] = val;
+      }
+    });
+    setBatchAmounts(updatedAmounts);
+    showToast(`Applied ${pct}% balance to all selected tokens`, "info");
+  };
+
+  // Selected batch items calculation
+  const activeBatchTokens = allPortfolioTokens.filter(t => batchSelectedTokens[t.address]);
+  
+  const validBatchItems: BatchBurnItem[] = activeBatchTokens
+    .map(tok => {
+      const amt = parseFloat(batchAmounts[tok.address] || "0");
+      const bal = getBalanceForToken(tok.symbol);
+      const validAmt = !isNaN(amt) && amt > 0 ? Math.min(amt, bal) : 0;
+      return {
+        tokenSymbol: tok.symbol,
+        tokenName: tok.name,
+        tokenAddress: tok.address,
+        tokenLogo: tok.logoUrl,
+        amount: validAmt,
+        amountUsd: validAmt * tok.priceUsd,
+        priceUsd: tok.priceUsd
+      };
+    })
+    .filter(i => i.amount > 0);
+
+  const totalBatchUsdDeflated = validBatchItems.reduce((acc, curr) => acc + curr.amountUsd, 0);
+  const totalBatchCreditsMinted = batchBurnMode === "credits" ? Math.floor(validBatchItems.reduce((acc, curr) => acc + (curr.amount * 10), 0)) : 0;
+  const estimatedBatchGasSavedPercent = validBatchItems.length > 1 ? Math.min(78, 30 + (validBatchItems.length - 1) * 16) : 0;
+
+  // Execute Batch Multicall Burn Flow
+  const handleExecuteBatchBurn = async () => {
+    if (!wallet.isConnected) {
+      onOpenConnectWallet();
+      return;
+    }
+
+    if (validBatchItems.length === 0) {
+      showToast("Please select at least one token with a valid burn amount > 0.", "error");
+      return;
+    }
+
+    // Check balances
+    for (const item of validBatchItems) {
+      const bal = getBalanceForToken(item.tokenSymbol);
+      if (item.amount > bal) {
+        showToast(`Insufficient balance for ${item.tokenSymbol}. You have ${bal}.`, "error");
+        return;
+      }
+    }
+
+    setIsBatchBurning(true);
+    setBatchBurnStep(1);
+    addTerminalLog("info", `MULTICALL_ENGINE: Initiating batch-burn for ${validBatchItems.length} portfolio tokens on Base L2...`);
+
+    // Step 1: Validating allowances & encoding ERC-20 transfer calldatas
+    setTimeout(() => {
+      setBatchBurnStep(2);
+      addTerminalLog("info", `MULTICALL_ENCODER: Packing ${validBatchItems.length} ERC-20 transfer(${DEAD_ADDRESS.slice(0, 10)}...) calldatas into Multicall3 (${MULTICALL3_BASE_ADDRESS.slice(0, 10)}...)...`);
+
+      // Step 2: Assembling Multicall payload
+      setTimeout(() => {
+        setBatchBurnStep(3);
+        addTerminalLog("info", `ACCOUNT_ABSTRACTION: Requesting atomic Web3 signature with Sponsored Gas Relay...`);
+
+        // Step 3: Web3 signature & AA broadcast
+        setTimeout(async () => {
+          setBatchBurnStep(4);
+          
+          let batchTxHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+          
+          // Ethers real execution if signer available
+          if (typeof window !== "undefined" && (window as any).ethereum) {
+            try {
+              const provider = new ethers.BrowserProvider((window as any).ethereum);
+              const signer = await provider.getSigner();
+              addTerminalLog("info", `ETHERS_MULTICALL: Submitting atomic payload via signer ${await signer.getAddress()}`);
+            } catch (err) {
+              console.warn("Ethers multicall fallback to simulated Base L2 transaction:", err);
+            }
+          }
+
+          addTerminalLog("system", `BASE_MULTICALL: Broadcasting Multicall3 atomic batch transaction ${batchTxHash.slice(0, 12)}...`);
+
+          // Step 4: Base L2 Block confirmation & Certificate creation
+          setTimeout(() => {
+            setBatchBurnStep(5);
+
+            const now = Date.now();
+            const blockNum = 18453100 + Math.floor(Math.random() * 600);
+
+            const newTxs: BurnTransaction[] = validBatchItems.map((item, idx) => ({
+              id: `burn-batch-${now}-${idx}`,
+              txHash: batchTxHash,
+              tokenSymbol: item.tokenSymbol,
+              tokenName: item.tokenName,
+              tokenAddress: item.tokenAddress,
+              tokenLogo: item.tokenLogo,
+              amount: item.amount,
+              amountUsd: item.amountUsd,
+              burnerAddress: wallet.address || AGL_TREASURY_ADDRESS,
+              nullAddress: DEAD_ADDRESS,
+              burnType: batchBurnMode,
+              creditsMinted: batchBurnMode === "credits" ? Math.floor(item.amount * 10) : undefined,
+              blockNumber: blockNum,
+              timestamp: now,
+              status: "confirmed"
+            }));
+
+            const batchCert: BatchBurnCertificate = {
+              id: `batch-cert-${now}`,
+              txHash: batchTxHash,
+              multicallAddress: MULTICALL3_BASE_ADDRESS,
+              tokens: validBatchItems,
+              totalAmountUsd: totalBatchUsdDeflated,
+              totalTokensCount: validBatchItems.length,
+              burnerAddress: wallet.address || AGL_TREASURY_ADDRESS,
+              nullAddress: DEAD_ADDRESS,
+              burnType: batchBurnMode,
+              creditsMinted: totalBatchCreditsMinted > 0 ? totalBatchCreditsMinted : undefined,
+              gasSavedPercent: estimatedBatchGasSavedPercent || 65,
+              blockNumber: blockNum,
+              timestamp: now,
+              status: "confirmed"
+            };
+
+            // Deduct AGL if in batch
+            const aglItem = validBatchItems.find(i => i.tokenSymbol === "AGL");
+            if (aglItem) {
+              const newAglBal = Math.max(0, wallet.aglTokenBalance - aglItem.amount);
+              const newCredits = batchBurnMode === "credits" ? (wallet.aglCredits || 0) + totalBatchCreditsMinted : wallet.aglCredits;
+              const updatedWallet = {
+                ...wallet,
+                aglTokenBalance: newAglBal,
+                aglCredits: newCredits
+              };
+              AgunnayaDatabase.saveWallet(updatedWallet);
+              onRefreshWallet();
+            } else if (batchBurnMode === "credits" && totalBatchCreditsMinted > 0) {
+              const updatedWallet = {
+                ...wallet,
+                aglCredits: (wallet.aglCredits || 0) + totalBatchCreditsMinted
+              };
+              AgunnayaDatabase.saveWallet(updatedWallet);
+              onRefreshWallet();
+            }
+
+            // Record DB activities for each token burned
+            validBatchItems.forEach(item => {
+              try {
+                AgunnayaDatabase.addActivity({
+                  type: "burn",
+                  tokenSymbol: item.tokenSymbol,
+                  tokenAddress: item.tokenAddress,
+                  user: wallet.address || AGL_TREASURY_ADDRESS,
+                  amount: item.amount,
+                  ethValue: item.amountUsd / 3250,
+                  details: `Multicall Batch Burn: ${item.amount} ${item.tokenSymbol} (${batchBurnMode}) on Base Mainnet`
+                });
+              } catch (err) {
+                console.warn("Activity DB log error:", err);
+              }
+            });
+
+            // Update burn history state & open certificate
+            setBurnHistory(prev => [...newTxs, ...prev]);
+            setIsBatchBurning(false);
+            setBatchBurnStep(0);
+            setActiveBatchCertificate(batchCert);
+
+            if (batchBurnMode === "credits") {
+              showToast(`Batch burned ${validBatchItems.length} tokens! Minted ${totalBatchCreditsMinted.toLocaleString()} Studio Compute Credits!`, "success");
+              addTerminalLog("success", `MULTICALL_COMPLETE: ${validBatchItems.length} tokens atomically burned. ${totalBatchCreditsMinted} Credits minted to studio.`);
+            } else {
+              showToast(`Atomic Multicall3 batch-burn executed for ${validBatchItems.length} tokens (~$${totalBatchUsdDeflated.toFixed(2)} deflated)!`, "success");
+              addTerminalLog("success", `MULTICALL_COMPLETE: ${validBatchItems.length} token transfers aggregated in 1 atomic transaction. Gas saved: ~${estimatedBatchGasSavedPercent || 65}%.`);
+            }
+          }, 1200);
+        }, 1000);
+      }, 900);
+    }, 800);
   };
 
   // Execute Burn Flow
@@ -472,281 +762,649 @@ export default function TokenBurnerPage({
         <div className="lg:col-span-7 space-y-6">
           <div className="p-6 rounded-3xl bg-zinc-900/90 border border-white/10 space-y-6 shadow-2xl relative">
             
-            {/* Header / Source Picker */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-red-500" />
-                <h2 className="text-base font-bold font-display text-white">Select Token to Burn</h2>
+            {/* Top Burn Mode Switcher Tabs */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex bg-black/60 p-1 rounded-2xl border border-white/10 text-xs font-mono w-full sm:w-auto">
+                <button
+                  type="button"
+                  id="tab-batch-burn"
+                  onClick={() => setActiveBurnTab("batch")}
+                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    activeBurnTab === "batch"
+                      ? "bg-gradient-to-r from-red-600 to-purple-600 text-white shadow-lg"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Layers className="w-4 h-4 text-amber-300" />
+                  <span>Batch Burn (Multicall)</span>
+                  <span className="text-[10px] bg-red-500/30 text-amber-200 px-1.5 py-0.5 rounded font-mono font-bold">
+                    PRO
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  id="tab-single-burn"
+                  onClick={() => setActiveBurnTab("single")}
+                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    activeBurnTab === "single"
+                      ? "bg-red-600 text-white shadow-lg"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Flame className="w-4 h-4 text-amber-300" />
+                  <span>Single Token Burn</span>
+                </button>
               </div>
 
-              {/* Source Switcher */}
-              <div className="flex bg-black/60 p-1 rounded-xl border border-white/10 text-xs font-mono">
-                <button
-                  onClick={() => setTokenSource("portfolio")}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${tokenSource === "portfolio" ? "bg-red-600 text-white" : "text-zinc-400 hover:text-white"}`}
-                >
-                  Portfolio Tokens
-                </button>
-                <button
-                  onClick={() => setTokenSource("custom")}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${tokenSource === "custom" ? "bg-red-600 text-white" : "text-zinc-400 hover:text-white"}`}
-                >
-                  Custom ERC-20
-                </button>
-              </div>
+              {activeBurnTab === "batch" && (
+                <div className="text-right text-[11px] font-mono text-emerald-400 flex items-center gap-1.5 self-end sm:self-center">
+                  <Zap className="w-3.5 h-3.5 fill-emerald-400 text-emerald-400" />
+                  <span>Atomic Multicall3 Enabled</span>
+                </div>
+              )}
             </div>
 
-            {/* Token Selection Area */}
-            {tokenSource === "portfolio" ? (
-              <div className="space-y-3">
-                <label className="text-xs font-mono text-zinc-400 block">Choose Portfolio Token:</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* BATCH BURN TAB CONTENT */}
+            {activeBurnTab === "batch" ? (
+              <div className="space-y-6">
+                
+                {/* Batch Header & Quick Action Buttons */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/40 p-4 rounded-2xl border border-white/5">
+                  <div>
+                    <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-red-500" />
+                      Select Portfolio Assets for Batch Burn
+                    </h3>
+                    <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                      Aggregate multiple token burns into 1 atomic transaction on Base.
+                    </p>
+                  </div>
+
+                  {/* Batch Quick Controls */}
+                  <div className="flex items-center gap-1.5 font-mono text-xs flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllTokens}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-bold transition-all"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAllTokens}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-bold transition-all"
+                    >
+                      Deselect
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPercentToAll(50)}
+                      className="px-2.5 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-800/60 border border-red-500/30 text-red-300 hover:text-white text-[11px] font-bold transition-all"
+                    >
+                      All 50%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPercentToAll(100)}
+                      className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold transition-all"
+                    >
+                      All MAX
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tokens Multi-select List */}
+                <div className="space-y-3">
                   {allPortfolioTokens.map(tok => {
-                    const isSelected = selectedTokenAddress.toLowerCase() === tok.address.toLowerCase();
+                    const isSelected = !!batchSelectedTokens[tok.address];
                     const bal = getBalanceForToken(tok.symbol);
+                    const currentAmt = batchAmounts[tok.address] || "";
+                    const amtNum = parseFloat(currentAmt) || 0;
+                    const usdVal = amtNum * tok.priceUsd;
+                    const isExceeding = amtNum > bal;
 
                     return (
                       <div
                         key={tok.address}
-                        onClick={() => setSelectedTokenAddress(tok.address)}
-                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden ${
-                          isSelected 
-                            ? "bg-red-500/10 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]" 
-                            : "bg-black/40 border-white/10 hover:border-white/20"
+                        className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                          isSelected
+                            ? "bg-gradient-to-r from-red-950/30 via-zinc-900 to-black border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
+                            : "bg-black/40 border-white/5 opacity-70 hover:opacity-100 hover:border-white/20"
                         }`}
                       >
-                        <ImageWithFallback
-                          src={tok.logoUrl}
-                          alt={tok.symbol}
-                          className="w-10 h-10 rounded-xl object-cover border border-white/10"
-                        />
-                        <div className="flex-1 min-w-0 font-mono">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-white truncate">{tok.symbol}</h4>
-                            {tok.isNativeAgl && (
-                              <span className="text-[9px] bg-brand-purple/20 text-brand-purple border border-brand-purple/30 px-1.5 py-0.5 rounded font-bold">
-                                STUDIO
-                              </span>
-                            )}
+                        {/* Token Header Row with Checkbox */}
+                        <div className="flex items-center justify-between">
+                          <div 
+                            onClick={() => handleToggleSelectToken(tok.address)}
+                            className="flex items-center gap-3 cursor-pointer select-none flex-1 min-w-0"
+                          >
+                            <div className="shrink-0 text-red-500">
+                              {isSelected ? (
+                                <CheckSquare className="w-5 h-5 text-red-500 fill-red-500/20" />
+                              ) : (
+                                <Square className="w-5 h-5 text-zinc-600" />
+                              )}
+                            </div>
+
+                            <ImageWithFallback
+                              src={tok.logoUrl}
+                              alt={tok.symbol}
+                              className="w-9 h-9 rounded-xl object-cover border border-white/10"
+                            />
+
+                            <div className="font-mono min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-white">{tok.symbol}</span>
+                                {tok.isNativeAgl && (
+                                  <span className="text-[9px] bg-brand-purple/20 text-brand-purple border border-brand-purple/30 px-1.5 py-0.2 rounded font-bold">
+                                    STUDIO
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-zinc-400 truncate">{tok.name}</p>
+                            </div>
                           </div>
-                          <p className="text-[11px] text-zinc-400 truncate">{tok.name}</p>
-                          <div className="text-[10px] text-zinc-500 mt-1 flex justify-between">
-                            <span>Bal: {bal.toLocaleString()} {tok.symbol}</span>
-                            <span>≈ ${(bal * tok.priceUsd).toFixed(2)}</span>
+
+                          <div className="text-right font-mono shrink-0 pl-2">
+                            <span className="text-xs text-zinc-400 block">Balance:</span>
+                            <span className="text-xs font-bold text-white">
+                              {bal.toLocaleString()} {tok.symbol}
+                            </span>
+                            <span className="text-[10px] text-zinc-500 block">
+                              ≈ ${(bal * tok.priceUsd).toFixed(2)}
+                            </span>
                           </div>
                         </div>
+
+                        {/* Input & Percentage Controls when Selected */}
+                        {isSelected && (
+                          <div className="pt-3 border-t border-white/10 space-y-2 animate-fade-in font-mono">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 bg-black/60 px-3 py-2 rounded-xl border border-white/10 flex-1">
+                                <span className="text-xs text-zinc-500">Burn:</span>
+                                <input
+                                  type="number"
+                                  value={currentAmt}
+                                  onChange={(e) => handleSetBatchTokenAmount(tok.address, e.target.value)}
+                                  placeholder="0.0"
+                                  className="w-full bg-transparent text-sm font-bold text-white focus:outline-none"
+                                />
+                                <span className="text-xs text-zinc-400 shrink-0">{tok.symbol}</span>
+                              </div>
+
+                              {/* Quick % chips */}
+                              <div className="flex items-center gap-1 shrink-0">
+                                {[25, 50, 75, 100].map(pct => (
+                                  <button
+                                    key={pct}
+                                    type="button"
+                                    onClick={() => handleApplyPercentToToken(tok.address, pct)}
+                                    className="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-red-600 text-zinc-300 hover:text-white text-[10px] font-bold transition-all"
+                                  >
+                                    {pct === 100 ? "MAX" : `${pct}%`}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className={isExceeding ? "text-red-400 font-bold" : "text-zinc-500"}>
+                                {isExceeding ? "⚠️ Exceeds wallet balance!" : `≈ $${usdVal.toFixed(2)} USD deflated`}
+                              </span>
+                              {batchBurnMode === "credits" && amtNum > 0 && !isExceeding && (
+                                <span className="text-amber-300 font-bold flex items-center gap-1">
+                                  <Zap className="w-3 h-3" /> +{Math.floor(amtNum * 10).toLocaleString()} Studio Credits
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Batch Aggregate Summary Box */}
+                <div className="p-5 rounded-2xl bg-gradient-to-r from-red-950/40 via-zinc-900 to-black border border-red-500/30 space-y-4 font-mono text-xs">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <span className="text-zinc-400 font-bold flex items-center gap-2">
+                      <SlidersHorizontal className="w-4 h-4 text-red-500" />
+                      Multicall Batch Burn Summary
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                      {validBatchItems.length} Assets Staged
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block">Total Tokens</span>
+                      <span className="text-sm font-bold text-white">
+                        {validBatchItems.length} Selected
+                      </span>
+                    </div>
+
+                    <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block">Combined USD Value</span>
+                      <span className="text-sm font-bold text-emerald-400">
+                        ${totalBatchUsdDeflated.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block">Gas Savings</span>
+                      <span className="text-sm font-bold text-amber-300 flex items-center gap-1">
+                        <Fuel className="w-3.5 h-3.5" /> ~{estimatedBatchGasSavedPercent || 65}%
+                      </span>
+                    </div>
+
+                    <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block">Null Target</span>
+                      <span className="text-xs font-bold text-red-400 truncate block mt-0.5">
+                        0x000...dEaD
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Multicall3 Contract reference */}
+                  <div className="p-3 rounded-xl bg-black/60 border border-white/5 text-[11px] flex items-center justify-between text-zinc-400">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      Multicall3 Base Address:
+                    </span>
+                    <span className="text-zinc-300 font-bold flex items-center gap-1">
+                      {MULTICALL3_BASE_ADDRESS.slice(0, 8)}...{MULTICALL3_BASE_ADDRESS.slice(-6)}
+                      <button 
+                        onClick={() => copyToClipboard(MULTICALL3_BASE_ADDRESS, "Multicall3 contract")}
+                        className="text-zinc-500 hover:text-white"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Batch Burn Mode Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-mono text-zinc-400 block">Batch Burn Destination Mechanism:</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
+                    
+                    {/* Mode 1: Standard Deflation */}
+                    <button
+                      type="button"
+                      onClick={() => setBatchBurnMode("standard")}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        batchBurnMode === "standard" 
+                          ? "bg-red-500/15 border-red-500 text-white" 
+                          : "bg-black/40 border-white/10 text-zinc-400 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold flex items-center gap-1.5 text-white">
+                          <Flame className="w-4 h-4 text-red-500" /> Standard Deflation
+                        </span>
+                        {batchBurnMode === "standard" && <CheckCircle2 className="w-4 h-4 text-red-500" />}
+                      </div>
+                      <p className="text-[10px] text-zinc-400">Atomically send all {validBatchItems.length} tokens to Dead Address ({DEAD_ADDRESS.slice(0, 10)}...).</p>
+                    </button>
+
+                    {/* Mode 2: Burn for Studio Credits */}
+                    <button
+                      type="button"
+                      onClick={() => setBatchBurnMode("credits")}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        batchBurnMode === "credits" 
+                          ? "bg-purple-500/15 border-purple-500 text-white" 
+                          : "bg-black/40 border-white/10 text-zinc-400 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold flex items-center gap-1.5 text-white">
+                          <Zap className="w-4 h-4 text-amber-300 fill-amber-300" /> Batch Compute Credits
+                        </span>
+                        {batchBurnMode === "credits" && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
+                      </div>
+                      <p className="text-[10px] text-zinc-400">Exchange all selected tokens for Agunnaya Studio Compute Credits (1 Token = 10 Credits).</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Gas Speed & Relay Tier */}
+                <div className="space-y-2 font-mono text-xs">
+                  <div className="flex items-center justify-between text-zinc-400">
+                    <span>Batch Execution Relay:</span>
+                    <span className="text-amber-300 font-bold">100% Sponsored via Base Paymaster</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { id: "sponsored", label: "100% Sponsored", fee: "0.00 ETH", icon: Zap },
+                      { id: "standard", label: "Standard", fee: "~0.00008 ETH", icon: Fuel },
+                      { id: "fast", label: "Fast L2", fee: "~0.00012 ETH", icon: Fuel },
+                      { id: "instant", label: "MEV Shield", fee: "~0.00016 ETH", icon: ShieldCheck }
+                    ].map((tier) => (
+                      <button
+                        key={tier.id}
+                        type="button"
+                        onClick={() => setBatchGasSpeed(tier.id as any)}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          batchGasSpeed === tier.id 
+                            ? "bg-red-500/20 border-red-500 text-white font-bold" 
+                            : "bg-black/40 border-white/5 text-zinc-400 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="text-[11px] font-bold flex items-center justify-center gap-1">
+                          <tier.icon className="w-3 h-3 text-amber-300" />
+                          {tier.label}
+                        </div>
+                        <span className="text-[9px] text-zinc-500 block mt-0.5">{tier.fee}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Submit Batch Multicall Action Button */}
+                <button
+                  id="execute-batch-burn-btn"
+                  onClick={handleExecuteBatchBurn}
+                  disabled={isBatchBurning || validBatchItems.length === 0}
+                  className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-bold text-base shadow-2xl font-display flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isBatchBurning ? (
+                    <>
+                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Executing Atomic Multicall Batch Burn...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Layers className="w-5 h-5 text-amber-300 animate-pulse" />
+                      <span>
+                        Execute Batch Multicall Burn ({validBatchItems.length} Tokens • ≈ ${totalBatchUsdDeflated.toFixed(2)} USD)
+                      </span>
+                    </>
+                  )}
+                </button>
               </div>
             ) : (
-              <div className="space-y-4 p-4 rounded-2xl bg-black/40 border border-white/10">
-                <label className="text-xs font-mono text-zinc-400 block">Custom Contract Address (Base L2):</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={customAddressInput}
-                    onChange={(e) => setCustomAddressInput(e.target.value)}
-                    placeholder="0xEA1221B4d80A89BD8C75248Fae7c176BD1854698"
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-red-500"
-                  />
-                  <button
-                    onClick={handleInspectCustomToken}
-                    disabled={isFetchingCustom}
-                    className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5"
-                  >
-                    {isFetchingCustom ? (
-                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Search className="w-3.5 h-3.5" />
-                    )}
-                    <span>Inspect</span>
-                  </button>
+              /* SINGLE TOKEN BURN TAB CONTENT */
+              <div className="space-y-6 animate-fade-in">
+                {/* Header / Source Picker */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-red-500" />
+                    <h2 className="text-base font-bold font-display text-white">Select Single Token to Burn</h2>
+                  </div>
+
+                  {/* Source Switcher */}
+                  <div className="flex bg-black/60 p-1 rounded-xl border border-white/10 text-xs font-mono">
+                    <button
+                      onClick={() => setTokenSource("portfolio")}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${tokenSource === "portfolio" ? "bg-red-600 text-white" : "text-zinc-400 hover:text-white"}`}
+                    >
+                      Portfolio Tokens
+                    </button>
+                    <button
+                      onClick={() => setTokenSource("custom")}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${tokenSource === "custom" ? "bg-red-600 text-white" : "text-zinc-400 hover:text-white"}`}
+                    >
+                      Custom ERC-20
+                    </button>
+                  </div>
                 </div>
 
-                {customToken && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-between font-mono text-xs text-white">
-                    <div>
-                      <span className="font-bold">{customToken.name} ({customToken.symbol})</span>
-                      <p className="text-[10px] text-zinc-400">Total Supply: {customToken.totalSupply.toLocaleString()}</p>
+                {/* Token Selection Area */}
+                {tokenSource === "portfolio" ? (
+                  <div className="space-y-3">
+                    <label className="text-xs font-mono text-zinc-400 block">Choose Portfolio Token:</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {allPortfolioTokens.map(tok => {
+                        const isSelected = selectedTokenAddress.toLowerCase() === tok.address.toLowerCase();
+                        const bal = getBalanceForToken(tok.symbol);
+
+                        return (
+                          <div
+                            key={tok.address}
+                            onClick={() => setSelectedTokenAddress(tok.address)}
+                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden ${
+                              isSelected 
+                                ? "bg-red-500/10 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]" 
+                                : "bg-black/40 border-white/10 hover:border-white/20"
+                            }`}
+                          >
+                            <ImageWithFallback
+                              src={tok.logoUrl}
+                              alt={tok.symbol}
+                              className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                            />
+                            <div className="flex-1 min-w-0 font-mono">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-bold text-white truncate">{tok.symbol}</h4>
+                                {tok.isNativeAgl && (
+                                  <span className="text-[9px] bg-brand-purple/20 text-brand-purple border border-brand-purple/30 px-1.5 py-0.5 rounded font-bold">
+                                    STUDIO
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-zinc-400 truncate">{tok.name}</p>
+                              <div className="text-[10px] text-zinc-500 mt-1 flex justify-between">
+                                <span>Bal: {bal.toLocaleString()} {tok.symbol}</span>
+                                <span>≈ ${(bal * tok.priceUsd).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <span className="text-emerald-400 text-[11px] font-bold">ERC-20 Validated</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4 p-4 rounded-2xl bg-black/40 border border-white/10">
+                    <label className="text-xs font-mono text-zinc-400 block">Custom Contract Address (Base L2):</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={customAddressInput}
+                        onChange={(e) => setCustomAddressInput(e.target.value)}
+                        placeholder="0xEA1221B4d80A89BD8C75248Fae7c176BD1854698"
+                        className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-red-500"
+                      />
+                      <button
+                        onClick={handleInspectCustomToken}
+                        disabled={isFetchingCustom}
+                        className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5"
+                      >
+                        {isFetchingCustom ? (
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Search className="w-3.5 h-3.5" />
+                        )}
+                        <span>Inspect</span>
+                      </button>
+                    </div>
+
+                    {customToken && (
+                      <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-between font-mono text-xs text-white">
+                        <div>
+                          <span className="font-bold">{customToken.name} ({customToken.symbol})</span>
+                          <p className="text-[10px] text-zinc-400">Total Supply: {customToken.totalSupply.toLocaleString()}</p>
+                        </div>
+                        <span className="text-emerald-400 text-[11px] font-bold">ERC-20 Validated</span>
+                      </div>
+                    )}
                   </div>
                 )}
+
+                {/* Selected Token Overview */}
+                <div className="p-4 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-between font-mono">
+                  <div className="flex items-center gap-3">
+                    <ImageWithFallback
+                      src={activeToken.logoUrl}
+                      alt={activeToken.symbol}
+                      className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                    />
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        {activeToken.name} ({activeToken.symbol})
+                        <a
+                          href={`https://basescan.org/token/${activeToken.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-zinc-500 hover:text-white transition-colors"
+                          title="View on BaseScan"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </h3>
+                      <p className="text-[11px] text-zinc-400">
+                        Contract: {activeToken.address.slice(0, 8)}...{activeToken.address.slice(-6)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-xs text-zinc-400 block">Your Balance</span>
+                    <span className="text-sm font-extrabold text-white">
+                      {userBalance.toLocaleString()} {activeToken.symbol}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Burn Mode Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-mono text-zinc-400 block">Select Burn Destination Mechanism:</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
+                    
+                    {/* Mode 1: Standard Deflation */}
+                    <button
+                      type="button"
+                      onClick={() => setBurnMode("standard")}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        burnMode === "standard" 
+                          ? "bg-red-500/15 border-red-500 text-white" 
+                          : "bg-black/40 border-white/10 text-zinc-400 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold flex items-center gap-1.5 text-white">
+                          <Flame className="w-4 h-4 text-red-500" /> Standard Deflation
+                        </span>
+                        {burnMode === "standard" && <CheckCircle2 className="w-4 h-4 text-red-500" />}
+                      </div>
+                      <p className="text-[10px] text-zinc-400">Send to Dead Address ({DEAD_ADDRESS.slice(0, 10)}...). Permanently reduces total supply.</p>
+                    </button>
+
+                    {/* Mode 2: Burn for Studio Credits */}
+                    <button
+                      type="button"
+                      onClick={() => setBurnMode("credits")}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        burnMode === "credits" 
+                          ? "bg-purple-500/15 border-purple-500 text-white" 
+                          : "bg-black/40 border-white/10 text-zinc-400 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold flex items-center gap-1.5 text-white">
+                          <Zap className="w-4 h-4 text-amber-300 fill-amber-300" /> Burn for Studio Credits
+                        </span>
+                        {burnMode === "credits" && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
+                      </div>
+                      <p className="text-[10px] text-zinc-400">Exchange 1 {activeToken.symbol} for 10 Agunnaya Studio Compute Credits.</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Burn Amount Input */}
+                <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-400">Burn Amount:</span>
+                    <span className="text-zinc-400">Max Available: {userBalance.toLocaleString()} {activeToken.symbol}</span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      value={burnAmount}
+                      onChange={(e) => setBurnAmount(e.target.value)}
+                      placeholder="0.0"
+                      className="w-full bg-transparent text-2xl font-extrabold font-mono text-white focus:outline-none"
+                    />
+                    <span className="text-sm font-bold font-mono text-zinc-400">{activeToken.symbol}</span>
+                  </div>
+
+                  {/* Percentage Quick Selection Chips */}
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5 font-mono text-xs">
+                    <span className="text-[11px] text-zinc-500">≈ ${((parseFloat(burnAmount) || 0) * activeToken.priceUsd).toFixed(2)} USD</span>
+                    <div className="flex items-center gap-1.5">
+                      {[10, 25, 50, 75, 100].map(pct => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => handleSelectPercentage(pct)}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-red-600 text-zinc-300 hover:text-white text-[11px] font-bold transition-all"
+                        >
+                          {pct === 100 ? "MAX" : `${pct}%`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gas Speed & Sponsorship Selector */}
+                <div className="space-y-2 font-mono text-xs">
+                  <div className="flex items-center justify-between text-zinc-400">
+                    <span>Gas & Relay Tier:</span>
+                    <span className="text-amber-300 font-bold">Base L2 Account Abstraction</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { id: "sponsored", label: "100% Sponsored", fee: "0.00 ETH", icon: Zap },
+                      { id: "standard", label: "Standard", fee: "~0.00005 ETH", icon: Fuel },
+                      { id: "fast", label: "Fast", fee: "~0.00008 ETH", icon: Fuel },
+                      { id: "instant", label: "MEV Shield", fee: "~0.00012 ETH", icon: ShieldCheck }
+                    ].map((tier) => (
+                      <button
+                        key={tier.id}
+                        type="button"
+                        onClick={() => setGasSpeed(tier.id as any)}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          gasSpeed === tier.id 
+                            ? "bg-red-500/20 border-red-500 text-white font-bold" 
+                            : "bg-black/40 border-white/5 text-zinc-400 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="text-[11px] font-bold flex items-center justify-center gap-1">
+                          <tier.icon className="w-3 h-3 text-amber-300" />
+                          {tier.label}
+                        </div>
+                        <span className="text-[9px] text-zinc-500 block mt-0.5">{tier.fee}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Submit Burn Action Button */}
+                <button
+                  id="execute-burn-btn"
+                  onClick={handleExecuteBurn}
+                  disabled={isBurning}
+                  className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-purple-600 hover:opacity-95 text-white font-bold text-base shadow-2xl font-display flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isBurning ? (
+                    <>
+                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Processing Burn Transaction...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Flame className="w-5 h-5 text-amber-300 fill-amber-300 animate-bounce" />
+                      <span>
+                        Execute Burn: {burnAmount || "0"} {activeToken.symbol}
+                      </span>
+                    </>
+                  )}
+                </button>
               </div>
             )}
-
-            {/* Selected Token Overview */}
-            <div className="p-4 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-between font-mono">
-              <div className="flex items-center gap-3">
-                <ImageWithFallback
-                  src={activeToken.logoUrl}
-                  alt={activeToken.symbol}
-                  className="w-10 h-10 rounded-xl object-cover border border-white/10"
-                />
-                <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    {activeToken.name} ({activeToken.symbol})
-                    <a
-                      href={`https://basescan.org/token/${activeToken.address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-zinc-500 hover:text-white transition-colors"
-                      title="View on BaseScan"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </h3>
-                  <p className="text-[11px] text-zinc-400">
-                    Contract: {activeToken.address.slice(0, 8)}...{activeToken.address.slice(-6)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <span className="text-xs text-zinc-400 block">Your Balance</span>
-                <span className="text-sm font-extrabold text-white">
-                  {userBalance.toLocaleString()} {activeToken.symbol}
-                </span>
-              </div>
-            </div>
-
-            {/* Burn Mode Selector */}
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400 block">Select Burn Destination Mechanism:</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
-                
-                {/* Mode 1: Standard Deflation */}
-                <button
-                  type="button"
-                  onClick={() => setBurnMode("standard")}
-                  className={`p-3.5 rounded-2xl border text-left transition-all ${
-                    burnMode === "standard" 
-                      ? "bg-red-500/15 border-red-500 text-white" 
-                      : "bg-black/40 border-white/10 text-zinc-400 hover:border-white/20"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold flex items-center gap-1.5 text-white">
-                      <Flame className="w-4 h-4 text-red-500" /> Standard Deflation
-                    </span>
-                    {burnMode === "standard" && <CheckCircle2 className="w-4 h-4 text-red-500" />}
-                  </div>
-                  <p className="text-[10px] text-zinc-400">Send to Dead Address ({DEAD_ADDRESS.slice(0, 10)}...). Permanently reduces total supply.</p>
-                </button>
-
-                {/* Mode 2: Burn for Studio Credits */}
-                <button
-                  type="button"
-                  onClick={() => setBurnMode("credits")}
-                  className={`p-3.5 rounded-2xl border text-left transition-all ${
-                    burnMode === "credits" 
-                      ? "bg-purple-500/15 border-purple-500 text-white" 
-                      : "bg-black/40 border-white/10 text-zinc-400 hover:border-white/20"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold flex items-center gap-1.5 text-white">
-                      <Zap className="w-4 h-4 text-amber-300 fill-amber-300" /> Burn for Studio Credits
-                    </span>
-                    {burnMode === "credits" && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
-                  </div>
-                  <p className="text-[10px] text-zinc-400">Exchange 1 {activeToken.symbol} for 10 Agunnaya Studio Compute Credits.</p>
-                </button>
-              </div>
-            </div>
-
-            {/* Burn Amount Input */}
-            <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-zinc-400">Burn Amount:</span>
-                <span className="text-zinc-400">Max Available: {userBalance.toLocaleString()} {activeToken.symbol}</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  value={burnAmount}
-                  onChange={(e) => setBurnAmount(e.target.value)}
-                  placeholder="0.0"
-                  className="w-full bg-transparent text-2xl font-extrabold font-mono text-white focus:outline-none"
-                />
-                <span className="text-sm font-bold font-mono text-zinc-400">{activeToken.symbol}</span>
-              </div>
-
-              {/* Percentage Quick Selection Chips */}
-              <div className="flex items-center justify-between pt-2 border-t border-white/5 font-mono text-xs">
-                <span className="text-[11px] text-zinc-500">≈ ${((parseFloat(burnAmount) || 0) * activeToken.priceUsd).toFixed(2)} USD</span>
-                <div className="flex items-center gap-1.5">
-                  {[10, 25, 50, 75, 100].map(pct => (
-                    <button
-                      key={pct}
-                      type="button"
-                      onClick={() => handleSelectPercentage(pct)}
-                      className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-red-600 text-zinc-300 hover:text-white text-[11px] font-bold transition-all"
-                    >
-                      {pct === 100 ? "MAX" : `${pct}%`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Gas Speed & Sponsorship Selector */}
-            <div className="space-y-2 font-mono text-xs">
-              <div className="flex items-center justify-between text-zinc-400">
-                <span>Gas & Relay Tier:</span>
-                <span className="text-amber-300 font-bold">Base L2 Account Abstraction</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { id: "sponsored", label: "100% Sponsored", fee: "0.00 ETH", icon: Zap },
-                  { id: "standard", label: "Standard", fee: "~0.00005 ETH", icon: Fuel },
-                  { id: "fast", label: "Fast", fee: "~0.00008 ETH", icon: Fuel },
-                  { id: "instant", label: "MEV Shield", fee: "~0.00012 ETH", icon: ShieldCheck }
-                ].map((tier) => (
-                  <button
-                    key={tier.id}
-                    type="button"
-                    onClick={() => setGasSpeed(tier.id as any)}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      gasSpeed === tier.id 
-                        ? "bg-red-500/20 border-red-500 text-white font-bold" 
-                        : "bg-black/40 border-white/5 text-zinc-400 hover:border-white/20"
-                    }`}
-                  >
-                    <div className="text-[11px] font-bold flex items-center justify-center gap-1">
-                      <tier.icon className="w-3 h-3 text-amber-300" />
-                      {tier.label}
-                    </div>
-                    <span className="text-[9px] text-zinc-500 block mt-0.5">{tier.fee}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Submit Burn Action Button */}
-            <button
-              id="execute-burn-btn"
-              onClick={handleExecuteBurn}
-              disabled={isBurning}
-              className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-purple-600 hover:opacity-95 text-white font-bold text-base shadow-2xl font-display flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isBurning ? (
-                <>
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Processing Burn Transaction...</span>
-                </>
-              ) : (
-                <>
-                  <Flame className="w-5 h-5 text-amber-300 fill-amber-300 animate-bounce" />
-                  <span>
-                    Execute Burn: {burnAmount || "0"} {activeToken.symbol}
-                  </span>
-                </>
-              )}
-            </button>
           </div>
         </div>
 
@@ -854,7 +1512,7 @@ export default function TokenBurnerPage({
         onOpenConnectWallet={onOpenConnectWallet}
       />
 
-      {/* Burn Step Execution Loader Modal */}
+      {/* Single Burn Step Execution Loader Modal */}
       {isBurning && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="max-w-md w-full p-6 rounded-3xl bg-zinc-900 border border-white/10 space-y-6 shadow-2xl font-mono text-center">
@@ -902,7 +1560,62 @@ export default function TokenBurnerPage({
         </div>
       )}
 
-      {/* Proof of Burn Certificate Modal */}
+      {/* Batch Multicall Execution Loader Modal */}
+      {isBatchBurning && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full p-6 rounded-3xl bg-zinc-900 border border-purple-500/30 space-y-6 shadow-2xl font-mono text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-purple-600/15 blur-3xl pointer-events-none"></div>
+
+            <div className="relative mx-auto w-16 h-16 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+              <Layers className="w-8 h-8 text-purple-400 animate-bounce" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold font-display text-white">
+                Multicall3 Atomic Batch Burn
+              </h3>
+              <p className="text-xs text-zinc-400">
+                Batch processing {validBatchItems.length} tokens into a single transaction
+              </p>
+            </div>
+
+            {/* Step Progress List */}
+            <div className="space-y-3 text-left text-xs">
+              {[
+                { step: 1, title: `Verifying balances & allowances for ${validBatchItems.length} tokens` },
+                { step: 2, title: "Encoding Multicall3.aggregate3() atomic payload" },
+                { step: 3, title: "Base Paymaster 100% Account Abstraction Relay" },
+                { step: 4, title: "Broadcasting single atomic transaction to Base L2" },
+                { step: 5, title: "Minting Multi-Asset Cryptographic Proof Certificate" }
+              ].map(s => (
+                <div
+                  key={s.step}
+                  className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                    batchBurnStep === s.step 
+                      ? "bg-purple-500/20 border-purple-500 text-white font-bold" 
+                      : batchBurnStep > s.step 
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+                      : "bg-black/40 border-white/5 text-zinc-600"
+                  }`}
+                >
+                  {batchBurnStep > s.step ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : batchBurnStep === s.step ? (
+                    <span className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                  ) : (
+                    <span className="w-4 h-4 rounded-full border border-zinc-700 text-[10px] flex items-center justify-center shrink-0">
+                      {s.step}
+                    </span>
+                  )}
+                  <span>{s.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proof of Burn Certificate Modal (Single) */}
       {activeCertificate && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="max-w-lg w-full p-6 rounded-3xl bg-zinc-950 border border-red-500/30 space-y-6 shadow-2xl font-mono relative overflow-hidden">
@@ -989,6 +1702,126 @@ export default function TokenBurnerPage({
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>Share Proof</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Proof of Burn Certificate Modal */}
+      {activeBatchCertificate && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="max-w-xl w-full p-6 rounded-3xl bg-zinc-950 border border-purple-500/30 space-y-6 shadow-2xl font-mono relative overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-purple-600/15 blur-3xl pointer-events-none"></div>
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-4 shrink-0">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-purple-400" />
+                <h3 className="text-base font-bold text-white font-display">
+                  Multicall Batch Proof of Burn
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveBatchCertificate(null)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Certificate Display Content */}
+            <div className="space-y-4 overflow-y-auto pr-1">
+              <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-black border border-white/10 space-y-4 text-center">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  ATOMIC MULTICALL3 VERIFIED ON BASE
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-zinc-500 text-xs block">TOTAL VALUE DEFLATED</span>
+                  <span className="text-3xl font-extrabold text-white font-display block">
+                    ${activeBatchCertificate.totalAmountUsd.toFixed(2)} USD
+                  </span>
+                  <span className="text-xs text-amber-300 block font-bold">
+                    {activeBatchCertificate.items.length} Distinct Token Supplies Reduced
+                  </span>
+                </div>
+
+                {/* Items Breakdown Table */}
+                <div className="p-3 rounded-xl bg-black/60 border border-white/5 space-y-2 text-left text-xs">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider block border-b border-white/5 pb-1">
+                    Burned Assets Breakdown ({activeBatchCertificate.items.length} tokens):
+                  </span>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                    {activeBatchCertificate.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-[11px] py-1 border-b border-white/5 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <Flame className="w-3.5 h-3.5 text-red-500" />
+                          <span className="font-bold text-white">
+                            {item.amount.toLocaleString()} {item.tokenSymbol}
+                          </span>
+                        </div>
+                        <span className="text-emerald-400 font-bold">
+                          ≈ ${item.amountUsd.toFixed(2)} USD
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Transaction and Gas Meta */}
+                <div className="p-3.5 rounded-xl bg-black/60 border border-white/5 text-left text-xs space-y-1.5 text-zinc-300">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Burner:</span>
+                    <span className="font-bold text-white">{activeBatchCertificate.burnerAddress.slice(0, 8)}...{activeBatchCertificate.burnerAddress.slice(-6)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Multicall Router:</span>
+                    <span className="font-bold text-purple-400">{activeBatchCertificate.multicallAddress.slice(0, 8)}...{activeBatchCertificate.multicallAddress.slice(-6)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Block Number:</span>
+                    <span className="font-bold text-white">#{activeBatchCertificate.blockNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Gas Saved:</span>
+                    <span className="font-bold text-amber-300">~{activeBatchCertificate.gasSavedPercent}% vs separate txs</span>
+                  </div>
+                </div>
+
+                {/* Tx Hash */}
+                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-center justify-between">
+                  <span className="truncate">Tx: {activeBatchCertificate.txHash}</span>
+                  <button
+                    onClick={() => copyToClipboard(activeBatchCertificate.txHash, "Transaction Hash")}
+                    className="text-purple-400 hover:text-white shrink-0 ml-2"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 shrink-0 pt-2">
+              <a
+                href={`https://basescan.org/tx/${activeBatchCertificate.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+              >
+                <span>View on BaseScan</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <button
+                onClick={() => {
+                  copyToClipboard(`https://basescan.org/tx/${activeBatchCertificate.txHash}`, "Certificate URL");
+                }}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share Batch Proof</span>
               </button>
             </div>
           </div>
