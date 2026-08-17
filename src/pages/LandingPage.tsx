@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import agunnayaLogo from "../assets/images/agunnaya_studio_logo_1786991724715.jpg";
-import agunnayaBanner from "../assets/images/agunnaya_banner_1782747920246.jpg";
+import agunnayaBanner from "../assets/images/agunnaya_studio_banner_1787004634511.jpg";
 import { Sparkles, ArrowRight, ShieldCheck, Zap, Coins, Bot, Globe, ChevronDown, CheckCircle, Mail, Presentation, FileDown } from "lucide-react";
 
 interface LandingPageProps {

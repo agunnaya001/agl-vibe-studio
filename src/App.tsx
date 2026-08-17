@@ -1115,12 +1115,12 @@ export default function App() {
           <meta property="og:site_name" content="Agunnaya Labs Studio" />
           <meta property="og:title" content="Agunnaya Labs Studio - High Performance Web3 Developer Studio" />
           <meta property="og:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
-          <meta property="og:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80" />
+          <meta property="og:image" content="/banner.jpg" />
           <meta property="og:url" content={typeof window !== "undefined" ? window.location.origin : "https://aglstudio.xyz"} />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="Agunnaya Labs Studio - High Performance Web3 Developer Studio" />
           <meta name="twitter:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
-          <meta name="twitter:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80" />
+          <meta name="twitter:image" content="/banner.jpg" />
         </Helmet>
         <LandingPage 
           onLaunchApp={(targetTab) => {

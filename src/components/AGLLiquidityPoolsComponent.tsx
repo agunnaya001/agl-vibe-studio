@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { AGLLiquidityPair, WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
+import ImageWithFallback from "./ImageWithFallback";
 
 interface AGLLiquidityPoolsComponentProps {
   wallet: WalletState;
@@ -412,7 +413,13 @@ export default function AGLLiquidityPoolsComponent({
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2">
-                        <img src={pair.tokenA.logoUrl} alt="AGL" className="w-8 h-8 rounded-full border-2 border-zinc-900" />
+                        <ImageWithFallback 
+                          src={pair.tokenA.logoUrl} 
+                          alt="AGL" 
+                          fallbackText="AGL"
+                          className="w-8 h-8 rounded-full border-2 border-zinc-900 object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
                         <div className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-zinc-900 flex items-center justify-center font-bold text-xs font-mono text-brand-purple">
                           {pair.tokenB.symbol.slice(0, 3)}
                         </div>

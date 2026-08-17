@@ -44,7 +44,7 @@ import {
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import agunnayaLogo from "../assets/images/agunnaya_studio_logo_1786991724715.jpg";
-import agunnayaBanner from "../assets/images/agunnaya_banner_1782747920246.jpg";
+import agunnayaBanner from "../assets/images/agunnaya_studio_banner_1787004634511.jpg";
 import { 
   AGL_TOKEN_ADDRESS, 
   AGL_CREDITS_ADDRESS, 
@@ -1095,10 +1095,19 @@ export default function PitchDeckPage({ showToast, onNavigateTab }: PitchDeckPag
 
           {/* Title & Subtitle */}
           <div className="mt-6 sm:mt-8 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white shadow-inner">
-                <SlideIcon className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400" />
-              </div>
+            <div className="flex items-center gap-3.5">
+              {currentSlide.id === 1 ? (
+                <img 
+                  src={agunnayaLogo} 
+                  alt="Agunnaya Labs Logo" 
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border border-purple-500/40 shadow-lg shadow-purple-500/25 shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-white shadow-inner shrink-0">
+                  <SlideIcon className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400" />
+                </div>
+              )}
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-black font-display text-white tracking-tight leading-tight">
                 {currentSlide.title}
               </h2>
