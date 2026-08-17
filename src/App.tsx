@@ -34,6 +34,7 @@ import TokenBurnerPage from "./pages/TokenBurnerPage";
 import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
 import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
+import PitchDeckPage from "./pages/PitchDeckPage";
 import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
 import OnboardingTour from "./components/OnboardingTour";
 import NotFoundPage from "./components/NotFoundPage";
@@ -809,6 +810,13 @@ export default function App() {
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=token-factory`
         };
+      case "pitch-deck":
+        return {
+          title: "Agunnaya Labs Studio Pitch Deck | Investor Presentation",
+          description: "Official investor deck and venture overview for Agunnaya Labs Studio, the autonomous AI Web3 developer OS on Base.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=pitch-deck`
+        };
       default:
         return {
           title: "Agunnaya Labs Studio - High Performance Web3 Developer Studio",
@@ -860,11 +868,10 @@ export default function App() {
             userDAOs={daos}
             userGameFi={games}
             userAgents={agents}
-  activities={activities}
-  onOpenConnect={() => setIsWalletModalOpen(true)}
-  onSelectTab={(tab) => setCurrentTab(tab)}
-  addTerminalLog={addTerminalLog}
-  />
+            activities={activities}
+            onOpenConnect={() => setIsWalletModalOpen(true)}
+            onSelectTab={(tab) => setCurrentTab(tab)}
+          />
         );
       case "explore":
         return (
@@ -1071,6 +1078,13 @@ export default function App() {
             showToast={showToast}
           />
         );
+      case "pitch-deck":
+        return (
+          <PitchDeckPage
+            showToast={showToast}
+            onNavigateTab={handleTabChange}
+          />
+        );
       default:
         return (
           <NotFoundPage
@@ -1108,7 +1122,14 @@ export default function App() {
           <meta name="twitter:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
           <meta name="twitter:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80" />
         </Helmet>
-        <LandingPage onLaunchApp={() => setIsLaunched(true)} />
+        <LandingPage 
+          onLaunchApp={(targetTab) => {
+            setIsLaunched(true);
+            if (targetTab) {
+              handleTabChange(targetTab);
+            }
+          }} 
+        />
       </HelmetProvider>
     );
   }

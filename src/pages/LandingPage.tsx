@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import agunnayaLogo from "../assets/images/agunnaya_logo_1782747905258.jpg";
+import agunnayaLogo from "../assets/images/agunnaya_studio_logo_1786991724715.jpg";
 import agunnayaBanner from "../assets/images/agunnaya_banner_1782747920246.jpg";
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Coins, Bot, Globe, ChevronDown, CheckCircle, Mail } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck, Zap, Coins, Bot, Globe, ChevronDown, CheckCircle, Mail, Presentation, FileDown } from "lucide-react";
 
 interface LandingPageProps {
-  onLaunchApp: () => void;
+  onLaunchApp: (targetTab?: string) => void;
 }
 
 export default function LandingPage({ onLaunchApp }: LandingPageProps) {
@@ -95,14 +95,24 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
             Agunnaya <span className="bg-gradient-to-r from-[#0052FF] to-[#A855F7] bg-clip-text text-transparent">Labs</span>
           </span>
         </div>
-        <button
-          id="hero-launch-nav"
-          onClick={onLaunchApp}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black font-bold hover:bg-white/90 active:scale-95 transition-all font-display text-xs"
-        >
-          <span>Launch Studio</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            id="hero-pitchdeck-nav"
+            onClick={() => onLaunchApp("pitch-deck")}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 text-purple-300 hover:text-white border border-purple-500/30 active:scale-95 transition-all font-display text-xs font-semibold"
+          >
+            <Presentation className="w-3.5 h-3.5 text-purple-400" />
+            <span>Pitch Deck</span>
+          </button>
+          <button
+            id="hero-launch-nav"
+            onClick={() => onLaunchApp("dashboard")}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black font-bold hover:bg-white/90 active:scale-95 transition-all font-display text-xs"
+          >
+            <span>Launch Studio</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -121,20 +131,28 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
           Create, launch, manage, and scale fully custom on-chain applications, linear bonding curve tokens, DAOs, GameFi reward structures, and autonomous AI agents in minutes. No Solidity experience required.
         </p>
 
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3.5">
           <button
             id="hero-launch-primary"
-            onClick={onLaunchApp}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[#0052FF] hover:bg-[#0052FF]/95 font-bold transition-all shadow-[0_0_20px_rgba(0,82,255,0.4)] text-sm font-display flex items-center justify-center gap-2 group hover:scale-[1.02]"
+            onClick={() => onLaunchApp("dashboard")}
+            className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[#0052FF] hover:bg-[#0052FF]/95 font-bold transition-all shadow-[0_0_20px_rgba(0,82,255,0.4)] text-sm font-display flex items-center justify-center gap-2 group hover:scale-[1.02]"
           >
             <span>Enter Developer Studio</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
+          <button
+            id="hero-pitchdeck-primary"
+            onClick={() => onLaunchApp("pitch-deck")}
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-purple-500/40 hover:border-purple-400 bg-purple-500/10 hover:bg-purple-500/20 transition-all font-bold text-sm font-display text-purple-200 hover:text-white flex items-center justify-center gap-2"
+          >
+            <Presentation className="w-4 h-4 text-purple-400" />
+            <span>Investor Pitch Deck (PDF)</span>
+          </button>
           <a
             href="#features-section"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/20 bg-zinc-900/40 hover:bg-zinc-900/60 transition-all font-semibold text-sm font-display"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-white/10 hover:border-white/20 bg-zinc-900/40 hover:bg-zinc-900/60 transition-all font-semibold text-sm font-display text-zinc-300 hover:text-white text-center"
           >
-            Explore Platform Features
+            Features
           </a>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import agunnayaLogo from "../assets/images/agunnaya_logo_1782747905258.jpg";
+import agunnayaLogo from "../assets/images/agunnaya_studio_logo_1786991724715.jpg";
 import { 
   LayoutDashboard, 
   Sparkles, 
@@ -25,6 +25,7 @@ import {
   Building2,
   Compass,
   FileSpreadsheet,
+  Presentation,
   X,
   Search,
   ChevronRight,
@@ -117,6 +118,7 @@ export default function Sidebar({
 
   const menuItems = [
     { id: "landing", label: "Studio Home", icon: Sparkles, category: "Welcome", description: "Welcome & Studio Overview" },
+    { id: "pitch-deck", label: "Pitch Deck", icon: Presentation, category: "Welcome", highlight: true, description: "Investor Presentation & Deck Export" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace", description: "Personal Activity & Assets" },
     { id: "task-sync", label: "TaskSync", icon: Clock, category: "Workspace", description: "Automated On-Chain Cron Tasks" },
     { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", highlight: true, description: "Prompt to Solidity Generator" },
@@ -151,6 +153,7 @@ export default function Sidebar({
   // Simplified Core Items for Mobile View
   const simplifiedCoreIds = [
     "landing",
+    "pitch-deck",
     "dashboard",
     "ai-builder",
     "token-factory",
