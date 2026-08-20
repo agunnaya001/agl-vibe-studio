@@ -6,6 +6,7 @@ import { ensureCorrectChain, getChainNameFromId } from "../lib/tokenFactory";
 import { aglSdk } from "../lib/aglSdk";
 import ImageWithFallback from "./ImageWithFallback";
 import OfflineIndicator from "./OfflineIndicator";
+import ThemeToggle from "./ThemeToggle";
 
 interface HeaderProps {
   wallet: WalletState;
@@ -565,6 +566,9 @@ export default function Header({
             <span className="hidden xl:inline">Quick Tour</span>
           </button>
         )}
+
+        {/* Theme Toggle Switch */}
+        <ThemeToggle id="header-theme-toggle" />
 
         {/* Connection Widget */}
         {wallet.isConnected ? (

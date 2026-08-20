@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { registerServiceWorker } from './serviceWorkerRegistration.ts';
+import { ThemeProvider } from './context/ThemeContext.tsx';
 
 // Register Service Worker for asset caching & offline capability
 registerServiceWorker(
@@ -19,7 +20,9 @@ registerServiceWorker(
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 );
 

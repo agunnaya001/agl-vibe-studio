@@ -2,12 +2,15 @@ import React, { useState } from "react";
 import agunnayaLogo from "../assets/images/agunnaya_studio_logo_1786991724715.jpg";
 import agunnayaBanner from "../assets/images/agunnaya_studio_banner_1787004634511.jpg";
 import { Sparkles, ArrowRight, ShieldCheck, Zap, Coins, Bot, Globe, ChevronDown, CheckCircle, Mail, Presentation, FileDown } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
+import { useTheme } from "../context/ThemeContext";
 
 interface LandingPageProps {
   onLaunchApp: (targetTab?: string) => void;
 }
 
 export default function LandingPage({ onLaunchApp }: LandingPageProps) {
+  const { isLight } = useTheme();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -74,7 +77,10 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
   ];
 
   return (
-    <div id="landing-page-root" className="min-h-screen bg-[#050505] text-white selection:bg-brand-purple/20 relative overflow-hidden">
+    <div 
+      id="landing-page-root" 
+      className={`min-h-screen ${isLight ? "bg-slate-50 text-slate-900" : "bg-[#050505] text-white"} selection:bg-brand-purple/20 relative overflow-hidden`}
+    >
       {/* Decorative background grids */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f2e_1px,transparent_1px),linear-gradient(to_bottom,#1f1f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 pointer-events-none"></div>
 
@@ -96,6 +102,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle variant="landing" id="landing-theme-toggle" />
           <button
             id="hero-pitchdeck-nav"
             onClick={() => onLaunchApp("pitch-deck")}

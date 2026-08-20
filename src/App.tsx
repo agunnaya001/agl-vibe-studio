@@ -48,8 +48,10 @@ import TerminalLog, { TerminalLine } from "./components/TerminalLog";
 import ImageWithFallback from "./components/ImageWithFallback";
 import { getBaseProvider } from "./lib/tokenFactory";
 import { BrainCircuit, Copy, Check, QrCode, X, ShieldCheck, Rocket, BarChart3, Terminal, Zap, ChevronRight, Pin, PinOff } from "lucide-react";
+import { useTheme } from "./context/ThemeContext";
 
 export default function App() {
+  const { isLight } = useTheme();
   const [isLaunched, setIsLaunched] = useState(false);
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
@@ -1150,7 +1152,10 @@ export default function App() {
         <meta name="twitter:description" content={meta.description} />
         <meta name="twitter:image" content={meta.image} />
       </Helmet>
-      <div id="studio-app-root" className="min-h-screen bg-[#050505] text-white flex overflow-hidden">
+      <div 
+        id="studio-app-root" 
+        className={`min-h-screen ${isLight ? "bg-slate-50 text-slate-900" : "bg-[#050505] text-white"} flex overflow-hidden`}
+      >
         {/* Side Navigation bar */}
         <Sidebar 
           currentTab={selectedToken ? "explore" : currentTab} 

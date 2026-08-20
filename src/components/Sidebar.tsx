@@ -33,6 +33,7 @@ import {
   SlidersHorizontal,
   CheckCircle2
 } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 interface SidebarProps {
   currentTab: string;
@@ -510,6 +511,9 @@ export default function Sidebar({
 
         {/* Sidebar Footer with Ecosystem Stats & Tour Trigger */}
         <div className="p-4 border-t border-white/10 bg-black/50 space-y-2.5">
+          {/* Theme Mode Switcher */}
+          <ThemeToggle variant="sidebar" id="sidebar-theme-toggle" />
+
           {onOpenTour && (
             <button
               id="btn-sidebar-onboarding-tour"
