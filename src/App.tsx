@@ -35,6 +35,7 @@ import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
 import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
+import AISuitePage from "./pages/AISuitePage";
 import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
 import OnboardingTour from "./components/OnboardingTour";
 import NotFoundPage from "./components/NotFoundPage";
@@ -1084,6 +1085,60 @@ export default function App() {
         return (
           <PitchDeckPage
             showToast={showToast}
+            onNavigateTab={handleTabChange}
+          />
+        );
+      case "ai-suite":
+        return (
+          <AISuitePage
+            initialSubTab="auditor"
+            showToast={showToast}
+            walletAddress={wallet.address}
+            onNavigateTab={handleTabChange}
+          />
+        );
+      case "ai-security-auditor":
+        return (
+          <AISuitePage
+            initialSubTab="auditor"
+            showToast={showToast}
+            walletAddress={wallet.address}
+            onNavigateTab={handleTabChange}
+          />
+        );
+      case "ai-dapp-generator":
+        return (
+          <AISuitePage
+            initialSubTab="dapp"
+            showToast={showToast}
+            walletAddress={wallet.address}
+            onNavigateTab={handleTabChange}
+          />
+        );
+      case "ai-contract-explainer":
+        return (
+          <AISuitePage
+            initialSubTab="explainer"
+            showToast={showToast}
+            walletAddress={wallet.address}
+            onNavigateTab={handleTabChange}
+          />
+        );
+      case "ai-onchain-agent":
+        return (
+          <AISuitePage
+            initialSubTab="agent"
+            showToast={showToast}
+            walletAddress={wallet.address}
+            onNavigateTab={handleTabChange}
+          />
+        );
+      case "ai-game-builder":
+        return (
+          <AISuitePage
+            initialSubTab="game"
+            showToast={showToast}
+            walletAddress={wallet.address}
             onNavigateTab={handleTabChange}
           />
         );

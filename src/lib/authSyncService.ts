@@ -1,6 +1,4 @@
 import { User, getIdTokenResult, getIdToken } from "firebase/auth";
-import { doc, getDocFromServer } from "firebase/firestore";
-import { auth, db } from "./firebase";
 
 export type AuthHealthStatus = "healthy" | "nearing_expiration" | "expired" | "offline" | "unauthenticated";
 
@@ -34,7 +32,7 @@ export async function checkAuthHealth(user: User | null): Promise<AuthHealthStat
     const expiresInSeconds = Math.max(0, Math.floor((expirationTimeMs - nowMs) / 1000));
     const expiresInMinutes = Math.max(0, Math.ceil(expiresInSeconds / 60));
 
-    // 2. Validate Firebase Firestore connection health
+    // 2. Validate network connection status
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       return {
         status: "offline",
@@ -44,32 +42,6 @@ export async function checkAuthHealth(user: User | null): Promise<AuthHealthStat
         errorMessage: "Device is offline",
         isRefreshing: false
       };
-    }
-
-    try {
-      // Test lightweight connection probe with a 3s timeout
-      const probePromise = getDocFromServer(doc(db, "test", "health-probe"));
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore probe timeout")), 3000)
-      );
-      await Promise.race([probePromise, timeoutPromise]);
-    } catch (err: any) {
-      if (
-        err?.message?.includes("offline") ||
-        err?.message?.includes("Could not reach Cloud Firestore") ||
-        err?.message?.includes("timeout") ||
-        err?.code === "unavailable"
-      ) {
-        return {
-          status: "offline",
-          expiresInSeconds,
-          expiresInMinutes,
-          lastCheckedAt: Date.now(),
-          errorMessage: "Firebase Auth & Firestore unreachable (Offline)",
-          isRefreshing: false
-        };
-      }
-      // Permission denied or missing doc is expected for probe, means we are ONLINE!
     }
 
     // 3. Determine Health Status

@@ -31,7 +31,10 @@ import {
   ChevronRight,
   Filter,
   SlidersHorizontal,
-  CheckCircle2
+  CheckCircle2,
+  ShieldCheck,
+  BrainCircuit,
+  Zap
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
@@ -61,7 +64,7 @@ export default function Sidebar({
 
   // Search & Mobile Layout View States
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [mobileTabFilter, setMobileTabFilter] = useState<"all" | "core" | "assets" | "defi">("all");
+  const [mobileTabFilter, setMobileTabFilter] = useState<"all" | "ai" | "core" | "assets" | "defi">("all");
   const [mobileViewMode, setMobileViewMode] = useState<"simplified" | "all">("simplified");
 
   // Touch Swipe Event Handlers
@@ -120,9 +123,15 @@ export default function Sidebar({
   const menuItems = [
     { id: "landing", label: "Studio Home", icon: Sparkles, category: "Welcome", description: "Welcome & Studio Overview" },
     { id: "pitch-deck", label: "Pitch Deck", icon: Presentation, category: "Welcome", highlight: true, description: "Investor Presentation & Deck Export" },
+    { id: "ai-suite", label: "Gemini AI Suite Hub", icon: Sparkles, category: "Gemini Web3 AI Suite", highlight: true, description: "All 5 AI Web3 Workspaces" },
+    { id: "ai-security-auditor", label: "AI Security Auditor", icon: ShieldCheck, category: "Gemini Web3 AI Suite", highlight: true, description: "Solidity Auditing & CEI Checks" },
+    { id: "ai-dapp-generator", label: "AI dApp Generator", icon: Zap, category: "Gemini Web3 AI Suite", highlight: true, description: "Prompt to Full-Stack Web3" },
+    { id: "ai-contract-explainer", label: "Contract Explainer", icon: BrainCircuit, category: "Gemini Web3 AI Suite", description: "ABI, Functions & Interactive Q&A" },
+    { id: "ai-onchain-agent", label: "Onchain AI Agent", icon: Bot, category: "Gemini Web3 AI Suite", highlight: true, description: "Base L2 Autonomous Assistant" },
+    { id: "ai-game-builder", label: "Web3 Game Builder", icon: Gamepad2, category: "Gemini Web3 AI Suite", highlight: true, description: "Verifiable VRF & Playable Arena" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace", description: "Personal Activity & Assets" },
     { id: "task-sync", label: "TaskSync", icon: Clock, category: "Workspace", description: "Automated On-Chain Cron Tasks" },
-    { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", highlight: true, description: "Prompt to Solidity Generator" },
+    { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", description: "Prompt to Solidity Generator" },
     { id: "gdrive", label: "Google Drive Cloud", icon: HardDrive, category: "Workspace", description: "Cloud Backup & Restore" },
     { id: "gmail", label: "Gmail Automation", icon: Mail, category: "Workspace", description: "Automated Email Alerts" },
     { id: "google-forms", label: "Google Forms", icon: FileSpreadsheet, category: "Workspace", description: "DAO Polls & Community Forms" },
@@ -154,9 +163,10 @@ export default function Sidebar({
   // Simplified Core Items for Mobile View
   const simplifiedCoreIds = [
     "landing",
-    "pitch-deck",
+    "ai-suite",
+    "ai-security-auditor",
+    "ai-dapp-generator",
     "dashboard",
-    "ai-builder",
     "token-factory",
     "daos",
     "staking-vault",
@@ -173,6 +183,7 @@ export default function Sidebar({
 
     if (!matchesSearch) return false;
 
+    if (mobileTabFilter === "ai") return item.category === "Gemini Web3 AI Suite";
     if (mobileTabFilter === "core") return item.category === "Welcome" || item.category === "Workspace";
     if (mobileTabFilter === "assets") return item.category === "Assets & Creation";
     if (mobileTabFilter === "defi") return item.category === "DeFi Tools" || item.category === "Administration";
@@ -354,6 +365,7 @@ export default function Sidebar({
               <div className="flex items-center gap-1 overflow-x-auto pb-1 pt-1 font-mono text-[10px] scrollbar-none">
                 {[
                   { id: "all", label: "All" },
+                  { id: "ai", label: "AI Suite" },
                   { id: "core", label: "Workspace" },
                   { id: "assets", label: "Creation" },
                   { id: "defi", label: "DeFi" }

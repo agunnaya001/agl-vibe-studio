@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./src/lib/auth";
+import { registerAISuiteRoutes } from "./server/aiSuiteRoutes";
 
 const app = express();
 const PORT = 3000;
@@ -12,6 +13,9 @@ const PORT = 3000;
 app.all(["/api/auth", "/api/auth/*"], toNodeHandler(auth));
 
 app.use(express.json());
+
+// Register Gemini Web3 AI Suite routes (Security Auditor, dApp Generator, Contract Explainer, Onchain Agent, Game Builder)
+registerAISuiteRoutes(app);
 
 // Lazy-loaded GoogleGenAI client
 function getAIClient(): GoogleGenAI {
