@@ -1,10 +1,11 @@
 # 🌌 Agunnaya Labs Studio
 
 <div align="center">
-  <img src="public/banner.jpg" alt="Agunnaya Labs Studio Banner" width="100%" style="border-radius: 16px; margin-bottom: 16px; max-height: 420px; object-fit: cover;" />
+
+[![Agunnaya Labs Studio Banner](public/banner.jpg)](public/banner.jpg)
 
   <p align="center">
-    <img src="public/logo.jpg" alt="Agunnaya Labs Logo" width="80" height="80" style="border-radius: 16px; border: 2px solid rgba(0, 82, 255, 0.5); box-shadow: 0 0 20px rgba(0, 82, 255, 0.3);" />
+    <img src="public/logo.jpg" alt="Agunnaya Labs Logo" width="80" height="80" style="border-radius: 16px; border: 2px solid rgba(0, 82, 255, 0.5);" />
   </p>
 
   <h2 style="margin: 0; padding: 0; color: #FFFFFF; font-family: sans-serif;">Agunnaya Labs Studio (v2.5)</h2>
@@ -20,7 +21,7 @@
   </div>
 </div>
 
-> **Agunnaya Labs Studio** is an all-in-one, full-stack Web3 creator suite and launchpad built for the Base L2 ecosystem. It allows developers, creators, and protocols to design, deploy, audit, manage, and scale smart contracts, AI agents, liquidity bonding curves, DAOs, and staking vaults without writing smart contracts from scratch. Powered by server-side Google Gemini 3.6 Flash, Account Abstraction gas sponsorship, and real-time Firebase Firestore synchronization.
+> **Agunnaya Labs Studio** is an all-in-one, full-stack Web3 creator suite and launchpad built for the Base L2 ecosystem. It allows developers, creators, and protocols to design, deploy, audit, manage[...] 
 
 ---
 
@@ -79,8 +80,8 @@ The **User Dashboard** serves as the central command center for your entire Web3
 ## 🚀 Core Features & Studio Modules
 
 ### 1. 🧙‍♂️ AI Token Deployment Wizard & Smart Contract Architect
-*   **AI Token Deployment Wizard**: Input natural language requirements (e.g. token name, symbol, supply, royalty fees, anti-whale caps, staking APY), and Gemini AI auto-synthesizes bonding curve slopes $k$, initial spot prices $P_0$, OpenZeppelin Solidity contract source code, and automated CEI security audit summaries.
-*   **Interactive Price Trajectory Visualizer**: Recharts area chart rendering the proposed bonding curve trajectory up to Uniswap v3 liquidity graduation targets with real-time parameter fine-tuning sliders.
+*   **AI Token Deployment Wizard**: Input natural language requirements (e.g. token name, symbol, supply, royalty fees, anti-whale caps, staking APY), and Gemini AI auto-synthesizes bonding curve slop[...] 
+*   **Interactive Price Trajectory Visualizer**: Recharts area chart rendering the proposed bonding curve trajectory up to Uniswap v3 liquidity graduation targets with real-time parameter fine-tuning [...]
 *   **1-Click Launch & Auto-Fill**: Transfer AI-proposed parameters directly to the launchpad form or trigger a 1-click deployment directly to Base Mainnet or Sepolia Sandbox.
 *   **Gemini AI Contract Architect**: Describe desired token mechanics or contract specifications in plain English, and Gemini auto-assembles verified Solidity-inspired contracts.
 *   **1-Click AI Suggestion Templates**: Instant prompt chips for Meme Coins, Staking Vault Tokens, AI Agent Cores, DAO Multi-Sig Hubs, and GameFi Reward Pools.
@@ -88,7 +89,7 @@ The **User Dashboard** serves as the central command center for your entire Web3
 
 ### 2. 📦 Batch Token Launchpad (CSV & Queue Engine)
 *   **CSV & Drag-and-Drop Ingestion**: Upload `.csv` or `.txt` token manifest files or paste raw comma-separated values to automatically parse and queue dozens of tokens for deployment.
-*   **Interactive Queue Manager**: Real-time parameter validation for token name, ticker symbol, initial supply, and category with status indicators (`Ready`, `Deploying`, `Success`, `Error`, `Invalid`).
+*   **Interactive Queue Manager**: Real-time parameter validation for token name, ticker symbol, initial supply, and category with status indicators (`Ready`, `Deploying`, `Success`, `Error`, `Invalid[...]`)
 *   **Dual-Pipeline Execution**:
     *   **Simulated Sandbox Fast Rollout**: High-speed deterministic deployment pipeline for rapid testing and gas-sponsored simulation.
     *   **Live Web3 On-Chain Engine**: Sequential on-chain execution calling `createToken(_name, _symbol)` directly on the Base Token Factory contract.
@@ -97,14 +98,14 @@ The **User Dashboard** serves as the central command center for your entire Web3
 
 ### 3. 📈 Bonding Curve Mathematical Analytics & Slippage Simulator
 *   **Continuous Curve Visualizer**: Recharts multi-series area and line chart mapping price progression $P(S) = P_0 + k \cdot S$ with shaded trade execution windows.
-*   **Slippage & Price Impact Metrics**: Real-time calculations comparing starting spot price ($P_{\text{start}}$), post-trade spot price ($P_{\text{end}}$), and expected average execution price ($P_{\text{avg}}$) with warning thresholds.
+*   **Slippage & Price Impact Metrics**: Real-time calculations comparing starting spot price ($P_{\text{start}}$), post-trade spot price ($P_{\text{end}}$), and expected average execution price ($P_{[...}$)
 *   **Volume Sensitivity Heatmap Grid**: Interactive table detailing price impacts across various buy order volumes ($0.05$ to $5.0$ ETH) with 1-click order execution filling.
 *   **Uniswap v3 DEX Graduation Meter**: Live tracker monitoring reserve growth toward the 10 ETH liquidity graduation target for automated AMM migration.
 *   **Closed-Form Mathematical Specs**: On-screen reference displaying integral reserve equations $R(S) = P_0 S + \frac{1}{2} k S^2$ and exact closed-form square-root token minting logic.
 
 ### 4. 🧠 Autonomous AI Agent Studio & Persona Forge
 *   **Agent Creation & Registration**: Forge autonomous AI workers with custom symbols, system prompt directives, and usage subscription fees (in ETH).
-*   **Personality & Persona Configuration**: Fine-tune agent cognition with specific **Tone** (Professional, Witty, Concise, Friendly, Analytical), **Response Depth** (Short, Medium, Long), and **Personality Behaviors** (Skeptical, Self-Correcting, Enthusiastic, Minimalist, strictly Technical).
+*   **Personality & Persona Configuration**: Fine-tune agent cognition with specific **Tone** (Professional, Witty, Concise, Friendly, Analytical), **Response Depth** (Short, Medium, Long), and **Pers[...]
 *   **Preset AI Agent Suggestions**: 1-click presets for Solidity Security Sentinel (`AUDIT`), DeFi Yield Scout (`YIELD`), and DAO Governance Advisor (`GOV`) with pre-configured cognitive personas.
 *   **Multimodal AI Engine**: Direct integration with Gemini LLM, speech-to-text audio transcription, AI image generation, and video synthesis.
 *   **Prompt Optimization Pipeline**: 1-click AI directive tuner that transforms simple descriptions into detailed autonomous cognitive instructions.
@@ -127,10 +128,10 @@ The **User Dashboard** serves as the central command center for your entire Web3
 *   **BaseScan Verification Bridge**: 1-click modal with auto-populated Solidity compiler versions (`v0.8.20`), optimization flags, and OpenZeppelin standard source code for BaseScan verification.
 
 ### 7. 🔥 ERC-20 Token Burner, Batch Multicall & Deflation Engine
-*   **Dual-Mode Burning (Single & Multicall Batch)**: Burn a single asset or select multiple tokens simultaneously to execute a single multicall batch-burn transaction using the canonical `Multicall3` contract (`0xcA11bde05977b3631167028862bE2a173976CA11`).
+*   **Dual-Mode Burning (Single & Multicall Batch)**: Burn a single asset or select multiple tokens simultaneously to execute a single multicall batch-burn transaction using the canonical `Multicall3`[...]
 *   **Burn Leaderboard**: Displays top burner wallets, cumulative deflation rankings, and total tokens permanently removed from circulation using real-time database synchronization.
-*   **Dual Destination Mechanisms**: Send tokens to the standard unspendable EVM Dead Address (`0x000...dEaD`) to permanently reduce circulating supply, or burn $AGL tokens to receive Agunnaya AI Studio Compute Credits.
-*   **Multi-Asset Cryptographic Proof of Burn Certificates**: Interactive verification certificates detailing burner address, null target, block number, individual token amounts, transaction hash, and BaseScan explorer links.
+*   **Dual Destination Mechanisms**: Send tokens to the standard unspendable EVM Dead Address (`0x000...dEaD`) to permanently reduce circulating supply, or burn $AGL tokens to receive Agunnaya AI Stud[...]
+*   **Multi-Asset Cryptographic Proof of Burn Certificates**: Interactive verification certificates detailing burner address, null target, block number, individual token amounts, transaction hash, and[...] 
 
 ### 8. 🔍 Token Registry Search, Filter & Discovery Suite
 *   **Instant Search & Query**: Search tokens across the Base Mainnet factory by token name, ticker symbol, contract address, or creator wallet address.
@@ -139,15 +140,15 @@ The **User Dashboard** serves as the central command center for your entire Web3
 
 ### 7. 💬 Categorized AI Web3 Advisor Drawer & Floating Developer Dock
 *   **Floating AI Drawer**: Accessible from anywhere in the applet via the floating action button (`#floating-ai-activator`) or shortcut tooltips.
-*   **Developer Quick Actions Menu**: Right-clicking `#floating-ai-activator` opens a sleek contextual menu for 1-click access to **Deploy Contract**, **View Analytics**, **Open Terminal**, and **AI Prompt Advisor**.
+*   **Developer Quick Actions Menu**: Right-clicking `#floating-ai-activator` opens a sleek contextual menu for 1-click access to **Deploy Contract**, **View Analytics**, **Open Terminal**, and **AI P[...]
 *   **Quick Copy Wallet Address**: 1-click clipboard button built directly into the floating dock with toast notifications and visual checkmark confirmations.
 *   **Mobile Wallet QR Code Popover**: Clickable QR code button triggering a popover window displaying the active wallet's address as a QR code for mobile scanning.
 *   **Interactive System Terminal Modal**: Access the full-featured Web3 CLI, RPC event streaming logs, custom themes (Classic Green, Amber, Monochrome), and command history via Quick Actions.
 *   **AGL Credit Metering**: Each AI query consumes 5 AGL Credits, backed on-chain or in the Sepolia Sandbox by burning AGL tokens.
 
 ### 8. 💼 Multi-Account Wallet Studio & Aggregate Portfolio Reserves
-*   **Simultaneous Multi-Sub-Account Tracking**: Connect and track multiple sub-accounts (MetaMask EOA, Coinbase Wallet, WalletConnect, and Account Abstraction Smart Accounts) simultaneously in a unified modal.
-*   **Aggregate Reserve Header Summary**: Live aggregate portfolio reserve header in the main application navigation bar displaying combined total ETH, AGL tokens, and AI Credits across all tracked sub-accounts.
+*   **Simultaneous Multi-Sub-Account Tracking**: Connect and track multiple sub-accounts (MetaMask EOA, Coinbase Wallet, WalletConnect, and Account Abstraction Smart Accounts) simultaneously in a unif[...]
+*   **Aggregate Reserve Header Summary**: Live aggregate portfolio reserve header in the main application navigation bar displaying combined total ETH, AGL tokens, and AI Credits across all tracked su[...]
 *   **1-Click Account Switching & Internal Transfers**: Seamlessly switch active wallets or transfer ETH and AGL tokens between internal sub-accounts with zero latency.
 *   **Sub-Account Faucet & Labeling**: Rename sub-accounts, fund balances via the testnet faucet, or link custom contract addresses.
 
@@ -158,7 +159,7 @@ The **User Dashboard** serves as the central command center for your entire Web3
 
 ### 10. 🔥 ERC-20 Token Burner & Deflation Engine
 *   **Portfolio & Custom Token Burning**: Select tokens directly from portfolio ($AGL, $USDC, $AERO, $cbETH) or input any custom Base ERC-20 contract address to inspect supply and execute burning.
-*   **Dual Destination Mechanisms**: Send tokens to the standard unspendable EVM Dead Address (`0x000...dEaD`) to reduce total supply, or burn $AGL tokens to receive Agunnaya AI Studio Compute Credits.
+*   **Dual Destination Mechanisms**: Send tokens to the standard unspendable EVM Dead Address (`0x000...dEaD`) to reduce total supply, or burn $AGL tokens to receive Agunnaya AI Studio Compute Credits[...]
 *   **Cryptographic Proof of Burn Certificates**: Interactive verification certificates detailing burner address, null target, block number, transaction hash, and BaseScan explorer links.
 
 ### 11. 🏛️ Automated Smart Contract Staking Vaults & Live Yield Ticker
@@ -198,18 +199,18 @@ The **User Dashboard** serves as the central command center for your entire Web3
 
 ## 📜 Standard ERC-20 Contract ABI Reference
 
-Agunnaya Labs Studio utilizes the standard OpenZeppelin ERC-20 contract ABI structure for seamless interoperability across Base Mainnet explorers (BaseScan), DEX routers (Uniswap/GeckoTerminal), and Web3 wallet providers (MetaMask, Coinbase Wallet):
+Agunnaya Labs Studio utilizes the standard OpenZeppelin ERC-20 contract ABI structure for seamless interoperability across Base Mainnet explorers (BaseScan), DEX routers (Uniswap/GeckoTerminal), and W[...] 
 
 ```json
-[
+[  
   { "inputs": [{ "internalType": "address", "name": "initialOwner", "type": "address" }], "stateMutability": "nonpayable", "type": "constructor" },
-  { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "allowance", "type": "uint256" }, { "internalType": "uint256", "name": "needed", "type": "uint256" }], "name": "ERC20InsufficientAllowance", "type": "error" },
-  { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }, { "internalType": "uint256", "name": "balance", "type": "uint256" }, { "internalType": "uint256", "name": "needed", "type": "uint256" }], "name": "ERC20InsufficientBalance", "type": "error" },
+  { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "allowance", "type": "uint256" }, { "internalType": "uint256", "name": "ne[...]
+  { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }, { "internalType": "uint256", "name": "balance", "type": "uint256" }, { "internalType": "uint256", "name": "neede[...]
   { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "OwnableUnauthorizedAccount", "type": "error" },
-  { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "Transfer", "type": "event" },
+  { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, {[...]
   { "inputs": [], "name": "TOTAL_SUPPLY", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-  { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-  { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability[...]
+  { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bo[...]
   { "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "burn", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
 ]
 ```
@@ -221,7 +222,7 @@ Agunnaya Labs Studio utilizes the standard OpenZeppelin ERC-20 contract ABI stru
 *   **Frontend Framework**: React 19 + TypeScript, styled with Tailwind CSS (v4).
 *   **Backend Proxy**: Express.js server providing bundle delivery and proxying server-side AI requests.
 *   **AI Engine**: Google GenAI SDK (`@google/genai`) utilizing server-side environment variables for secure Gemini API key management.
-*   **Multi-Node Failover RPC Engine**: Built-in RPC failover handler with static network configuration (`chainId: 8453`) across 5 Base Mainnet RPC providers (`mainnet.base.org`, `base.llamarpc.com`, `1rpc.io/base`, `base.drpc.org`, `developer-access-mainnet.base.org`) to guarantee high uptime and sub-second query speeds.
+*   **Multi-Node Failover RPC Engine**: Built-in RPC failover handler with static network configuration (`chainId: 8453`) across 5 Base Mainnet RPC providers (`mainnet.base.org`, `base.llamarpc.com`, [...]
 *   **Database**: Firebase Firestore (`ai-studio-agunnayalabsstud-dfe9e8c6-b14d-4481-85b1-f815054eab7d`) for session recovery, user records, and activity feeds.
 *   **Animations**: Fluid micro-animations powered by the `motion` framework.
 *   **Data Visualization**: Financial charts and bonding curve trajectory visualizers built with `recharts`.
@@ -246,4 +247,3 @@ Run and build the project locally or in container environments using standard np
   <h3 style="margin: 0; color: #FFFFFF;">✨ Agunnaya Labs Studio — Production Ready ✨</h3>
   <p style="color: #A1A1AA; font-size: 12px;">Built for high performance, modular security, and seamless developer user experience on Base Mainnet.</p>
 </div>
-
