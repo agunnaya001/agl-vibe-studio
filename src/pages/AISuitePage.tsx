@@ -8,32 +8,43 @@ import {
   Sparkles, 
   Cpu, 
   Activity,
-  Layers
+  Layers,
+  Terminal
 } from "lucide-react";
 import SecurityAuditorWorkspace from "../components/ai/SecurityAuditorWorkspace";
 import DAppGeneratorWorkspace from "../components/ai/DAppGeneratorWorkspace";
 import ContractExplainerWorkspace from "../components/ai/ContractExplainerWorkspace";
 import OnchainAgentWorkspace from "../components/ai/OnchainAgentWorkspace";
 import GameBuilderWorkspace from "../components/ai/GameBuilderWorkspace";
+import AgentWorkflowStudio from "../components/agent/AgentWorkflowStudio";
 import { NetworkKey } from "../types/aiSuite";
 
 interface AISuitePageProps {
   showToast?: (msg: string, type: "success" | "error" | "info") => void;
-  initialSubTab?: "auditor" | "dapp" | "explainer" | "agent" | "game";
+  initialSubTab?: "orchestrator" | "auditor" | "dapp" | "explainer" | "agent" | "game";
   walletAddress?: string;
   onNavigateTab?: (tab: string) => void;
 }
 
 export default function AISuitePage({
-  showToast,
-  initialSubTab = "auditor",
+  showToast = () => {},
+  initialSubTab = "orchestrator",
   walletAddress,
   onNavigateTab
 }: AISuitePageProps) {
-  const [activeWorkspace, setActiveWorkspace] = useState<"auditor" | "dapp" | "explainer" | "agent" | "game">(initialSubTab);
+  const [activeWorkspace, setActiveWorkspace] = useState<"orchestrator" | "auditor" | "dapp" | "explainer" | "agent" | "game">(initialSubTab);
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkKey>("base-mainnet");
 
   const WORKSPACES = [
+    {
+      id: "orchestrator" as const,
+      name: "Agent Orchestrator",
+      badge: "Autonomous Dev",
+      description: "End-to-end autonomous multi-step Web3 development, formal audits & Base deployment",
+      icon: Sparkles,
+      color: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+      activeTabClass: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-lg shadow-brand-purple/30",
+    },
     {
       id: "auditor" as const,
       name: "Security Auditor",
@@ -162,6 +173,13 @@ export default function AISuitePage({
 
       {/* Active Workspace Container */}
       <div className="transition-all duration-300">
+        {activeWorkspace === "orchestrator" && (
+          <AgentWorkflowStudio
+            walletAddress={walletAddress}
+            showToast={showToast}
+          />
+        )}
+
         {activeWorkspace === "auditor" && (
           <SecurityAuditorWorkspace
             showToast={showToast}

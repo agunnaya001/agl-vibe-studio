@@ -380,7 +380,7 @@ export default function App() {
         localStorage.setItem("agl_activities", JSON.stringify(sorted));
       }
     }, (error) => {
-      console.error("Error in real-time activities subscription:", error);
+      console.warn("Firestore real-time activities fallback:", error);
     });
 
     return () => {

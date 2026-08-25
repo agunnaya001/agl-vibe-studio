@@ -15,11 +15,14 @@ import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
 import InsufficientCreditsModal from "../components/InsufficientCreditsModal";
 import { AgentInteractionHistory } from "../components/AgentInteractionHistory";
 import { AgentServiceRegistry } from "../components/AgentServiceRegistry";
+import AgentWorkflowStudio from "../components/agent/AgentWorkflowStudio";
+import AgentActivityPanel from "../components/AgentActivityPanel";
 import { 
   Bot, Send, BrainCircuit, X, MessageSquare, Plus, Zap, Award, Coins, 
   Sparkles, Cpu, Layers, ShieldCheck, Mic, MicOff, Image as ImageIcon, 
   MapPin, Eye, Film, Download, RefreshCw, Sliders, Play, Trash2, Loader2, Info,
-  Flame, TrendingUp, Check, Copy, ArrowRight, Lock, Code, Terminal, Globe
+  Flame, TrendingUp, Check, Copy, ArrowRight, Lock, Code, Terminal, Globe,
+  Activity
 } from "lucide-react";
 
 interface AgentStudioPageProps {
@@ -38,8 +41,8 @@ interface ChatMessage {
 }
 
 export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTerminalLog, showToast }: AgentStudioPageProps) {
-  // Tabs: "agents" (Agent Forge & chats), "history" (Interaction History), "creative" (Media Generator) or "services" (Service Registry)
-  const [activeTab, setActiveTab] = useState<"agents" | "history" | "creative" | "services">("agents");
+  // Tabs: "orchestrator" (Agentic Web3 Studio), "activity" (Task Manager & Activity), "agents" (Agent Forge & chats), "history", "creative", "services"
+  const [activeTab, setActiveTab] = useState<"orchestrator" | "activity" | "agents" | "history" | "creative" | "services">("orchestrator");
 
   // Forge Sub-Tab: "configure" or "preview"
   const [forgeMode, setForgeMode] = useState<"configure" | "preview">("configure");
@@ -884,6 +887,30 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
         {/* Tab Selection buttons */}
         <div className="flex flex-wrap gap-2 bg-zinc-900/60 p-1 rounded-xl border border-white/5">
           <button
+            id="tab-orchestrator"
+            onClick={() => setActiveTab("orchestrator")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "orchestrator"
+                ? "bg-brand-purple text-white shadow-lg shadow-brand-purple/20 font-bold"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Agentic Web3 Studio</span>
+          </button>
+          <button
+            id="tab-activity"
+            onClick={() => setActiveTab("activity")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "activity"
+                ? "bg-brand-purple text-white shadow-lg shadow-brand-purple/20 font-bold"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5 text-emerald-300" />
+            <span>Agent Activity & Tasks</span>
+          </button>
+          <button
             id="tab-agents"
             onClick={() => setActiveTab("agents")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all ${
@@ -981,7 +1008,36 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
       </div>
 
       <AnimatePresence mode="wait">
-        {activeTab === "agents" ? (
+        {activeTab === "orchestrator" ? (
+          <motion.div
+            key="orchestrator-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <AgentWorkflowStudio
+              walletAddress={wallet.address || "0x725615639B760DAa64b3e794AA49B5A9a8A7632E"}
+              showToast={showToast}
+              addTerminalLog={addTerminalLog}
+            />
+          </motion.div>
+        ) : activeTab === "activity" ? (
+          <motion.div
+            key="activity-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <AgentActivityPanel
+              onSelectTask={(taskId) => {
+                setActiveTab("orchestrator");
+              }}
+              showToast={showToast}
+            />
+          </motion.div>
+        ) : activeTab === "agents" ? (
           <motion.div 
             key="agents-view"
             initial={{ opacity: 0, y: 10 }}
