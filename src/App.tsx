@@ -18,6 +18,7 @@ import CreatePage from "./pages/CreatePage";
 import TradePage from "./pages/TradePage";
 import NFTStudioPage from "./pages/NFTStudioPage";
 import DAOBuilderPage from "./pages/DAOBuilderPage";
+import GovernancePage from "./pages/GovernancePage";
 import GameFiPage from "./pages/GameFiPage";
 import AgentStudioPage from "./pages/AgentStudioPage";
 import DeFiPage from "./pages/DeFiPage";
@@ -338,7 +339,13 @@ export default function App() {
         console.warn("[Firestore Sync] Connection passive, operating with local state:", err?.message || err);
       });
 
-    // Check for referral code and tab parameter in URL search params
+    // Check for referral code and tab parameter in URL search params or pathname
+    const pathname = window.location.pathname.toLowerCase();
+    if (pathname.includes("/governance") || pathname.includes("/dao")) {
+      setCurrentTab("governance");
+      setIsLaunched(true);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     if (tabParam) {
@@ -915,14 +922,17 @@ export default function App() {
             showToast={showToast}
           />
         );
+      case "governance":
       case "daos":
         return (
-          <DAOBuilderPage
-            wallet={wallet}
-            daos={daos}
-            onRefreshDAOs={refreshAllData}
-            addTerminalLog={addTerminalLog}
+          <GovernancePage
+            wallet={{
+              address: wallet.address,
+              isConnected: wallet.isConnected,
+              connect: () => setIsWalletModalOpen(true)
+            }}
             showToast={showToast}
+            addTerminalLog={(msg) => addTerminalLog("system", msg)}
           />
         );
       case "gamefi":

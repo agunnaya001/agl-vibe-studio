@@ -29,12 +29,17 @@ export const ARENA_CHAMPION_NFT_ADDRESS = "0x68f08b005b09B0F7D07E1c0B5CDe18E43CE
 export const ARENA_BATTLE_ADDRESS = "0xF6fc2B6a306B626548ca9dF25B31a22D0f8971CF";
 export const ARENA_PVP_ADDRESS = "0xd0C4Af12E95f9590e7314D079C58597771E57533";
 
+// 8. Base Mainnet DAO Governance & Timelock Architecture
+export const AGL_VOTES_WRAPPER_ADDRESS = "0x89D913d80a1c1a2f6479b47e248bF3e5D18925A9";
+export const AGL_TIMELOCK_ADDRESS = "0x7a3C9C22C990263f7F1872De0964724b17935c11";
+export const AGL_DAO_GOVERNOR_ADDRESS = "0x4e6De4A17B80979E2286b110757270e53a277981";
+
 export interface BaseEcosystemContractInfo {
   name: string;
   symbol?: string;
   address: string;
   purpose: string;
-  category: "DeFi & Utility" | "Gaming & PvP" | "NFT Marketplace" | "Core Protocol";
+  category: "DeFi & Utility" | "Gaming & PvP" | "NFT Marketplace" | "Core Protocol" | "DAO Governance";
   basescanUrl: string;
   isVerified: boolean;
 }
@@ -47,6 +52,31 @@ export const BASE_MAINNET_ECOSYSTEM_CONTRACTS: BaseEcosystemContractInfo[] = [
     purpose: "Native platform utility token for AI compute, fee discounts, and governance",
     category: "DeFi & Utility",
     basescanUrl: `https://basescan.org/address/${AGL_TOKEN_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "AgunnayaDAO Governor",
+    address: AGL_DAO_GOVERNOR_ADDRESS,
+    purpose: "On-chain DAO Governor for community proposals, voting snapshots, and timelocked execution",
+    category: "DAO Governance",
+    basescanUrl: `https://basescan.org/address/${AGL_DAO_GOVERNOR_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "TimelockController",
+    address: AGL_TIMELOCK_ADDRESS,
+    purpose: "48-hour decentralized timelock delay controller enforcing autonomous proposal execution",
+    category: "DAO Governance",
+    basescanUrl: `https://basescan.org/address/${AGL_TIMELOCK_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "AGLVotesWrapper (wAGL)",
+    symbol: "wAGL",
+    address: AGL_VOTES_WRAPPER_ADDRESS,
+    purpose: "1:1 AGL checkpoint wrapper providing IVotes snapshotting, delegation, and voting power",
+    category: "DAO Governance",
+    basescanUrl: `https://basescan.org/address/${AGL_VOTES_WRAPPER_ADDRESS}`,
     isVerified: true
   },
   {
