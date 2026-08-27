@@ -17,6 +17,7 @@ import { AgentInteractionHistory } from "../components/AgentInteractionHistory";
 import { AgentServiceRegistry } from "../components/AgentServiceRegistry";
 import AgentWorkflowStudio from "../components/agent/AgentWorkflowStudio";
 import AgentActivityPanel from "../components/AgentActivityPanel";
+import AgentFleetStudio from "../components/agent/AgentFleetStudio";
 import { 
   Bot, Send, BrainCircuit, X, MessageSquare, Plus, Zap, Award, Coins, 
   Sparkles, Cpu, Layers, ShieldCheck, Mic, MicOff, Image as ImageIcon, 
@@ -41,8 +42,8 @@ interface ChatMessage {
 }
 
 export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTerminalLog, showToast }: AgentStudioPageProps) {
-  // Tabs: "orchestrator" (Agentic Web3 Studio), "activity" (Task Manager & Activity), "agents" (Agent Forge & chats), "history", "creative", "services"
-  const [activeTab, setActiveTab] = useState<"orchestrator" | "activity" | "agents" | "history" | "creative" | "services">("orchestrator");
+  // Tabs: "orchestrator" (Agentic Web3 Studio), "fleets" (Background Fleets & Labs), "activity" (Task Manager & Activity), "agents" (Agent Forge & chats), "history", "creative", "services"
+  const [activeTab, setActiveTab] = useState<"orchestrator" | "fleets" | "activity" | "agents" | "history" | "creative" | "services">("orchestrator");
 
   // Forge Sub-Tab: "configure" or "preview"
   const [forgeMode, setForgeMode] = useState<"configure" | "preview">("configure");
@@ -899,6 +900,18 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
             <span>Agentic Web3 Studio</span>
           </button>
           <button
+            id="tab-fleets"
+            onClick={() => setActiveTab("fleets")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "fleets"
+                ? "bg-brand-purple text-white shadow-lg shadow-brand-purple/20 font-bold"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span>Background Fleets & Labs</span>
+          </button>
+          <button
             id="tab-activity"
             onClick={() => setActiveTab("activity")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
@@ -1021,6 +1034,16 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
               showToast={showToast}
               addTerminalLog={addTerminalLog}
             />
+          </motion.div>
+        ) : activeTab === "fleets" ? (
+          <motion.div
+            key="fleets-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <AgentFleetStudio showToast={showToast} />
           </motion.div>
         ) : activeTab === "activity" ? (
           <motion.div
