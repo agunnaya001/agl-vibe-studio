@@ -171,6 +171,8 @@ export interface AIAgent {
   tone?: "professional" | "witty" | "concise" | "friendly" | "analytical";
   responseLength?: "short" | "medium" | "long";
   personalityBehaviors?: string[];
+  goals?: string[];
+  primaryResponsibilities?: string[];
   avatarUrl: string;
   aglRewardDiscounts: boolean;
   backedByAglLiquidity?: boolean;

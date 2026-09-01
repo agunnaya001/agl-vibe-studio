@@ -16,6 +16,7 @@ import InsufficientCreditsModal from "../components/InsufficientCreditsModal";
 import { AgentInteractionHistory } from "../components/AgentInteractionHistory";
 import { AgentServiceRegistry } from "../components/AgentServiceRegistry";
 import AgentWorkflowStudio from "../components/agent/AgentWorkflowStudio";
+import AgentSettingsPage from "../components/agent/AgentSettingsPage";
 import AgentActivityPanel from "../components/AgentActivityPanel";
 import AgentFleetStudio from "../components/agent/AgentFleetStudio";
 import { 
@@ -77,6 +78,7 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
 
   // Active chat state
   const [activeChatAgent, setActiveChatAgent] = useState<AIAgent | null>(null);
+  const [settingsAgentId, setSettingsAgentId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -870,6 +872,8 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
     }
   };
 
+  const settingsAgent = settingsAgentId ? (agents.find(a => a.id === settingsAgentId) ?? null) : null;
+
   return (
     <div id="agent-workspace-container" className="space-y-6">
       
@@ -1061,6 +1065,15 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
             />
           </motion.div>
         ) : activeTab === "agents" ? (
+          settingsAgent ? (
+          <AgentSettingsPage
+            agent={settingsAgent}
+            onBack={() => setSettingsAgentId(null)}
+            onSaved={onRefreshAgents}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+          />
+          ) : (
           <motion.div 
             key="agents-view"
             initial={{ opacity: 0, y: 10 }}
@@ -1918,8 +1931,8 @@ CORE DIRECTIVES:
                         </div>
                       </div>
 
-                      {/* Action Buttons: Preview Directives, Prompt Agent & History Log */}
-                      <div className="grid grid-cols-3 gap-1.5">
+                      {/* Action Buttons: Preview Directives, Prompt Agent, Settings & History Log */}
+                      <div className="grid grid-cols-4 gap-1.5">
                         <button
                           id={`preview-agent-trigger-${agent.id}`}
                           onClick={() => handlePreviewAgentDirectives(agent)}
@@ -1974,6 +1987,7 @@ CORE DIRECTIVES:
               />
             </div>
           </motion.div>
+          )
         ) : activeTab === "history" ? (
           <motion.div
             key="history-view"
