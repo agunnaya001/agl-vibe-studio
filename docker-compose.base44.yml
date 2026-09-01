@@ -13,7 +13,7 @@ services:
     volumes:
       - ./:/app
       - node_modules:/app/node_modules
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install -g bun && bun install && npm run dev"
     restart: unless-stopped
 
 volumes:

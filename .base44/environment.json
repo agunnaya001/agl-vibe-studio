@@ -1,0 +1,32 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/api/health",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "GEMINI_API_KEY",
+      "description": "Google Gemini API key for AI features (builder, agent chat, portfolio rebalancer, image/video gen). Get from Google AI Studio (aistudio.google.com) API keys. App boots without it but AI endpoints return fallbacks.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "LIFI_API_KEY",
+      "description": "Optional. LI.FI API key for higher rate limits on cross-chain bridge/DEX aggregation. Get from li.fi.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "ETHERSCAN_API_KEY",
+      "description": "Optional. Etherscan API V2 key for contract verification & gas oracle on Base/Ethereum. Get from etherscan.io.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "BASESCAN_API_KEY",
+      "description": "Optional. BaseScan-specific API key for Base L2 contract verification. Get from basescan.org.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "BETTER_AUTH_SECRET",
+      "description": "Optional. Secret for signing Better Auth tokens/cookies. Random long string; code has a dev default.",
+      "requiredAtBoot": false
+    }
+  ]
+}
