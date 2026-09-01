@@ -14,14 +14,27 @@
   <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; margin-bottom: 20px;">
     <img src="https://img.shields.io/badge/Ecosystem-Base_Mainnet-0052FF?style=for-the-badge&logo=base&logoColor=white" alt="Base Ecosystem" />
     <img src="https://img.shields.io/badge/Status-Production_Ready-22C55E?style=for-the-badge&logo=statuspage&logoColor=white" alt="Production Ready" />
-    <img src="https://img.shields.io/badge/AI_Engine-Gemini_3.6_Flash-A855F7?style=for-the-badge&logo=google-gemini&logoColor=white" alt="Gemini Engine" />
+    <img src="https://img.shields.io/badge/AI_Engine-Gemini_2.5_Flash-A855F7?style=for-the-badge&logo=google-gemini&logoColor=white" alt="Gemini Engine" />
+    <img src="https://img.shields.io/badge/Free_Starter_Credits-500_AGL_Granted-10B981?style=for-the-badge&logo=zap&logoColor=white" alt="Starter Credits" />
     <img src="https://img.shields.io/badge/Contract_ABI-Standard_ERC20-3178C6?style=for-the-badge&logo=ethereum&logoColor=white" alt="Standard ERC20 ABI" />
     <img src="https://img.shields.io/badge/Database-Firebase_Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase Firestore" />
     <img src="https://img.shields.io/badge/Referrals-Earn_20%25_AGL-A855F7?style=for-the-badge&logo=gift&logoColor=white" alt="Referrals Active" />
   </div>
 </div>
 
-> **Agunnaya Labs Studio** is an all-in-one, full-stack Web3 creator suite and launchpad built for the Base L2 ecosystem. It allows developers, creators, and protocols to design, deploy, audit, manage[...] 
+> **Agunnaya Labs Studio** is an all-in-one, full-stack Web3 creator suite, autonomous agent fleet, and token launchpad built for the Base L2 ecosystem. It allows developers, creators, and protocols to design, deploy, audit, manage, and scale smart contracts, AI agents, bonding curve tokens, DAOs, and DeFi protocols on Base without writing Solidity from scratch.
+
+---
+
+## 🏛️ Verified On-Chain Smart Contracts (Base Mainnet)
+
+| Contract | Address | Network | Description |
+| :--- | :--- | :--- | :--- |
+| **AgunnayaDAO** | `0x3fFCb92A17caeaAd1342DD76978b566C8aEC7010` | Base (8453) | Production Governor DAO with on-chain proposal voting and timelock execution |
+| **TimelockController** | `0x900D315C91D9e54F3fa3412D475009d905bf6744` | Base (8453) | 24-hour governance delay securing treasury and system parameters |
+| **AGLVotesWrapper (wAGL)** | `0xA27C9BA04D06EcAF766EF4e074b403DAf19A3d69` | Base (8453) | ERC20Votes token wrapper for snapshot vote tallying |
+| **AGL Token Factory** | `0x6EF504b98b4369C0a1aF4fD1885D7acCf843dDf6` | Base (8453) | Canonical launchpad factory for ERC-20 tokens & bonding curves |
+| **$AAIC (Agunnaya AI Core)** | `0xa19a0B2C7e00EB4e9619c0Bf1B1Ae00Ee23AB6B5` | Base (8453) | Native AI agent and studio compute utility token | 
 
 ---
 

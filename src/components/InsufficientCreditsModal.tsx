@@ -1,5 +1,6 @@
-import React from "react";
-import { Flame, AlertTriangle, Sparkles, X, ArrowRight, ShieldAlert, Coins } from "lucide-react";
+import React, { useState } from "react";
+import { Flame, AlertTriangle, Sparkles, X, ArrowRight, ShieldAlert, Coins, Zap, Check } from "lucide-react";
+import { AgunnayaDatabase } from "../lib/db";
 
 interface InsufficientCreditsModalProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface InsufficientCreditsModalProps {
   requiredCredits: number;
   availableCredits: number;
   onNavigateToCredits: () => void;
+  onCreditsClaimed?: () => void;
 }
 
 export default function InsufficientCreditsModal({
@@ -16,9 +18,31 @@ export default function InsufficientCreditsModal({
   featureName,
   requiredCredits,
   availableCredits,
-  onNavigateToCredits
+  onNavigateToCredits,
+  onCreditsClaimed
 }: InsufficientCreditsModalProps) {
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimedSuccess, setClaimedSuccess] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleClaimFreeFaucet = () => {
+    setIsClaiming(true);
+    try {
+      AgunnayaDatabase.claimStarterCredits(500);
+      setClaimedSuccess(true);
+      if (onCreditsClaimed) {
+        onCreditsClaimed();
+      }
+      setTimeout(() => {
+        setIsClaiming(false);
+        onClose();
+      }, 1200);
+    } catch (err) {
+      console.error("Failed to claim free faucet credits:", err);
+      setIsClaiming(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in font-sans">
@@ -72,13 +96,33 @@ export default function InsufficientCreditsModal({
           </div>
 
           <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">
-            AI generation requires computational credits backed by permanently burned AGL tokens on Base Mainnet. 
-            Top up your balance on the AGL Credits Burn portal to unlock uninterrupted AI contract generation, image/video rendering, and advisor queries.
+            AI generation requires computational credits. You can claim a free developer grant immediately below, or burn AGL tokens on Base Mainnet for permanent on-chain credits.
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="space-y-2 relative z-10 pt-2 font-mono">
+        <div className="space-y-2.5 relative z-10 pt-2 font-mono">
+          {/* 1-Click Instant Faucet Button */}
+          <button
+            type="button"
+            id="btn-modal-claim-free-faucet"
+            onClick={handleClaimFreeFaucet}
+            disabled={isClaiming || claimedSuccess}
+            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer disabled:opacity-75"
+          >
+            {claimedSuccess ? (
+              <>
+                <Check className="w-4 h-4 text-white animate-bounce" />
+                <span>+500 Free Credits Granted!</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>⚡ Claim 500 Free AI Credits (Instant Faucet)</span>
+              </>
+            )}
+          </button>
+
           <button
             type="button"
             id="btn-modal-burn-credits"
@@ -86,17 +130,17 @@ export default function InsufficientCreditsModal({
               onClose();
               onNavigateToCredits();
             }}
-            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-2xl bg-zinc-900 border border-purple-500/30 hover:bg-purple-900/30 text-purple-300 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Flame className="w-4 h-4 text-amber-300 animate-pulse" />
-            <span>Burn AGL Tokens to Buy Credits</span>
+            <span>Burn AGL Tokens for Credits</span>
             <ArrowRight className="w-4 h-4 ml-auto text-purple-200" />
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 px-4 rounded-2xl bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-zinc-400 hover:text-white font-semibold text-xs transition-all cursor-pointer text-center"
+            className="w-full py-2 px-4 rounded-2xl bg-zinc-900/60 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white font-semibold text-xs transition-all cursor-pointer text-center"
           >
             Cancel
           </button>

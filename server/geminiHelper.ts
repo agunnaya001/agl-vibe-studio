@@ -99,9 +99,9 @@ export async function executeGeminiWithFallback<T>(
 ): Promise<T> {
   const models = options.preferredModels && options.preferredModels.length > 0
     ? options.preferredModels
-    : ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+    : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro", "gemini-3.7-flash"];
   const maxRetries = options.maxRetriesPerModel ?? 2;
-  const initialBackoff = options.initialBackoffMs ?? 500;
+  const initialBackoff = options.initialBackoffMs ?? 400;
   const opName = options.operationName || "Gemini Operation";
 
   const client = getAIClient();
@@ -123,7 +123,7 @@ export async function executeGeminiWithFallback<T>(
         );
 
         if (attempt < maxRetries && isRetryable) {
-          const delay = initialBackoff * Math.pow(2, attempt) + Math.random() * 200;
+          const delay = initialBackoff * Math.pow(1.5, attempt) + Math.random() * 100;
           await sleep(delay);
           continue;
         }

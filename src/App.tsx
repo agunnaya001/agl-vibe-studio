@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { HelmetProvider, Helmet } from "react-helmet-async";
 import { User, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { auth, db } from "./lib/firebase";
 import { AuthHealthState, startAuthHealthSyncService, refreshAuthSessionToken } from "./lib/authSyncService";
@@ -1172,51 +1171,34 @@ export default function App() {
 
   const meta = getPageMetadata();
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = isLaunched ? meta.title : "Agunnaya Labs Studio - High Performance Web3 Developer Studio";
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) {
+        metaDesc = document.createElement("meta");
+        metaDesc.setAttribute("name", "description");
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.setAttribute("content", isLaunched ? meta.description : "Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads.");
+    }
+  }, [isLaunched, meta.title, meta.description]);
+
   if (!isLaunched) {
     return (
-      <HelmetProvider>
-        <Helmet>
-          <title>Agunnaya Labs Studio - High Performance Web3 Developer Studio</title>
-          <meta name="description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
-          <meta property="og:type" content="website" />
-          <meta property="og:site_name" content="Agunnaya Labs Studio" />
-          <meta property="og:title" content="Agunnaya Labs Studio - High Performance Web3 Developer Studio" />
-          <meta property="og:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
-          <meta property="og:image" content="/banner.jpg" />
-          <meta property="og:url" content={typeof window !== "undefined" ? window.location.origin : "https://aglstudio.xyz"} />
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content="Agunnaya Labs Studio - High Performance Web3 Developer Studio" />
-          <meta name="twitter:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
-          <meta name="twitter:image" content="/banner.jpg" />
-        </Helmet>
-        <LandingPage 
-          onLaunchApp={(targetTab) => {
-            setIsLaunched(true);
-            if (targetTab) {
-              handleTabChange(targetTab);
-            }
-          }} 
-        />
-      </HelmetProvider>
+      <LandingPage 
+        onLaunchApp={(targetTab) => {
+          setIsLaunched(true);
+          if (targetTab) {
+            handleTabChange(targetTab);
+          }
+        }} 
+      />
     );
   }
 
   return (
-    <HelmetProvider>
-      <Helmet>
-        <title>{meta.title}</title>
-        <meta name="description" content={meta.description} />
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Agunnaya Labs Studio" />
-        <meta property="og:title" content={meta.title} />
-        <meta property="og:description" content={meta.description} />
-        <meta property="og:image" content={meta.image} />
-        <meta property="og:url" content={meta.url} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={meta.title} />
-        <meta name="twitter:description" content={meta.description} />
-        <meta name="twitter:image" content={meta.image} />
-      </Helmet>
+    <>
       <div 
         id="studio-app-root" 
         className={`min-h-screen ${isLight ? "bg-slate-50 text-slate-900" : "bg-[#050505] text-white"} flex overflow-hidden`}
@@ -1683,6 +1665,6 @@ export default function App() {
           </div>
         )}
       </div>
-    </HelmetProvider>
+    </>
   );
 }

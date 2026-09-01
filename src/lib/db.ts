@@ -114,6 +114,27 @@ export function getEthReturnForTokens(currentSupply: number, tokensToSell: numbe
 // INITIAL SEED DATA
 const SEED_TOKENS: Token[] = [
   {
+    address: "0xa19a0B2C7e00EB4e9619c0Bf1B1Ae00Ee23AB6B5",
+    name: "Agunnaya AI Compute",
+    symbol: "AAIC",
+    description: "Official AI computational bandwidth & decentralized inference token launched on Base Mainnet via Agunnaya Bonding Curve Factory.",
+    creator: "0xD034E94465Db1669f80D817c66e58cF194d027C8",
+    creatorFeesEarned: 0,
+    currentPrice: BASE_PRICE + SLOPE * 1000000,
+    supply: 1000000,
+    maxSupply: 1000000000,
+    marketCap: (BASE_PRICE + SLOPE * 1000000) * 1000000,
+    reserveEth: getReserveAtSupply(1000000),
+    volume24h: 1.25,
+    category: "ai",
+    logoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    socials: { website: "https://basescan.org/address/0xa19a0B2C7e00EB4e9619c0Bf1B1Ae00Ee23AB6B5" },
+    isVerified: true,
+    vestingWeeks: 0,
+    referralRewardsPct: 2,
+    createdAt: Date.now()
+  },
+  {
     address: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698",
     name: "Agunnaya Utility Token",
     symbol: "AGL",
@@ -513,7 +534,7 @@ const DEFAULT_WALLET: WalletState = {
   isSmartAccount: false,
   sponsoredGasEth: 0.0,
   aglTokenBalance: 0, // starts at 0 until on-chain connect
-  aglCredits: 0
+  aglCredits: 500 // Generous starter developer credit grant for AI Studio & Agents
 };
 
 // PERSISTENCE WRAPPER
@@ -925,12 +946,27 @@ export class AgunnayaDatabase {
 
   static getWallet(): WalletState {
     const wallet = this.safeParse<WalletState>("agl_wallet", DEFAULT_WALLET);
+    // Ensure default starter credits if zero/undefined
+    if (wallet.aglCredits === undefined || wallet.aglCredits === null) {
+      wallet.aglCredits = 500;
+    }
     // Ensure subAccounts is populated
     const subAccounts = this.getSubAccounts();
     return {
       ...wallet,
       subAccounts
     };
+  }
+
+  static claimStarterCredits(amount: number = 500): WalletState {
+    const current = this.getWallet();
+    const updatedCredits = (current.aglCredits || 0) + amount;
+    const updatedWallet: WalletState = {
+      ...current,
+      aglCredits: updatedCredits
+    };
+    this.saveWallet(updatedWallet);
+    return updatedWallet;
   }
 
   static saveWallet(wallet: WalletState) {

@@ -30,16 +30,17 @@ export const ARENA_BATTLE_ADDRESS = "0xF6fc2B6a306B626548ca9dF25B31a22D0f8971CF"
 export const ARENA_PVP_ADDRESS = "0xd0C4Af12E95f9590e7314D079C58597771E57533";
 
 // 8. Base Mainnet DAO Governance & Timelock Architecture
-export const AGL_VOTES_WRAPPER_ADDRESS = "0x89D913d80a1c1a2f6479b47e248bF3e5D18925A9";
-export const AGL_TIMELOCK_ADDRESS = "0x7a3C9C22C990263f7F1872De0964724b17935c11";
-export const AGL_DAO_GOVERNOR_ADDRESS = "0x4e6De4A17B80979E2286b110757270e53a277981";
+export const AGL_VOTES_WRAPPER_ADDRESS = "0xA27C9BA04D06EcAF766EF4e074b403DAf19A3d69";
+export const AGL_TIMELOCK_ADDRESS = "0x900D315C91D9e54F3fa3412D475009d905bf6744";
+export const AGL_DAO_GOVERNOR_ADDRESS = "0x3fFCb92A17caeaAd1342DD76978b566C8aEC7010";
+export const AAIC_TOKEN_ADDRESS = "0xa19a0B2C7e00EB4e9619c0Bf1B1Ae00Ee23AB6B5";
 
 export interface BaseEcosystemContractInfo {
   name: string;
   symbol?: string;
   address: string;
   purpose: string;
-  category: "DeFi & Utility" | "Gaming & PvP" | "NFT Marketplace" | "Core Protocol" | "DAO Governance";
+  category: "DeFi & Utility" | "Gaming & PvP" | "NFT Marketplace" | "Core Protocol" | "DAO Governance" | "AI & Inference";
   basescanUrl: string;
   isVerified: boolean;
 }
@@ -52,6 +53,15 @@ export const BASE_MAINNET_ECOSYSTEM_CONTRACTS: BaseEcosystemContractInfo[] = [
     purpose: "Native platform utility token for AI compute, fee discounts, and governance",
     category: "DeFi & Utility",
     basescanUrl: `https://basescan.org/address/${AGL_TOKEN_ADDRESS}`,
+    isVerified: true
+  },
+  {
+    name: "Agunnaya AI Compute",
+    symbol: "AAIC",
+    address: AAIC_TOKEN_ADDRESS,
+    purpose: "Decentralized AI computational bandwidth & inference token deployed via Agunnaya Bonding Curve Factory",
+    category: "AI & Inference",
+    basescanUrl: `https://basescan.org/address/${AAIC_TOKEN_ADDRESS}`,
     isVerified: true
   },
   {
