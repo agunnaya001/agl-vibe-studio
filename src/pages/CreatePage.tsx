@@ -20,6 +20,7 @@ import {
   ensureCorrectChain,
   getChainNameFromId
 } from "../lib/tokenFactory";
+import { getWalletErrorMessage } from "../lib/baseNetwork";
 import { 
   Sparkles, 
   Rocket, 
@@ -822,13 +823,17 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
         setDeployedAddress(newToken.address);
         onLaunchSuccess(newToken);
         return;
-      } catch (err: any) {
-        console.warn("On-chain transaction notice or fallback:", err);
-        addTerminalLog("error", `Web3 notice: ${err.message || "Transaction rejected or network mismatch"}. Falling back to sandbox relay deployment...`);
-      }
-    }
-
-    // Milestone 1: Compiling Solidity (Sandbox fallback)
+  } catch (err: any) {
+  const message = getWalletErrorMessage(err);
+  console.warn("[v0] On-chain deployment failed:", err);
+  addTerminalLog("error", `On-chain deployment stopped: ${message}`);
+  setDeployingAI(false);
+  setDeployStep("idle");
+  return;
+  }
+  }
+  
+  // Clearly labeled local draft flow for disconnected wallets only.
     setTimeout(() => {
       addTerminalLog("success", `Solidity compiled successfully. Generated ABI & Bytecode.`);
       setDeployStep("gas");

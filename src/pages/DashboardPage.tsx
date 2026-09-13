@@ -141,7 +141,7 @@ export default function DashboardPage({
             <h3 className="text-sm font-semibold text-white font-mono">{wallet.address}</h3>
             <p className="text-xs text-zinc-400 mt-2 flex items-center gap-1">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Simulated Base Network Secure Link</span>
+              <span>Wallet connected · live address</span>
             </p>
           </div>
           <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center text-xs">

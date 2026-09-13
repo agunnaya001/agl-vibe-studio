@@ -56,7 +56,7 @@ export default function App() {
   const [isLaunched, setIsLaunched] = useState(false);
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
-  const [network, setNetwork] = useState<"sepolia" | "mainnet">("sepolia");
+  const [network, setNetwork] = useState<"sepolia" | "mainnet">("mainnet");
 
   // Modals state
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);

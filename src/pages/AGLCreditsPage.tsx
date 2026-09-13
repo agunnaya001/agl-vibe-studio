@@ -188,16 +188,14 @@ export default function AGLCreditsPage({
       addLocalLog("success", `On-chain wallet stats loaded successfully (${isWeb3 ? (onWrongNetwork ? "Web3 Direct Provider [Wrong Chain]" : "Web3 Direct Provider [Base Mainnet]") : "Base RPC Public Gateway"})`);
     } catch (err: any) {
       console.error("Error loading user stats:", err);
-      // Fallback/Simulated values based on the mock wallet balances
-      setOnChainEthBalance(wallet.balanceEth.toFixed(4));
-      setOnChainAglBalance(wallet.aglTokenBalance.toLocaleString());
-      setUserCreditsPurchased((wallet.aglCredits || 0).toLocaleString());
-      // Estimate sandbox AGL burned based on sandbox credits rate (default 100 if rate not loaded yet)
-      const rate = creditsPerAgl || 100;
-      setUserAglBurned(((wallet.aglCredits || 0) / rate).toFixed(1));
-      setCurrentAllowance(ethers.parseEther("1000000")); // Auto mock allow
+      // Keep production-facing credits honest when the Base read fails.
+      setOnChainEthBalance("—");
+      setOnChainAglBalance("—");
+      setUserCreditsPurchased("—");
+      setUserAglBurned("—");
+      setCurrentAllowance(0n);
       setLoadingUserStats(false);
-      addLocalLog("warn", "Loaded Sandbox simulated stats. Connect a real Web3 wallet to sync with Base Mainnet.");
+      addLocalLog("error", "Base Mainnet stats could not be verified. No simulated balances are shown.");
     }
   };
 
