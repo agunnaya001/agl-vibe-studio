@@ -3,17 +3,17 @@
 <div align="center">
 
   <p align="center">
-    <a href="public/banner.jpg">
-      <img src="public/banner.jpg" alt="Agunnaya Labs Studio Hero Banner" width="100%" style="border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 20px 50px rgba(0, 82, 255, 0.18);" />
+    <a href="assets/banner.jpg">
+      <img src="assets/banner.jpg" alt="Agunnaya Labs Studio Hero Banner" width="100%" />
     </a>
   </p>
 
   <p align="center">
-    <a href="public/logo.jpg">
-      <img src="public/logo.jpg" alt="Agunnaya Studio Primary Logo" width="90" height="90" style="border-radius: 20px; border: 2px solid #0052FF; box-shadow: 0 0 25px rgba(0, 82, 255, 0.4); margin: 0 8px;" />
+    <a href="assets/logo.jpg">
+      <img src="assets/logo.jpg" alt="Agunnaya Studio Primary Logo" width="90" height="90" />
     </a>
-    <a href="src/assets/images/agunnaya_logo_1782747905258.jpg">
-      <img src="src/assets/images/agunnaya_logo_1782747905258.jpg" alt="Agunnaya Cosmic Core Logo" width="90" height="90" style="border-radius: 20px; border: 2px solid #A855F7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); margin: 0 8px;" />
+    <a href="assets/cosmic_logo.jpg">
+      <img src="assets/cosmic_logo.jpg" alt="Agunnaya Cosmic Core Logo" width="90" height="90" />
     </a>
   </p>
 
@@ -54,27 +54,27 @@ The visual identity of Agunnaya Labs Studio represents high-performance decentra
 
 ### 🖼️ App Logos & Visual Assets Showcase
 
-| Asset Name | Preview | Description | File Path |
+| Asset Name | Preview | Description | Repository File Path |
 | :--- | :---: | :--- | :--- |
-| **Studio Master Logo** | <img src="public/logo.jpg" width="80" height="80" style="border-radius: 16px; border: 2px solid #0052FF;" alt="Master Logo" /> | Primary emblem for Agunnaya Labs Studio, featuring the neon blue and cosmic gradient core. | `public/logo.jpg`<br/>`src/assets/images/agunnaya_studio_logo_1786991724715.jpg` |
-| **Cosmic Genesis Emblem** | <img src="src/assets/images/agunnaya_logo_1782747905258.jpg" width="80" height="80" style="border-radius: 16px; border: 2px solid #A855F7;" alt="Cosmic Genesis Logo" /> | Alternative deep cosmic brand crest for DAO governance and protocol identity. | `src/assets/images/agunnaya_logo_1782747905258.jpg` |
-| **Studio App Icon / Favicon** | <img src="public/favicon.jpg" width="64" height="64" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.2);" alt="App Icon" /> | Square icon format optimized for browser tabs, PWA homescreen launchers, and smart wallet interfaces. | `public/favicon.jpg` |
-| **Primary Studio Banner** | <img src="public/banner.jpg" width="220" style="border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" alt="Studio Banner" /> | Panoramic widescreen banner used across social media cards, GitHub headers, and pitch decks. | `public/banner.jpg`<br/>`src/assets/images/agunnaya_studio_banner_1787004634511.jpg` |
-| **Deep Horizon Banner** | <img src="src/assets/images/agunnaya_banner_1782747920246.jpg" width="220" style="border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" alt="Horizon Banner" /> | Ultra-wide landscape artwork depicting the decentralized on-chain ecosystem. | `src/assets/images/agunnaya_banner_1782747920246.jpg` |
+| **Studio Master Logo** | <img src="assets/logo.jpg" width="80" height="80" alt="Master Logo" /> | Primary emblem for Agunnaya Labs Studio, featuring the neon blue and cosmic gradient core. | `assets/logo.jpg` / `public/logo.jpg` |
+| **Cosmic Genesis Emblem** | <img src="assets/cosmic_logo.jpg" width="80" height="80" alt="Cosmic Genesis Logo" /> | Alternative deep cosmic brand crest for DAO governance and protocol identity. | `assets/cosmic_logo.jpg` / `public/cosmic_logo.jpg` |
+| **Studio App Icon / Favicon** | <img src="assets/favicon.jpg" width="64" height="64" alt="App Icon" /> | Square icon format optimized for browser tabs, PWA homescreen launchers, and smart wallet interfaces. | `assets/favicon.jpg` / `public/favicon.jpg` |
+| **Primary Studio Banner** | <img src="assets/banner.jpg" width="240" alt="Studio Banner" /> | Panoramic widescreen banner used across social media cards, GitHub headers, and pitch decks. | `assets/banner.jpg` / `public/banner.jpg` |
+| **Deep Horizon Banner** | <img src="assets/cosmic_banner.jpg" width="240" alt="Horizon Banner" /> | Ultra-wide landscape artwork depicting the decentralized on-chain ecosystem. | `assets/cosmic_banner.jpg` / `public/cosmic_banner.jpg` |
 
 ### 🌌 Visual Brand Showcases
 
 #### 1. Studio Panoramic Artwork
 <p align="center">
-  <a href="public/banner.jpg">
-    <img src="public/banner.jpg" alt="Agunnaya Studio Panoramic Artwork" width="100%" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);" />
+  <a href="assets/banner.jpg">
+    <img src="assets/banner.jpg" alt="Agunnaya Studio Panoramic Artwork" width="100%" />
   </a>
 </p>
 
 #### 2. Deep Space Ecosystem Artwork
 <p align="center">
-  <a href="src/assets/images/agunnaya_banner_1782747920246.jpg">
-    <img src="src/assets/images/agunnaya_banner_1782747920246.jpg" alt="Agunnaya Deep Space Ecosystem Artwork" width="100%" style="border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);" />
+  <a href="assets/cosmic_banner.jpg">
+    <img src="assets/cosmic_banner.jpg" alt="Agunnaya Deep Space Ecosystem Artwork" width="100%" />
   </a>
 </p>
 
@@ -82,12 +82,12 @@ The visual identity of Agunnaya Labs Studio represents high-performance decentra
 
 | Color Name | Hex Code | Swatch | RGB | Semantic Role |
 | :--- | :---: | :---: | :--- | :--- |
-| **Base Blue** | `#0052FF` | <img src="https://via.placeholder.com/20/0052FF/0052FF.png" width="20" height="20" style="border-radius: 4px;" alt="#0052FF" /> | `rgb(0, 82, 255)` | Primary brand accent, L2 connection indicators, primary action buttons |
-| **Cosmic Purple** | `#A855F7` | <img src="https://via.placeholder.com/20/A855F7/A855F7.png" width="20" height="20" style="border-radius: 4px;" alt="#A855F7" /> | `rgb(168, 85, 247)` | AI Suite compute, autonomous agent workflows, governance voting |
-| **Emerald Mint** | `#10B981` | <img src="https://via.placeholder.com/20/10B981/10B981.png" width="20" height="20" style="border-radius: 4px;" alt="#10B981" /> | `rgb(16, 185, 129)` | Verified contracts, liquidity graduation, positive yield indicators |
-| **Obsidian Void** | `#050505` | <img src="https://via.placeholder.com/20/050505/050505.png" width="20" height="20" style="border-radius: 4px;" alt="#050505" /> | `rgb(5, 5, 5)` | Deep background canvas, maximizing visual focus and reducing eye strain |
-| **Obsidian Surface** | `#0A0A0A` | <img src="https://via.placeholder.com/20/0A0A0A/0A0A0A.png" width="20" height="20" style="border-radius: 4px;" alt="#0A0A0A" /> | `rgb(10, 10, 10)` | Container panels, sidebar drawers, card backgrounds with 1px border grid |
-| **Pure Light** | `#FFFFFF` | <img src="https://via.placeholder.com/20/FFFFFF/FFFFFF.png" width="20" height="20" style="border-radius: 4px;" alt="#FFFFFF" /> | `rgb(255, 255, 255)` | High-contrast display typography and active state highlights |
+| **Base Blue** | `#0052FF` | 🟦 | `rgb(0, 82, 255)` | Primary brand accent, L2 connection indicators, primary action buttons |
+| **Cosmic Purple** | `#A855F7` | 🟪 | `rgb(168, 85, 247)` | AI Suite compute, autonomous agent workflows, governance voting |
+| **Emerald Mint** | `#10B981` | 🟩 | `rgb(16, 185, 129)` | Verified contracts, liquidity graduation, positive yield indicators |
+| **Obsidian Void** | `#050505` | ⬛ | `rgb(5, 5, 5)` | Deep background canvas, maximizing visual focus and reducing eye strain |
+| **Obsidian Surface** | `#0A0A0A` | ◼️ | `rgb(10, 10, 10)` | Container panels, sidebar drawers, card backgrounds with 1px border grid |
+| **Pure Light** | `#FFFFFF` | ⬜ | `rgb(255, 255, 255)` | High-contrast display typography and active state highlights |
 
 ### 🖋️ Typography Guidelines
 
@@ -317,11 +317,11 @@ Run and build the project locally or in container environments using standard np
 
 <div align="center">
   <p align="center">
-    <a href="public/logo.jpg">
-      <img src="public/logo.jpg" alt="Agunnaya Studio Logo" width="52" height="52" style="border-radius: 12px; margin: 0 6px; border: 1px solid rgba(0, 82, 255, 0.5);" />
+    <a href="assets/logo.jpg">
+      <img src="assets/logo.jpg" alt="Agunnaya Studio Logo" width="52" height="52" />
     </a>
-    <a href="src/assets/images/agunnaya_logo_1782747905258.jpg">
-      <img src="src/assets/images/agunnaya_logo_1782747905258.jpg" alt="Agunnaya Cosmic Crest" width="52" height="52" style="border-radius: 12px; margin: 0 6px; border: 1px solid rgba(168, 85, 247, 0.5);" />
+    <a href="assets/cosmic_logo.jpg">
+      <img src="assets/cosmic_logo.jpg" alt="Agunnaya Cosmic Crest" width="52" height="52" />
     </a>
   </p>
   <h3 style="margin: 0; color: #FFFFFF;">✨ Agunnaya Labs Studio — Production Ready ✨</h3>
