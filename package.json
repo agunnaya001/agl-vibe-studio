@@ -8,7 +8,8 @@
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
-    "deploy:dao:hardhat": "hardhat run scripts/deploy-dao-hardhat.ts --network base",
+    "deploy:dao": "tsx scripts/deploy-dao.ts",
+    "deploy:dao:hardhat": "hardhat --config hardhat.config.cjs run scripts/deploy-dao-hardhat.ts --network base",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "better-auth": "^1.6.26",
     "dotenv": "^17.2.3",
+    "esbuild": "^0.25.0",
     "ethers": "^6.17.0",
     "express": "^4.21.2",
     "firebase": "^12.15.0",
@@ -44,7 +46,6 @@
     "@types/minimatch": "^6.0.0",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
     "hardhat": "^3.15.0",
     "solc": "0.8.20",
     "tailwindcss": "^4.1.14",
