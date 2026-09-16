@@ -1,15 +1,31 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
+import fs from "fs";
 import { Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./src/lib/auth";
 import { registerAISuiteRoutes } from "./server/aiSuiteRoutes";
 import { registerAgentOrchestratorRoutes } from "./server/agentOrchestratorRoutes";
+import { registerAutonomousAgentRoutes } from "./server/autonomousAgentRoutes";
+import { crossChainLiquidityRoutes } from "./server/crossChainLiquidityRoutes";
+import { ventureGrantsRoutes } from "./server/ventureGrantsRoutes";
 import { getAIClient, safeParseJson, executeGeminiWithFallback } from "./server/geminiHelper";
 
 const app = express();
 const PORT = 3000;
+
+// Trust reverse proxy (Cloud Run / Nginx ingress)
+app.set("trust proxy", true);
+
+// Fast-path Health check endpoints for Cloud Run & Nginx load balancers
+app.get(["/health", "/healthz", "/_health", "/api/health", "/api/healthz"], (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    service: "Agunnaya Labs Studio",
+  });
+});
 
 // Better Auth API route handler for /api/auth and sub-paths
 app.all(["/api/auth", "/api/auth/*"], toNodeHandler(auth));
@@ -21,6 +37,15 @@ registerAISuiteRoutes(app);
 
 // Register Agentic Web3 Orchestrator & Tool routes
 registerAgentOrchestratorRoutes(app);
+
+// Register Autonomous Self-Executing AI Agents with Dedicated Treasury routes
+registerAutonomousAgentRoutes(app);
+
+// Register Cross-Chain Routes & Unified Bonding Curve Liquidity via LI.FI
+app.use("/api/crosschain", crossChainLiquidityRoutes);
+
+// Register Protocol Treasury-Funded Venture Grants & POL Co-Investment routes
+app.use("/api/venture-grants", ventureGrantsRoutes);
 
 // AI Builder endpoint
 app.post("/api/ai/build", async (req, res) => {
@@ -1434,26 +1459,109 @@ app.use("/api/*", (req, res) => {
 });
 
 // Vite Middleware & Static Asset Serving Setup
+const isCompiledBundle = typeof __filename === "string" && (__filename.endsWith(".cjs") || __filename.includes("dist"));
+const isProduction =
+  process.env.NODE_ENV === "production" ||
+  isCompiledBundle ||
+  process.env.K_SERVICE !== undefined || // Cloud Run standard env var
+  (process.env.NODE_ENV !== "development" && fs.existsSync(path.join(process.cwd(), "dist", "index.html")));
+
+if (isProduction && process.env.NODE_ENV !== "production") {
+  process.env.NODE_ENV = "production";
+}
+
 const startServer = async () => {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
+  if (isProduction) {
+    // Resolve dist path reliably in production container (safe across ESM & CommonJS)
+    const currentDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
+    const candidatePaths = [
+      path.join(process.cwd(), "dist"),
+      currentDir,
+      path.resolve(currentDir, "../dist"),
+      path.resolve(currentDir, "dist"),
+    ];
+    const distPath = candidatePaths.find((p) => fs.existsSync(path.join(p, "index.html"))) || candidatePaths[0];
+
+    app.use(express.static(distPath, {
+      index: false,
+      maxAge: "1d",
+      redirect: false,
+    }));
+
+    app.get("*", (req, res, next) => {
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath, (err) => {
+          if (err && !res.headersSent) {
+            next(err);
+          }
+        });
+      } else {
+        res.status(200).send("<!DOCTYPE html><html><head><title>Agunnaya Labs Studio</title></head><body><div id='root'></div></body></html>");
+      }
     });
-    app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          allowedHosts: true,
+        },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (viteErr) {
+      console.error("[Vite Middleware Startup Error]", viteErr);
+    }
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Agunnaya Labs Studio Server] Running on http://0.0.0.0:${PORT}`);
+  // Global Express error handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("[Server Error]", err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    res.status(500).json({ error: "Internal Server Error", message: err?.message || "An unexpected error occurred" });
   });
+
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Agunnaya Labs Studio Server] Running on http://0.0.0.0:${PORT} (${isProduction ? "production" : "development"})`);
+  });
+
+  server.on("error", (err: any) => {
+    console.error("[Server Error on Listen]", err);
+    process.exit(1);
+  });
+
+  // Graceful shutdown handling for Cloud Run & container orchestration
+  const shutdown = (signal: string) => {
+    console.log(`[Process] Received ${signal}. Closing server gracefully...`);
+    server.close(() => {
+      console.log("[Process] HTTP server closed cleanly.");
+      process.exit(0);
+    });
+    // Force shutdown after 10s if connections linger
+    setTimeout(() => {
+      console.error("[Process] Forced exit after timeout.");
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 };
+
+// Process-level crash prevention
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[Process] Unhandled Promise Rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("[Process] Uncaught Exception:", error);
+});
 
 startServer().catch((err) => {
   console.error("Failed to start Agunnaya Labs Studio server:", err);
+  process.exit(1);
 });

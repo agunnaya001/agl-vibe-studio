@@ -380,4 +380,15 @@ export interface UserProfile {
 }
 
 export * from "./types/agentWorkflow";
+export * from "./types/crossChainLiquidity";
+export * from "./types/ventureGrants";
+export type {
+  AutonomousAgentRole,
+  MarketMakingConfig,
+  ArbitrageConfig,
+  GovernanceConfig,
+  AgentTreasury,
+  AutonomousAgent,
+  AgentExecutionRecord,
+} from "./types/autonomousAgent";
 

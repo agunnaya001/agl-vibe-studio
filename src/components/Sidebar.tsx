@@ -34,7 +34,9 @@ import {
   CheckCircle2,
   ShieldCheck,
   BrainCircuit,
-  Zap
+  Zap,
+  Cpu,
+  Globe
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
@@ -128,6 +130,7 @@ export default function Sidebar({
     { id: "ai-dapp-generator", label: "AI dApp Generator", icon: Zap, category: "Gemini Web3 AI Suite", highlight: true, description: "Prompt to Full-Stack Web3" },
     { id: "ai-contract-explainer", label: "Contract Explainer", icon: BrainCircuit, category: "Gemini Web3 AI Suite", description: "ABI, Functions & Interactive Q&A" },
     { id: "ai-onchain-agent", label: "Onchain AI Agent", icon: Bot, category: "Gemini Web3 AI Suite", highlight: true, description: "Base L2 Autonomous Assistant" },
+    { id: "autonomous-agents", label: "Autonomous AI Agents", icon: Cpu, category: "Gemini Web3 AI Suite", highlight: true, description: "Self-Executing Treasury Agents" },
     { id: "ai-game-builder", label: "Web3 Game Builder", icon: Gamepad2, category: "Gemini Web3 AI Suite", highlight: true, description: "Verifiable VRF & Playable Arena" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace", description: "Personal Activity & Assets" },
     { id: "task-sync", label: "TaskSync", icon: Clock, category: "Workspace", description: "Automated On-Chain Cron Tasks" },
@@ -136,6 +139,7 @@ export default function Sidebar({
     { id: "gmail", label: "Gmail Automation", icon: Mail, category: "Workspace", description: "Automated Email Alerts" },
     { id: "google-forms", label: "Google Forms", icon: FileSpreadsheet, category: "Workspace", description: "DAO Polls & Community Forms" },
     { id: "explore", label: "Bonding Curve Pad", icon: Rocket, category: "Assets & Creation", description: "Linear Curve Token Pad" },
+    { id: "crosschain-routes", label: "Cross-Chain & LI.FI", icon: Globe, category: "Assets & Creation", highlight: true, description: "Deploy to OP, Arb, Unichain & Polygon via LI.FI" },
     { id: "token-factory", label: "Token Factory (Base)", icon: Database, category: "Assets & Creation", highlight: true, description: "Deploy ERC-20 Tokens" },
     { id: "nfts", label: "NFT Studio", icon: Disc, category: "Assets & Creation", description: "Collections & Mints" },
     { id: "governance", label: "DAO Governance (Base)", icon: Users, category: "Assets & Creation", highlight: true, description: "wAGL & Timelocked Proposals" },
@@ -164,9 +168,11 @@ export default function Sidebar({
   const simplifiedCoreIds = [
     "landing",
     "ai-suite",
+    "autonomous-agents",
     "ai-security-auditor",
     "ai-dapp-generator",
     "dashboard",
+    "crosschain-routes",
     "token-factory",
     "governance",
     "daos",

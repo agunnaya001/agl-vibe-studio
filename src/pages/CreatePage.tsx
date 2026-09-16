@@ -62,9 +62,10 @@ interface CreatePageProps {
   onRefreshWallet: () => void;
   addTerminalLog: (type: "info" | "success" | "error" | "buy" | "sell" | "system", message: string) => void;
   showToast: (message: string, type: "success" | "error" | "info") => void;
+  onSelectTab?: (tab: string) => void;
 }
 
-export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, addTerminalLog, showToast }: CreatePageProps) {
+export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, addTerminalLog, showToast, onSelectTab }: CreatePageProps) {
   const [activeSubMode, setActiveSubMode] = useState<"launchpad" | "ai-architect" | "templates">("ai-architect");
 
   // AI Architect State
@@ -1966,6 +1967,53 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
               </div>
             )}
           </div>
+        </div>
+
+        {/* CROSS-CHAIN ROUTES VIA LI.FI (OPTIMISM, ARBITRUM, UNICHAIN, POLYGON) */}
+        <div className="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-950/20 via-zinc-950 to-indigo-950/20 space-y-4 relative overflow-hidden shadow-xl">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-purple-400 animate-pulse" />
+              <span className="text-xs font-bold font-display text-white">Cross-Chain Deployment & LI.FI Routes</span>
+            </div>
+            <span className="text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping"></span>
+              4 L2 Networks + Hub
+            </span>
+          </div>
+
+          <p className="text-xs text-zinc-400 font-mono leading-relaxed">
+            Expand this bonding curve across <span className="text-purple-300 font-bold">Optimism</span>, <span className="text-blue-300 font-bold">Arbitrum</span>, <span className="text-pink-300 font-bold">Unichain</span>, and <span className="text-violet-300 font-bold">Polygon</span> with unified liquidity via LI.FI bridge.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
+            <div className="p-2 rounded-xl bg-zinc-900/80 border border-zinc-800">
+              <div className="text-[10px] text-zinc-500">Optimism</div>
+              <div className="text-xs font-bold text-white">Chain 10</div>
+            </div>
+            <div className="p-2 rounded-xl bg-zinc-900/80 border border-zinc-800">
+              <div className="text-[10px] text-zinc-500">Arbitrum</div>
+              <div className="text-xs font-bold text-white">Chain 42161</div>
+            </div>
+            <div className="p-2 rounded-xl bg-zinc-900/80 border border-zinc-800">
+              <div className="text-[10px] text-zinc-500">Unichain</div>
+              <div className="text-xs font-bold text-white">Chain 130</div>
+            </div>
+            <div className="p-2 rounded-xl bg-zinc-900/80 border border-zinc-800">
+              <div className="text-[10px] text-zinc-500">Polygon</div>
+              <div className="text-xs font-bold text-white">Chain 137</div>
+            </div>
+          </div>
+
+          <button
+            id="btn-open-crosschain-hub-from-create"
+            type="button"
+            onClick={() => onSelectTab && onSelectTab("crosschain-routes")}
+            className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-purple-600/20"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Open Cross-Chain Deployment & LI.FI Liquidity Hub</span>
+          </button>
         </div>
       </div>
       </div>

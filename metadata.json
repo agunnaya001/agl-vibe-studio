@@ -1,6 +1,6 @@
 {
   "name": "Agunnaya Labs Studio",
-  "description": "An AI-powered Web3 builder and launchpad where anyone can create, launch, manage, and scale blockchain applications and tokens on Base without writing smart contracts.",
+  "description": "An AI-powered Web3 builder and launchpad with cross-chain deployment routes across Optimism, Arbitrum, Unichain, and Polygon, featuring unified bonding curve liquidity via LI.FI.",
   "requestFramePermissions": ["microphone", "geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -18,6 +18,7 @@ import { AgentServiceRegistry } from "../components/AgentServiceRegistry";
 import AgentWorkflowStudio from "../components/agent/AgentWorkflowStudio";
 import AgentActivityPanel from "../components/AgentActivityPanel";
 import AgentFleetStudio from "../components/agent/AgentFleetStudio";
+import AutonomousAgentsHub from "../components/autonomous/AutonomousAgentsHub";
 import { 
   Bot, Send, BrainCircuit, X, MessageSquare, Plus, Zap, Award, Coins, 
   Sparkles, Cpu, Layers, ShieldCheck, Mic, MicOff, Image as ImageIcon, 
@@ -42,8 +43,8 @@ interface ChatMessage {
 }
 
 export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTerminalLog, showToast }: AgentStudioPageProps) {
-  // Tabs: "orchestrator" (Agentic Web3 Studio), "fleets" (Background Fleets & Labs), "activity" (Task Manager & Activity), "agents" (Agent Forge & chats), "history", "creative", "services"
-  const [activeTab, setActiveTab] = useState<"orchestrator" | "fleets" | "activity" | "agents" | "history" | "creative" | "services">("orchestrator");
+  // Tabs: "orchestrator" (Agentic Web3 Studio), "autonomous" (Self-Executing Treasury Agents), "fleets" (Background Fleets & Labs), "activity" (Task Manager & Activity), "agents" (Agent Forge & chats), "history", "creative", "services"
+  const [activeTab, setActiveTab] = useState<"orchestrator" | "autonomous" | "fleets" | "activity" | "agents" | "history" | "creative" | "services">("orchestrator");
 
   // Forge Sub-Tab: "configure" or "preview"
   const [forgeMode, setForgeMode] = useState<"configure" | "preview">("configure");
@@ -900,6 +901,18 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
             <span>Agentic Web3 Studio</span>
           </button>
           <button
+            id="tab-autonomous"
+            onClick={() => setActiveTab("autonomous")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
+              activeTab === "autonomous"
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-purple-600/25 font-bold"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>Autonomous Treasury Agents</span>
+          </button>
+          <button
             id="tab-fleets"
             onClick={() => setActiveTab("fleets")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-display transition-all flex items-center gap-1.5 ${
@@ -1031,6 +1044,20 @@ export default function AgentStudioPage({ wallet, agents, onRefreshAgents, addTe
           >
             <AgentWorkflowStudio
               walletAddress={wallet.address || "0x725615639B760DAa64b3e794AA49B5A9a8A7632E"}
+              showToast={showToast}
+              addTerminalLog={addTerminalLog}
+            />
+          </motion.div>
+        ) : activeTab === "autonomous" ? (
+          <motion.div
+            key="autonomous-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <AutonomousAgentsHub
+              wallet={wallet}
               showToast={showToast}
               addTerminalLog={addTerminalLog}
             />

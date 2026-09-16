@@ -36,6 +36,8 @@ import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
 import AISuitePage from "./pages/AISuitePage";
+import AutonomousAgentsPage from "./pages/AutonomousAgentsPage";
+import CrossChainBondingCurveHub from "./components/crosschain/CrossChainBondingCurveHub";
 import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
 import OnboardingTour from "./components/OnboardingTour";
 import NotFoundPage from "./components/NotFoundPage";
@@ -756,6 +758,13 @@ export default function App() {
           image: "https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=ai-agents`
         };
+      case "crosschain-routes":
+        return {
+          title: "Cross-Chain Routes & Unified Liquidity | Agunnaya Labs Studio",
+          description: "Deterministic cross-chain deployments across Optimism, Arbitrum, Unichain, and Polygon with unified bonding curve liquidity powered by LI.FI.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=crosschain-routes`
+        };
       case "defi":
         return {
           title: "AMM Token Swap & Staking | Agunnaya Labs Studio",
@@ -900,6 +909,17 @@ export default function App() {
             onRefreshWallet={refreshAllData}
             addTerminalLog={addTerminalLog}
             showToast={showToast}
+            onSelectTab={handleTabChange}
+          />
+        );
+      case "crosschain-routes":
+        return (
+          <CrossChainBondingCurveHub
+            wallet={wallet}
+            onRefreshWallet={refreshAllData}
+            addTerminalLog={addTerminalLog}
+            showToast={showToast}
+            initialToken={tokens.find(t => t.symbol === "AGL") || null}
           />
         );
       case "token-factory":
@@ -942,6 +962,15 @@ export default function App() {
             onRefreshGames={refreshAllData}
             addTerminalLog={addTerminalLog}
             showToast={showToast}
+          />
+        );
+      case "autonomous-agents":
+        return (
+          <AutonomousAgentsPage
+            wallet={wallet}
+            showToast={showToast}
+            addTerminalLog={addTerminalLog}
+            onConnectWallet={() => setIsWalletModalOpen(true)}
           />
         );
       case "ai-agents":

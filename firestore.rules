@@ -153,6 +153,26 @@ service cloud.firestore {
         && data.updatedAt is number;
     }
 
+    function isValidAutonomousAgent(data) {
+      return data.keys().hasAll(['id', 'name', 'symbol', 'role', 'status', 'treasury', 'createdAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.symbol is string && data.symbol.size() >= 1 && data.symbol.size() <= 10
+        && data.role is string
+        && data.status is string
+        && data.createdAt is number;
+    }
+
+    function isValidAgentExecutionRecord(data) {
+      return data.keys().hasAll(['id', 'agentId', 'type', 'timestamp', 'status', 'action'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
+        && data.agentId is string && data.agentId.size() >= 1 && data.agentId.size() <= 64
+        && data.type is string
+        && data.timestamp is number
+        && data.status is string
+        && data.action is string;
+    }
+
     // 4. Secure Collections Match Blocks
     
     // USERS COLLECTION
@@ -282,6 +302,20 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isSignedIn() && isValidId(id) && isValidAgentServiceConnection(incoming());
       allow delete: if isSignedIn() && (isAdmin() || isValidId(id));
+    }
+
+    // AUTONOMOUS AGENTS COLLECTION
+    match /autonomous_agents/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidAutonomousAgent(incoming());
+      allow delete: if isSignedIn() && (isAdmin() || isValidId(id));
+    }
+
+    // AGENT EXECUTIONS COLLECTION
+    match /agent_executions/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidAgentExecutionRecord(incoming());
+      allow delete: if isAdmin();
     }
 
     // TEST COLLECTION

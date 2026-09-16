@@ -211,9 +211,56 @@
         "updatedAt": { "type": "number" }
       },
       "required": ["userId", "updatedAt"]
+    },
+    "AutonomousAgent": {
+      "title": "AutonomousAgent",
+      "description": "Self-executing AI agent equipped with dedicated treasury wallet for market-making, arbitrage, and governance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "symbol": { "type": "string" },
+        "role": { "type": "string", "enum": ["market_making", "arbitrage", "governance", "hybrid"] },
+        "status": { "type": "string", "enum": ["active", "paused", "executing", "error"] },
+        "network": { "type": "string" },
+        "treasury": { "type": "object" },
+        "executionIntervalMinutes": { "type": "number" },
+        "totalExecutions": { "type": "number" },
+        "totalProfitEth": { "type": "number" },
+        "creatorAddress": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "name", "symbol", "role", "status", "treasury", "createdAt"]
+    },
+    "AgentExecutionRecord": {
+      "title": "AgentExecutionRecord",
+      "description": "Autonomous agent execution log record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "agentId": { "type": "string" },
+        "agentName": { "type": "string" },
+        "type": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "status": { "type": "string" },
+        "action": { "type": "string" },
+        "reasoningSummary": { "type": "string" },
+        "txHash": { "type": "string" },
+        "gasUsedEth": { "type": "number" },
+        "profitOrLossEth": { "type": "number" }
+      },
+      "required": ["id", "agentId", "type", "timestamp", "status", "action"]
     }
   },
   "firestore": {
+    "/autonomous_agents/{id}": {
+      "schema": { "$ref": "#/entities/AutonomousAgent" },
+      "description": "Registry of self-executing autonomous agents with dedicated treasury wallets"
+    },
+    "/agent_executions/{id}": {
+      "schema": { "$ref": "#/entities/AgentExecutionRecord" },
+      "description": "Log of autonomous agent actions, fills, arbitrage trades, and governance votes"
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "User profile document tracking daily missions and bonus AGL credits"
