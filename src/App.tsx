@@ -6,8 +6,9 @@ import { AuthHealthState, startAuthHealthSyncService, refreshAuthSessionToken } 
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
-import WalletModal from "./components/WalletModal";
+import UniversalWalletModal from "./components/UniversalWalletModal";
 import AIAssistantSidebar from "./components/AIAssistantSidebar";
+import { useAGLWallet } from "./hooks/useAGLWallet";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -88,6 +89,39 @@ export default function App() {
   const [agents, setAgents] = useState<AIAgent[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
+
+  // Universal EVM Wallet Hook (Base-First, EIP-6963, WalletConnect)
+  const {
+    isConnected: isWagmiConnected,
+    address: wagmiAddress,
+    connector: wagmiConnector,
+    walletName: wagmiWalletName,
+    nativeBalance: wagmiNativeBalance,
+    aglTokenBalance: wagmiAglBalance,
+    aglCredits: wagmiAglCredits,
+    disconnectWallet: wagmiDisconnect,
+    refreshBalances: wagmiRefreshBalances,
+  } = useAGLWallet();
+
+  // Sync Universal EVM Wallet State with App state & database
+  useEffect(() => {
+    if (isWagmiConnected && wagmiAddress) {
+      const ethVal = wagmiNativeBalance 
+        ? parseFloat(ethers.formatUnits(wagmiNativeBalance.value, wagmiNativeBalance.decimals)) 
+        : wallet.balanceEth;
+      const updated: WalletState = {
+        ...wallet,
+        address: wagmiAddress,
+        isConnected: true,
+        balanceEth: ethVal,
+        aglTokenBalance: wagmiAglBalance,
+        aglCredits: wagmiAglCredits || wallet.aglCredits,
+        walletType: (wagmiConnector?.id as any) || wallet.walletType || "metamask",
+      };
+      setWallet(updated);
+      AgunnayaDatabase.saveWallet(updated);
+    }
+  }, [isWagmiConnected, wagmiAddress, wagmiNativeBalance, wagmiAglBalance, wagmiAglCredits, wagmiConnector?.id]);
 
   // Toast notifications
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -680,6 +714,7 @@ export default function App() {
   };
 
   const handleWalletDisconnect = () => {
+    wagmiDisconnect();
     const freshWallet: WalletState = {
       isConnected: false,
       address: "",
@@ -1779,11 +1814,10 @@ export default function App() {
           showToast={showToast}
         />
 
-        {/* Wallet Connection Modal overlay */}
-        <WalletModal
+        {/* Universal EVM Wallet Connection Modal overlay */}
+        <UniversalWalletModal
           isOpen={isWalletModalOpen}
           onClose={() => setIsWalletModalOpen(false)}
-          onConnect={handleWalletConnect}
           wallet={wallet}
           onRefreshWallet={refreshAllData}
           showToast={showToast}
