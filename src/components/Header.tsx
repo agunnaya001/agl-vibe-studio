@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Wallet, Coins, RefreshCw, Layers, Database, Search, X, Bot, Palette, Cloud, CloudOff, Menu, AlertTriangle, Clock, ShieldAlert, ArrowRightLeft, Share2, Compass, Store } from "lucide-react";
+import { Wallet, Coins, RefreshCw, Layers, Database, Search, X, Bot, Palette, Cloud, CloudOff, Menu, AlertTriangle, Clock, ShieldAlert, ArrowRightLeft, Share2, Compass, Store, History } from "lucide-react";
 import { WalletState, Token, NFTCollection, AIAgent } from "../types";
 import { AuthHealthState } from "../lib/authSyncService";
 import { ensureCorrectChain, getChainNameFromId } from "../lib/tokenFactory";
@@ -8,6 +8,7 @@ import ImageWithFallback from "./ImageWithFallback";
 import OfflineIndicator from "./OfflineIndicator";
 import ThemeToggle from "./ThemeToggle";
 import UniversalConnectButton from "./UniversalConnectButton";
+import RecentTransactionsModal from "./RecentTransactionsModal";
 
 interface HeaderProps {
   wallet: WalletState;
@@ -57,6 +58,7 @@ export default function Header({
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [currentChainId, setCurrentChainId] = useState<number | null>(null);
+  const [showRecentTxModal, setShowRecentTxModal] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Monitor connected wallet chain ID
@@ -579,6 +581,19 @@ export default function Header({
           </button>
         )}
 
+        {/* Recent On-Chain Activity Trigger */}
+        {wallet.isConnected && (
+          <button
+            id="header-recent-tx-btn"
+            onClick={() => setShowRecentTxModal(true)}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer hover:scale-105 active:scale-95"
+            title="View last 10 on-chain transactions on BaseScan"
+          >
+            <History className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden xl:inline">Activity</span>
+          </button>
+        )}
+
         {/* Theme Toggle Switch */}
         <ThemeToggle id="header-theme-toggle" />
 
@@ -588,6 +603,13 @@ export default function Header({
           onRefreshWallet={onFundWallet}
         />
       </div>
+
+      {/* Recent On-Chain Transactions Modal */}
+      <RecentTransactionsModal
+        isOpen={showRecentTxModal}
+        onClose={() => setShowRecentTxModal(false)}
+        targetAddress={wallet.address}
+      />
     </header>
   );
 }

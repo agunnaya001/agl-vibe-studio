@@ -12,11 +12,13 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   X,
-  Layers
+  Layers,
+  History
 } from "lucide-react";
 import { useAGLWallet } from "../hooks/useAGLWallet";
 import { BASE_MAINNET, BASE_SEPOLIA } from "../lib/chains";
 import { AGL_TOKEN_ADDRESS } from "../lib/aglContracts";
+import RecentTransactionsModal from "./RecentTransactionsModal";
 
 interface ConnectedWalletMenuProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ export default function ConnectedWalletMenu({
   } = useAGLWallet();
 
   const [copied, setCopied] = useState(false);
+  const [showRecentTxModal, setShowRecentTxModal] = useState(false);
 
   if (!isOpen || !address) return null;
 
@@ -166,6 +169,20 @@ export default function ConnectedWalletMenu({
 
         {/* Action Links */}
         <div className="space-y-1.5 pt-2 border-t border-white/10 text-xs font-mono">
+          {/* Recent On-Chain Transactions */}
+          <button
+            onClick={() => setShowRecentTxModal(true)}
+            className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-900 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <History className="w-3.5 h-3.5 text-blue-400" />
+              <span>Recent On-Chain Activity</span>
+            </span>
+            <span className="text-[10px] text-blue-400 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+              Last 10
+            </span>
+          </button>
+
           <a
             href={`https://basescan.org/address/${address}`}
             target="_blank"
@@ -222,6 +239,14 @@ export default function ConnectedWalletMenu({
           </button>
         </div>
       </div>
+
+      {/* Recent On-Chain Transactions Modal */}
+      <RecentTransactionsModal
+        isOpen={showRecentTxModal}
+        onClose={() => setShowRecentTxModal(false)}
+        targetAddress={address}
+        showToast={showToast}
+      />
     </div>
   );
 }

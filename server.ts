@@ -12,7 +12,7 @@ import { ventureGrantsRoutes } from "./server/ventureGrantsRoutes";
 import { getAIClient, safeParseJson, executeGeminiWithFallback } from "./server/geminiHelper";
 
 const app = express();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 // Trust reverse proxy (Cloud Run / Nginx ingress)
 app.set("trust proxy", true);
@@ -1452,6 +1452,148 @@ app.get("/api/basescan/status", async (req, res) => {
   }
 });
 
+
+// BaseScan & Etherscan API V2 Proxy - Fetch Last 10 Recent On-Chain Transactions
+app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) => {
+  try {
+    const address = req.query.address as string;
+    const chainId = (req.query.chainId as string) || "8453"; // Default 8453 for Base Mainnet
+    const limit = Math.min(25, Math.max(1, parseInt((req.query.limit as string) || "10", 10)));
+
+    if (!address || !address.startsWith("0x") || address.length !== 42) {
+      res.status(400).json({ error: "A valid 42-character EVM address is required" });
+      return;
+    }
+
+    const apiKey = process.env.ETHERSCAN_API_KEY || process.env.BASESCAN_API_KEY || "YourApiKeyToken";
+    
+    // Normal Transactions URL
+    let txListUrl = `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=${limit}&sort=desc&apikey=${apiKey}`;
+    // ERC-20 Token Transfers URL
+    let tokenTxUrl = `https://api.basescan.org/api?module=account&action=tokentx&address=${address}&page=1&offset=${limit}&sort=desc&apikey=${apiKey}`;
+
+    if (process.env.ETHERSCAN_API_KEY) {
+      txListUrl = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=${limit}&sort=desc&apikey=${apiKey}`;
+      tokenTxUrl = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=tokentx&address=${address}&page=1&offset=${limit}&sort=desc&apikey=${apiKey}`;
+    }
+
+    const [txResponse, tokenTxResponse] = await Promise.allSettled([
+      fetch(txListUrl).then(r => r.json()),
+      fetch(tokenTxUrl).then(r => r.json())
+    ]);
+
+    const txResult = txResponse.status === "fulfilled" && txResponse.value?.status === "1" && Array.isArray(txResponse.value?.result)
+      ? txResponse.value.result
+      : [];
+
+    const tokenResult = tokenTxResponse.status === "fulfilled" && tokenTxResponse.value?.status === "1" && Array.isArray(tokenTxResponse.value?.result)
+      ? tokenTxResponse.value.result
+      : [];
+
+    const formattedTxs: any[] = [];
+    const seenHashes = new Set<string>();
+
+    // Process normal transactions
+    for (const tx of txResult) {
+      const isSender = tx.from?.toLowerCase() === address.toLowerCase();
+      const isContractCreation = !tx.to || tx.to === "" || tx.contractAddress;
+      const rawValue = BigInt(tx.value || "0");
+      const valueEth = Number(rawValue) / 1e18;
+      const gasUsed = BigInt(tx.gasUsed || "21000");
+      const gasPrice = BigInt(tx.gasPrice || "10000000");
+      const gasFeeEth = Number(gasUsed * gasPrice) / 1e18;
+      
+      let type = isSender ? "send" : "receive";
+      if (isContractCreation) type = "deploy";
+      else if (tx.input && tx.input !== "0x" && tx.input.length > 10) type = "contract_call";
+
+      let functionName = tx.functionName || "";
+      if (!functionName && type === "contract_call") {
+        functionName = `Call (${tx.input.slice(0, 10)})`;
+      }
+
+      seenHashes.add(tx.hash);
+      formattedTxs.push({
+        hash: tx.hash,
+        blockNumber: tx.blockNumber,
+        timeStamp: parseInt(tx.timeStamp, 10),
+        from: tx.from,
+        to: tx.to || tx.contractAddress || "",
+        value: tx.value,
+        valueEth,
+        gasUsed: tx.gasUsed,
+        gasPrice: tx.gasPrice,
+        gasFeeEth,
+        isError: tx.isError === "1",
+        status: tx.isError === "1" ? "failed" : "confirmed",
+        functionName,
+        type,
+        tokenSymbol: "ETH",
+        tokenName: "Ethereum",
+        tokenDecimal: 18,
+        explorerUrl: `https://${chainId === "84532" ? "sepolia." : ""}basescan.org/tx/${tx.hash}`
+      });
+    }
+
+    // Process token transfer activities
+    for (const ttx of tokenResult) {
+      if (!seenHashes.has(ttx.hash)) {
+        seenHashes.add(ttx.hash);
+        const isSender = ttx.from?.toLowerCase() === address.toLowerCase();
+        const decimals = parseInt(ttx.tokenDecimal || "18", 10);
+        const rawValue = BigInt(ttx.value || "0");
+        const tokenAmount = Number(rawValue) / Math.pow(10, decimals);
+        const gasUsed = BigInt(ttx.gasUsed || "50000");
+        const gasPrice = BigInt(ttx.gasPrice || "10000000");
+        const gasFeeEth = Number(gasUsed * gasPrice) / 1e18;
+
+        formattedTxs.push({
+          hash: ttx.hash,
+          blockNumber: ttx.blockNumber,
+          timeStamp: parseInt(ttx.timeStamp, 10),
+          from: ttx.from,
+          to: ttx.to,
+          value: ttx.value,
+          valueEth: tokenAmount,
+          gasUsed: ttx.gasUsed,
+          gasPrice: ttx.gasPrice,
+          gasFeeEth,
+          isError: false,
+          status: "confirmed",
+          functionName: `Transfer ${ttx.tokenSymbol || "Tokens"}`,
+          type: isSender ? "send" : "receive",
+          tokenSymbol: ttx.tokenSymbol || "TOKEN",
+          tokenName: ttx.tokenName || "ERC20 Token",
+          tokenDecimal: decimals,
+          tokenContract: ttx.contractAddress,
+          explorerUrl: `https://${chainId === "84532" ? "sepolia." : ""}basescan.org/tx/${ttx.hash}`
+        });
+      }
+    }
+
+    // Sort descending by timestamp and truncate to limit
+    formattedTxs.sort((a, b) => b.timeStamp - a.timeStamp);
+    const finalTxs = formattedTxs.slice(0, limit);
+
+    res.json({
+      success: true,
+      address,
+      chainId,
+      count: finalTxs.length,
+      limit,
+      transactions: finalTxs,
+      explorerUrl: `https://${chainId === "84532" ? "sepolia." : ""}basescan.org/address/${address}`,
+      source: process.env.ETHERSCAN_API_KEY ? "Etherscan V2 Unified API (Base)" : "BaseScan API"
+    });
+  } catch (error: any) {
+    console.error("Fetch Wallet Transactions Error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || "Failed to fetch on-chain transactions",
+      transactions: []
+    });
+  }
+});
 
 // 404 Handler for missing /api endpoints
 app.use("/api/*", (req, res) => {
