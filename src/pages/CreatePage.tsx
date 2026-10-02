@@ -2141,7 +2141,7 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                   <span>Custom Contract Deployed on Base!</span>
                 </div>
                 {deployedAddress && (
-                  <div className="bg-zinc-900 border border-white/5 rounded-xl p-3 text-center space-y-1.5 animate-fade-in">
+                  <div className="bg-zinc-900 border border-white/5 rounded-xl p-3 text-center space-y-2 animate-fade-in">
                     <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 block">Deployed Contract Address</span>
                     <a 
                       href={`https://basescan.org/address/${deployedAddress}`}
@@ -2151,6 +2151,26 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                     >
                       {deployedAddress} ↗
                     </a>
+
+                    {/* Flywheel Ecosystem Next Steps */}
+                    <div className="pt-2 border-t border-white/5 flex flex-wrap gap-2 justify-center text-[11px] font-mono">
+                      <button
+                        type="button"
+                        onClick={() => onSelectTab?.("marketplace")}
+                        className="px-3 py-1.5 rounded-lg bg-brand-purple/20 hover:bg-brand-purple/30 border border-brand-purple/40 text-purple-300 font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Publish to Marketplace</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onSelectTab?.("app-store")}
+                        className="px-3 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <Globe className="w-3 h-3" />
+                        <span>List in App Store</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

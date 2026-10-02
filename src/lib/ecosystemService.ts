@@ -522,11 +522,11 @@ export class EcosystemService {
     AgunnayaDatabase.saveToFirestore("builder_profiles", builder.walletAddress.toLowerCase(), builder);
   }
 
-  static incrementBuilderStat(walletAddress: string, field: keyof BuilderIdentity) {
+  static incrementBuilderStat(walletAddress: string, field: keyof BuilderIdentity, amount: number = 1) {
     if (!walletAddress) return;
     const builder = this.getBuilderIdentity(walletAddress);
     if (typeof builder[field] === "number") {
-      (builder[field] as number) += 1;
+      (builder[field] as number) += amount;
       this.saveBuilderIdentity(builder);
     }
   }
