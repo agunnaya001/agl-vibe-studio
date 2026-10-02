@@ -36,7 +36,11 @@ import {
   BrainCircuit,
   Zap,
   Cpu,
-  Globe
+  Globe,
+  Store,
+  Award,
+  User,
+  Code2
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
@@ -125,6 +129,13 @@ export default function Sidebar({
   const menuItems = [
     { id: "landing", label: "Studio Home", icon: Sparkles, category: "Welcome", description: "Welcome & Studio Overview" },
     { id: "pitch-deck", label: "Pitch Deck", icon: Presentation, category: "Welcome", highlight: true, description: "Investor Presentation & Deck Export" },
+    { id: "marketplace", label: "AGL Marketplace", icon: Store, category: "Ecosystem Layer", highlight: true, description: "Discover & Publish AI Agents, dApps & Modules" },
+    { id: "agent-economy", label: "Agent Economy", icon: Cpu, category: "Ecosystem Layer", highlight: true, description: "Specialized Agents & Explicit Wallet Safety" },
+    { id: "app-store", label: "AGL App Store", icon: Compass, category: "Ecosystem Layer", highlight: true, description: "Directory of Finished Base Applications" },
+    { id: "builder-profile", label: "Builder Identity", icon: User, category: "Ecosystem Layer", description: "Verifiable Profile & Activity Badges" },
+    { id: "bounties", label: "Bounties & Grants", icon: Award, category: "Ecosystem Layer", highlight: true, description: "Dev Bounties & Protocol Venture Grants" },
+    { id: "ecosystem-dashboard", label: "Ecosystem Analytics", icon: BarChart3, category: "Ecosystem Layer", description: "Verified On-Chain & Studio Metrics" },
+    { id: "developer-sdk", label: "Developer SDK & APIs", icon: Code2, category: "Ecosystem Layer", description: "TypeScript SDK & REST Documentation" },
     { id: "ai-suite", label: "Gemini AI Suite Hub", icon: Sparkles, category: "Gemini Web3 AI Suite", highlight: true, description: "All 5 AI Web3 Workspaces" },
     { id: "ai-security-auditor", label: "AI Security Auditor", icon: ShieldCheck, category: "Gemini Web3 AI Suite", highlight: true, description: "Solidity Auditing & CEI Checks" },
     { id: "ai-dapp-generator", label: "AI dApp Generator", icon: Zap, category: "Gemini Web3 AI Suite", highlight: true, description: "Prompt to Full-Stack Web3" },
@@ -167,6 +178,11 @@ export default function Sidebar({
   // Simplified Core Items for Mobile View
   const simplifiedCoreIds = [
     "landing",
+    "marketplace",
+    "agent-economy",
+    "app-store",
+    "bounties",
+    "ecosystem-dashboard",
     "ai-suite",
     "autonomous-agents",
     "ai-security-auditor",
@@ -175,10 +191,8 @@ export default function Sidebar({
     "crosschain-routes",
     "token-factory",
     "governance",
-    "daos",
     "staking-vault",
-    "gas-dashboard",
-    "gdrive"
+    "gas-dashboard"
   ];
 
   // Filter menu items by search and category

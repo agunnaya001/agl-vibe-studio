@@ -37,6 +37,13 @@ import TaskSyncPage from "./pages/TaskSyncPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
 import AISuitePage from "./pages/AISuitePage";
 import AutonomousAgentsPage from "./pages/AutonomousAgentsPage";
+import MarketplacePage from "./pages/MarketplacePage";
+import AgentEconomyPage from "./pages/AgentEconomyPage";
+import AppStorePage from "./pages/AppStorePage";
+import BuilderIdentityPage from "./pages/BuilderIdentityPage";
+import BountiesGrantsPage from "./pages/BountiesGrantsPage";
+import EcosystemDashboardPage from "./pages/EcosystemDashboardPage";
+import DeveloperSdkPage from "./pages/DeveloperSdkPage";
 import CrossChainBondingCurveHub from "./components/crosschain/CrossChainBondingCurveHub";
 import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
 import OnboardingTour from "./components/OnboardingTour";
@@ -828,6 +835,55 @@ export default function App() {
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=token-factory`
         };
+      case "marketplace":
+        return {
+          title: "AGL Marketplace | Discover AI Agents, dApps & Web3 Modules",
+          description: "Discover, launch, and publish specialized AI agents, smart-contract templates, automated workflows, and Web3 tools on Base Mainnet.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=marketplace`
+        };
+      case "agent-economy":
+        return {
+          title: "Agent Economy | Specialized Autonomous Web3 Agents on Base",
+          description: "Create, configure, test, and publish specialized AI agents with modular tools and strict cryptographic transaction safety.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=agent-economy`
+        };
+      case "app-store":
+        return {
+          title: "AGL App Store | Ecosystem Directory of Finished Base Apps",
+          description: "Explore completed Web3 applications, games, and autonomous tools built with AGL Studio on Base Mainnet.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=app-store`
+        };
+      case "builder-profile":
+        return {
+          title: "Builder Identity | Verifiable Base Developer Profile & Badges",
+          description: "View verified on-chain deployments, audits executed, studio credits, and earned badges.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=builder-profile`
+        };
+      case "bounties":
+        return {
+          title: "Bounties & Venture Grants Hub | Agunnaya Labs Protocol",
+          description: "Explore community development bounties and protocol treasury-funded on-chain venture grants with POL co-investment.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=bounties`
+        };
+      case "ecosystem-dashboard":
+        return {
+          title: "Ecosystem Analytics | Verified Public Telemetry & On-Chain Data",
+          description: "Transparent real-time on-chain metrics across AGL token, studio usage, DAO governance, and GameFi on Base Mainnet.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=ecosystem-dashboard`
+        };
+      case "developer-sdk":
+        return {
+          title: "Developer SDK & API Layer | Agunnaya Labs",
+          description: "Integrate Agunnaya AI agents, security audits, and credit systems into your own dApps using @agunnaya/sdk.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${baseUrl}/?tab=developer-sdk`
+        };
       case "pitch-deck":
         return {
           title: "Agunnaya Labs Studio Pitch Deck | Investor Presentation",
@@ -971,6 +1027,68 @@ export default function App() {
             showToast={showToast}
             addTerminalLog={addTerminalLog}
             onConnectWallet={() => setIsWalletModalOpen(true)}
+          />
+        );
+      case "marketplace":
+        return (
+          <MarketplacePage
+            wallet={wallet}
+            showToast={showToast}
+            addTerminalLog={addTerminalLog}
+            onSelectTab={handleTabChange}
+            onNavigateToBuilder={(addr) => {
+              setCurrentTab("builder-profile");
+            }}
+          />
+        );
+      case "agent-economy":
+        return (
+          <AgentEconomyPage
+            wallet={wallet}
+            showToast={showToast}
+            addTerminalLog={addTerminalLog}
+            onSelectTab={handleTabChange}
+          />
+        );
+      case "app-store":
+        return (
+          <AppStorePage
+            wallet={wallet}
+            showToast={showToast}
+            addTerminalLog={addTerminalLog}
+            onSelectTab={handleTabChange}
+            onNavigateToBuilder={(addr) => {
+              setCurrentTab("builder-profile");
+            }}
+          />
+        );
+      case "builder-profile":
+        return (
+          <BuilderIdentityPage
+            wallet={wallet}
+            showToast={showToast}
+            onSelectTab={handleTabChange}
+          />
+        );
+      case "bounties":
+        return (
+          <BountiesGrantsPage
+            wallet={wallet}
+            showToast={showToast}
+            addTerminalLog={addTerminalLog}
+            onSelectTab={handleTabChange}
+          />
+        );
+      case "ecosystem-dashboard":
+        return (
+          <EcosystemDashboardPage
+            onSelectTab={handleTabChange}
+          />
+        );
+      case "developer-sdk":
+        return (
+          <DeveloperSdkPage
+            onSelectTab={handleTabChange}
           />
         );
       case "ai-agents":

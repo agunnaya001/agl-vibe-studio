@@ -250,9 +250,78 @@
         "profitOrLossEth": { "type": "number" }
       },
       "required": ["id", "agentId", "type", "timestamp", "status", "action"]
+    },
+    "MarketplaceItem": {
+      "title": "MarketplaceItem",
+      "description": "Discoverable developer agent, template, plugin or module on AGL Marketplace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "creatorAddress": { "type": "string" },
+        "creditsCost": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "name", "category", "creatorAddress", "createdAt"]
+    },
+    "PublishedApp": {
+      "title": "PublishedApp",
+      "description": "Finished application directory listing in the AGL App Store",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "developerAddress": { "type": "string" },
+        "launchUrl": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "name", "category", "developerAddress", "launchUrl", "createdAt"]
+    },
+    "EcosystemBounty": {
+      "title": "EcosystemBounty",
+      "description": "Community development bounty or grant in the AGL Bounties Hub",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "creatorAddress": { "type": "string" },
+        "rewardEth": { "type": "number" },
+        "rewardAgl": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "title", "creatorAddress", "createdAt"]
+    },
+    "BuilderIdentity": {
+      "title": "BuilderIdentity",
+      "description": "Verified on-chain builder profile tracking applications and contracts",
+      "type": "object",
+      "properties": {
+        "walletAddress": { "type": "string" },
+        "displayName": { "type": "string" },
+        "joinedAt": { "type": "number" }
+      },
+      "required": ["walletAddress", "displayName", "joinedAt"]
     }
   },
   "firestore": {
+    "/marketplace_items/{id}": {
+      "schema": { "$ref": "#/entities/MarketplaceItem" },
+      "description": "AGL Marketplace listings for agents, templates, tools and workflows"
+    },
+    "/published_apps/{id}": {
+      "schema": { "$ref": "#/entities/PublishedApp" },
+      "description": "AGL App Store directory of completed Web3 applications"
+    },
+    "/bounties/{id}": {
+      "schema": { "$ref": "#/entities/EcosystemBounty" },
+      "description": "Agunnaya ecosystem development bounties and grants"
+    },
+    "/builder_profiles/{address}": {
+      "schema": { "$ref": "#/entities/BuilderIdentity" },
+      "description": "Builder identity profiles connected to wallets"
+    },
     "/autonomous_agents/{id}": {
       "schema": { "$ref": "#/entities/AutonomousAgent" },
       "description": "Registry of self-executing autonomous agents with dedicated treasury wallets"

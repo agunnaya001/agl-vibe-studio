@@ -382,6 +382,7 @@ export interface UserProfile {
 export * from "./types/agentWorkflow";
 export * from "./types/crossChainLiquidity";
 export * from "./types/ventureGrants";
+export * from "./types/ecosystem";
 export type {
   AutonomousAgentRole,
   MarketMakingConfig,

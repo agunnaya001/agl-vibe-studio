@@ -21,7 +21,8 @@ import {
   TrendingUp,
   Calendar,
   Droplets,
-  Filter
+  Filter,
+  ExternalLink
 } from "lucide-react";
 
 interface DashboardPageProps {
@@ -48,6 +49,7 @@ export default function DashboardPage({
   onSelectTab
 }: DashboardPageProps) {
   const [localActivities, setLocalActivities] = useState<Activity[]>(initialActivities);
+  const [accountSubTab, setAccountSubTab] = useState<"overview" | "deployments" | "agents_apps" | "governance" | "activity">("overview");
 
   // Sorting state for created tokens list
   type TokenSortOption = "marketCap" | "launchDate" | "liquidity";
@@ -126,7 +128,79 @@ export default function DashboardPage({
 
   return (
     <div id="dashboard-connected-root" className="space-y-6 animate-fade-in">
-      {/* Upper Cards Area */}
+      {/* Unified AGL Account Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-zinc-900/60 border border-white/5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-purple/20 text-brand-purple font-bold">
+              UNIFIED AGL ACCOUNT
+            </span>
+            <span className="text-xs text-zinc-500 font-mono">
+              {wallet.address ? `${wallet.address.slice(0, 8)}...${wallet.address.slice(-6)}` : "Base Mainnet"}
+            </span>
+          </div>
+          <h2 className="text-lg font-bold font-display text-white">Developer Hub & Ecosystem Assets</h2>
+        </div>
+
+        {/* Sub-nav buttons */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-950 border border-white/10 text-xs font-mono overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setAccountSubTab("overview")}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              accountSubTab === "overview"
+                ? "bg-brand-purple text-white font-bold shadow"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Overview & Wallet
+          </button>
+          <button
+            onClick={() => setAccountSubTab("deployments")}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              accountSubTab === "deployments"
+                ? "bg-brand-purple text-white font-bold shadow"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Deployments ({myCreatedProjectsCount})
+          </button>
+          <button
+            onClick={() => setAccountSubTab("agents_apps")}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              accountSubTab === "agents_apps"
+                ? "bg-brand-purple text-white font-bold shadow"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Agents & Apps
+          </button>
+          <button
+            onClick={() => setAccountSubTab("governance")}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              accountSubTab === "governance"
+                ? "bg-brand-purple text-white font-bold shadow"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Governance
+          </button>
+          <button
+            onClick={() => setAccountSubTab("activity")}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              accountSubTab === "activity"
+                ? "bg-brand-purple text-white font-bold shadow"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Ledger & Tasks
+          </button>
+        </div>
+      </div>
+
+      {/* Conditional Rendering based on accountSubTab */}
+      {accountSubTab === "overview" && (
+        <>
+          {/* Upper Cards Area */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Wallet Details Profile */}
         <div className="glass-panel p-6 rounded-2xl border border-white/5 bg-zinc-900/40 relative overflow-hidden flex flex-col justify-between">
@@ -452,6 +526,200 @@ export default function DashboardPage({
       />
 
       <TaskSummaryWidget onNavigateToTasks={() => onSelectTab("task-sync")} />
+        </>
+      )}
+
+      {accountSubTab === "deployments" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div>
+              <h3 className="text-base font-bold font-display text-white">Your Deployed Contracts & Assets</h3>
+              <p className="text-xs text-zinc-400">Tokens, bonding curve contracts, and DAOs deployed with your wallet.</p>
+            </div>
+            <button
+              onClick={() => onSelectTab("token-factory")}
+              className="px-4 py-2 rounded-xl bg-brand-purple hover:bg-purple-600 text-white font-semibold text-xs font-display flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              + Launch New Token
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {userTokens.filter(t => t.creator.toLowerCase() === wallet.address.toLowerCase()).map(t => (
+              <div key={t.address} className="glass-panel p-5 rounded-2xl border border-white/5 bg-zinc-900/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <ImageWithFallback src={t.logoUrl} alt={t.name} fallbackText={t.symbol} className="w-8 h-8 rounded-xl object-cover" />
+                    <div>
+                      <h4 className="text-sm font-bold text-white font-display">{t.name}</h4>
+                      <span className="text-[10px] font-mono text-zinc-400">${t.symbol}</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400">
+                    Deployed
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-white/5 text-xs font-mono space-y-1">
+                  <div className="flex justify-between text-zinc-400">
+                    <span>Supply:</span>
+                    <span className="text-white font-bold">{t.supply.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-400">
+                    <span>Reserve:</span>
+                    <span className="text-emerald-400 font-bold">{t.reserveEth.toFixed(3)} ETH</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-between items-center text-xs font-mono">
+                  <a
+                    href={`https://basescan.org/address/${t.address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-purple hover:underline flex items-center gap-1"
+                  >
+                    <span>{t.address.slice(0, 8)}...</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <button
+                    onClick={() => onSelectTab("explore")}
+                    className="text-zinc-300 hover:text-white underline cursor-pointer"
+                  >
+                    Trade Curve
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {userTokens.filter(t => t.creator.toLowerCase() === wallet.address.toLowerCase()).length === 0 && (
+              <div className="col-span-full py-12 text-center bg-zinc-900/20 border border-dashed border-white/10 rounded-2xl p-6">
+                <Coins className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                <h4 className="text-sm font-bold text-white font-display">No tokens deployed yet</h4>
+                <p className="text-xs text-zinc-400 mt-1">Deploy your first bonding curve token or ERC-20 on Base Mainnet.</p>
+                <button
+                  onClick={() => onSelectTab("token-factory")}
+                  className="mt-3 px-4 py-2 rounded-xl bg-brand-purple text-white text-xs font-semibold cursor-pointer"
+                >
+                  Deploy First Token
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {accountSubTab === "agents_apps" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div>
+              <h3 className="text-base font-bold font-display text-white">Your Specialized Agents & Published Apps</h3>
+              <p className="text-xs text-zinc-400">Autonomous agents and completed applications you have published to the ecosystem.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onSelectTab("agent-economy")}
+                className="px-3.5 py-2 rounded-xl bg-brand-purple text-white text-xs font-semibold cursor-pointer"
+              >
+                + New Agent
+              </button>
+              <button
+                onClick={() => onSelectTab("app-store")}
+                className="px-3.5 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold cursor-pointer"
+              >
+                + Publish App
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
+              <h4 className="text-xs font-bold font-mono text-white uppercase flex items-center gap-1.5">
+                <Bot className="w-4 h-4 text-brand-purple" />
+                <span>Specialized Autonomous Agents</span>
+              </h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Deploy and configure specialized agents with modular tools, credit pricing, and zero silent transaction permissions.
+              </p>
+              <button
+                onClick={() => onSelectTab("agent-economy")}
+                className="text-xs font-mono text-brand-purple hover:underline flex items-center gap-1 pt-1 cursor-pointer"
+              >
+                <span>Manage Autonomous Fleet in Agent Economy</span>
+                <ArrowUpDown className="w-3 h-3 rotate-90" />
+              </button>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
+              <h4 className="text-xs font-bold font-mono text-white uppercase flex items-center gap-1.5">
+                <Compass className="w-4 h-4 text-brand-blue" />
+                <span>Published Apps in App Store</span>
+              </h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Discover your published applications in the ecosystem directory, view live user metrics, and embed the "Built with AGL" badge.
+              </p>
+              <button
+                onClick={() => onSelectTab("app-store")}
+                className="text-xs font-mono text-brand-blue hover:underline flex items-center gap-1 pt-1 cursor-pointer"
+              >
+                <span>View AGL App Store Listings</span>
+                <ArrowUpDown className="w-3 h-3 rotate-90" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {accountSubTab === "governance" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div>
+              <h3 className="text-base font-bold font-display text-white">DAO Governance & Voting Records</h3>
+              <p className="text-xs text-zinc-400">Timelocked protocol voting power and community proposal history.</p>
+            </div>
+            <button
+              onClick={() => onSelectTab("governance")}
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-display flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              Open DAO Governance Hub
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
+            <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-1">
+              <span className="text-[10px] text-zinc-500 block uppercase">Voting Token (wAGL)</span>
+              <span className="text-sm font-bold text-white block">1 wAGL = 1 Vote</span>
+              <span className="text-[10px] text-zinc-500">ERC-20 IVotes Snapshot</span>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-1">
+              <span className="text-[10px] text-zinc-500 block uppercase">Timelock Controller</span>
+              <span className="text-sm font-bold text-emerald-400 block">48 Hours Delay</span>
+              <span className="text-[10px] text-zinc-500">Autonomous execution</span>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-1">
+              <span className="text-[10px] text-zinc-500 block uppercase">Venture Grants Hub</span>
+              <span className="text-sm font-bold text-brand-purple block">Active Cohorts</span>
+              <button
+                onClick={() => onSelectTab("bounties")}
+                className="text-[10px] text-brand-purple hover:underline"
+              >
+                View Protocol Grants
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {accountSubTab === "activity" && (
+        <div className="space-y-6">
+          <TransactionHistoryTable 
+            activities={localActivities.length > 0 ? localActivities : initialActivities} 
+            onRefresh={handleRefreshActivities}
+          />
+          <TaskSummaryWidget onNavigateToTasks={() => onSelectTab("task-sync")} />
+        </div>
+      )}
     </div>
   );
 }

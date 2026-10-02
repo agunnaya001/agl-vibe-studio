@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Wallet, Coins, RefreshCw, Layers, Database, Search, X, Bot, Palette, Cloud, CloudOff, Menu, AlertTriangle, Clock, ShieldAlert, ArrowRightLeft, Share2, Compass } from "lucide-react";
+import { Wallet, Coins, RefreshCw, Layers, Database, Search, X, Bot, Palette, Cloud, CloudOff, Menu, AlertTriangle, Clock, ShieldAlert, ArrowRightLeft, Share2, Compass, Store } from "lucide-react";
 import { WalletState, Token, NFTCollection, AIAgent } from "../types";
 import { AuthHealthState } from "../lib/authSyncService";
 import { ensureCorrectChain, getChainNameFromId } from "../lib/tokenFactory";
@@ -381,6 +381,17 @@ export default function Header({
             </span>
           </button>
         )}
+
+        {/* Quick Marketplace Access */}
+        <button
+          id="header-marketplace-button"
+          onClick={() => onSelectTab("marketplace")}
+          title="Discover and publish AI agents, smart contracts & dApps on AGL Marketplace"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-purple/40 bg-brand-purple/10 hover:bg-brand-purple/20 text-purple-200 text-xs font-mono font-bold transition-all shadow-[0_0_12px_rgba(168,85,247,0.15)] hover:scale-105 active:scale-95 cursor-pointer"
+        >
+          <Store className="w-3.5 h-3.5 text-brand-purple" />
+          <span>Marketplace</span>
+        </button>
 
         {/* Persistent Onboarding Tour Button */}
         {onOpenTour && (

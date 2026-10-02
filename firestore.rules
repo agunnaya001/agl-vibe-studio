@@ -139,6 +139,40 @@ service cloud.firestore {
         && data.createdAt is number;
     }
 
+    function isValidMarketplaceItem(data) {
+      return data.keys().hasAll(['id', 'name', 'category', 'creatorAddress', 'createdAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 128
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 128
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 64
+        && data.creatorAddress is string && data.creatorAddress.size() >= 10 && data.creatorAddress.size() <= 64
+        && data.createdAt is number;
+    }
+
+    function isValidPublishedApp(data) {
+      return data.keys().hasAll(['id', 'name', 'category', 'developerAddress', 'launchUrl', 'createdAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 128
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 128
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 64
+        && data.developerAddress is string && data.developerAddress.size() >= 10 && data.developerAddress.size() <= 64
+        && data.launchUrl is string && data.launchUrl.size() >= 1 && data.launchUrl.size() <= 500
+        && data.createdAt is number;
+    }
+
+    function isValidEcosystemBounty(data) {
+      return data.keys().hasAll(['id', 'title', 'creatorAddress', 'createdAt'])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 128
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 200
+        && data.creatorAddress is string && data.creatorAddress.size() >= 10 && data.creatorAddress.size() <= 64
+        && data.createdAt is number;
+    }
+
+    function isValidBuilderIdentity(data) {
+      return data.keys().hasAll(['walletAddress', 'displayName', 'joinedAt'])
+        && data.walletAddress is string && data.walletAddress.size() >= 10 && data.walletAddress.size() <= 64
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.joinedAt is number;
+    }
+
     function isValidAgentServiceConnection(data) {
       return data.keys().hasAll(['id', 'providerName', 'connectedAt', 'status'])
         && data.id is string && data.id.size() >= 1 && data.id.size() <= 64
@@ -315,6 +349,34 @@ service cloud.firestore {
     match /agent_executions/{id} {
       allow read: if true;
       allow create, update: if isSignedIn() && isValidId(id) && isValidAgentExecutionRecord(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // MARKETPLACE ITEMS COLLECTION
+    match /marketplace_items/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidMarketplaceItem(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // PUBLISHED APPS COLLECTION
+    match /published_apps/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidPublishedApp(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // BOUNTIES COLLECTION
+    match /bounties/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(id) && isValidEcosystemBounty(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // BUILDER PROFILES COLLECTION
+    match /builder_profiles/{address} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(address) && isValidBuilderIdentity(incoming());
       allow delete: if isAdmin();
     }
 

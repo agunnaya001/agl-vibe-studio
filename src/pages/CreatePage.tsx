@@ -56,6 +56,37 @@ import {
   Plane
 } from "lucide-react";
 
+export const TOKEN_DRAFT_STORAGE_KEY = "agl_create_token_draft";
+
+export interface TokenCreateDraft {
+  tokenName: string;
+  tokenSymbol: string;
+  tokenDesc: string;
+  tokenLogo: string;
+  tokenCategory: Token["category"];
+  vesting: number;
+  referral: number;
+  seedBuy: string;
+  autoVerify: boolean;
+  activeSubMode?: "launchpad" | "ai-architect" | "templates";
+  aiPrompt?: string;
+  aiProjectType?: string;
+  aiAccessControl?: string;
+  updatedAt: number;
+}
+
+export const getStoredTokenDraft = (): TokenCreateDraft | null => {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+  try {
+    const raw = localStorage.getItem(TOKEN_DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn("Could not read token draft from localStorage:", err);
+    return null;
+  }
+};
+
 interface CreatePageProps {
   wallet: WalletState;
   onLaunchSuccess: (newToken: Token) => void;
@@ -66,12 +97,18 @@ interface CreatePageProps {
 }
 
 export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, addTerminalLog, showToast, onSelectTab }: CreatePageProps) {
-  const [activeSubMode, setActiveSubMode] = useState<"launchpad" | "ai-architect" | "templates">("ai-architect");
+  // Read any existing local draft synchronously on initialization
+  const initialDraftRef = useRef<TokenCreateDraft | null>(getStoredTokenDraft());
+  const initialDraft = initialDraftRef.current;
+
+  const [activeSubMode, setActiveSubMode] = useState<"launchpad" | "ai-architect" | "templates">(
+    initialDraft?.activeSubMode || "ai-architect"
+  );
 
   // AI Architect State
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [aiProjectType, setAiProjectType] = useState("ERC-20 Token");
-  const [aiAccessControl, setAiAccessControl] = useState("Ownable");
+  const [aiPrompt, setAiPrompt] = useState(initialDraft?.aiPrompt || "");
+  const [aiProjectType, setAiProjectType] = useState(initialDraft?.aiProjectType || "ERC-20 Token");
+  const [aiAccessControl, setAiAccessControl] = useState(initialDraft?.aiAccessControl || "Ownable");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any | null>(null);
   const [deployingAI, setDeployingAI] = useState(false);
@@ -189,6 +226,11 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
 
     showToast(`🚀 Successfully launched ${newToken.name} ($${newToken.symbol}) via AI Wizard!`, "success");
     addTerminalLog("success", `AI DEPLOYMENT WIZARD: Deployed ${newToken.name} ($${newToken.symbol}) at ${newToken.address}`);
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.removeItem(TOKEN_DRAFT_STORAGE_KEY);
+    }
+    setIsDraftSaved(false);
+    setDraftRestored(false);
     onLaunchSuccess(newToken);
   };
 
@@ -309,19 +351,182 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
     return () => clearInterval(timer);
   }, []);
 
-  // Token Launchpad State
-  const [tokenName, setTokenName] = useState("");
-  const [tokenSymbol, setTokenSymbol] = useState("");
-  const [tokenDesc, setTokenDesc] = useState("");
-  const [tokenLogo, setTokenLogo] = useState("");
-  const [tokenCategory, setTokenCategory] = useState<Token["category"]>("meme");
-  const [vesting, setVesting] = useState<number>(0);
-  const [referral, setReferral] = useState<number>(0);
-  const [seedBuy, setSeedBuy] = useState<string>("0");
+  // Token Launchpad State (restores automatically from localStorage draft)
+  const [tokenName, setTokenName] = useState(initialDraft?.tokenName || "");
+  const [tokenSymbol, setTokenSymbol] = useState(initialDraft?.tokenSymbol || "");
+  const [tokenDesc, setTokenDesc] = useState(initialDraft?.tokenDesc || "");
+  const [tokenLogo, setTokenLogo] = useState(initialDraft?.tokenLogo || "");
+  const [tokenCategory, setTokenCategory] = useState<Token["category"]>(initialDraft?.tokenCategory || "meme");
+  const [vesting, setVesting] = useState<number>(initialDraft?.vesting ?? 0);
+  const [referral, setReferral] = useState<number>(initialDraft?.referral ?? 0);
+  const [seedBuy, setSeedBuy] = useState<string>(initialDraft?.seedBuy ?? "0");
   const [launchingToken, setLaunchingToken] = useState(false);
   const [launchpadDeployStep, setLaunchpadDeployStep] = useState<"idle" | "compiling" | "verifying" | "deploying" | "finalizing" | "completed">("idle");
-  const [autoVerify, setAutoVerify] = useState<boolean>(true);
+  const [autoVerify, setAutoVerify] = useState<boolean>(initialDraft?.autoVerify ?? true);
   const [gasEstimate, setGasEstimate] = useState<string>("0.0000");
+
+  // Draft Auto-Save State
+  const hasSavedContent = Boolean(
+    initialDraft && (
+      initialDraft.tokenName ||
+      initialDraft.tokenSymbol ||
+      initialDraft.tokenDesc ||
+      initialDraft.tokenLogo ||
+      (initialDraft.seedBuy && initialDraft.seedBuy !== "0") ||
+      initialDraft.vesting > 0 ||
+      initialDraft.referral > 0 ||
+      initialDraft.aiPrompt
+    )
+  );
+  const [draftRestored, setDraftRestored] = useState<boolean>(hasSavedContent);
+  const [isDraftSaved, setIsDraftSaved] = useState<boolean>(hasSavedContent);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState<number | null>(initialDraft?.updatedAt || null);
+
+  // Notify user and terminal on mount if draft was restored from local storage
+  useEffect(() => {
+    if (hasSavedContent) {
+      addTerminalLog(
+        "info",
+        `DRAFT AUTO-SAVE: Restored in-progress token draft "${initialDraft?.tokenName || initialDraft?.tokenSymbol || "Active configuration"}" from local storage.`
+      );
+    }
+  }, []);
+
+  // Continuous Draft Auto-Save to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.localStorage) return;
+
+    const hasAnyContent = Boolean(
+      tokenName.trim() ||
+      tokenSymbol.trim() ||
+      tokenDesc.trim() ||
+      tokenLogo.trim() ||
+      parseFloat(seedBuy || "0") > 0 ||
+      vesting > 0 ||
+      referral > 0 ||
+      aiPrompt.trim()
+    );
+
+    if (hasAnyContent) {
+      const draft: TokenCreateDraft = {
+        tokenName,
+        tokenSymbol,
+        tokenDesc,
+        tokenLogo,
+        tokenCategory,
+        vesting,
+        referral,
+        seedBuy,
+        autoVerify,
+        activeSubMode,
+        aiPrompt,
+        aiProjectType,
+        aiAccessControl,
+        updatedAt: Date.now()
+      };
+      try {
+        localStorage.setItem(TOKEN_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        setLastDraftSavedAt(draft.updatedAt);
+        setIsDraftSaved(true);
+      } catch (err) {
+        console.warn("Failed to auto-save draft to localStorage:", err);
+      }
+    }
+  }, [
+    tokenName,
+    tokenSymbol,
+    tokenDesc,
+    tokenLogo,
+    tokenCategory,
+    vesting,
+    referral,
+    seedBuy,
+    autoVerify,
+    activeSubMode,
+    aiPrompt,
+    aiProjectType,
+    aiAccessControl
+  ]);
+
+  // Window unload / refresh sync guarantee
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (typeof window === "undefined" || !window.localStorage) return;
+      const hasAnyContent = Boolean(
+        tokenName.trim() ||
+        tokenSymbol.trim() ||
+        tokenDesc.trim() ||
+        tokenLogo.trim() ||
+        parseFloat(seedBuy || "0") > 0 ||
+        vesting > 0 ||
+        referral > 0 ||
+        aiPrompt.trim()
+      );
+      if (hasAnyContent) {
+        const draft: TokenCreateDraft = {
+          tokenName,
+          tokenSymbol,
+          tokenDesc,
+          tokenLogo,
+          tokenCategory,
+          vesting,
+          referral,
+          seedBuy,
+          autoVerify,
+          activeSubMode,
+          aiPrompt,
+          aiProjectType,
+          aiAccessControl,
+          updatedAt: Date.now()
+        };
+        try {
+          localStorage.setItem(TOKEN_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        } catch (err) {
+          console.warn("Failed to sync draft on beforeunload:", err);
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [
+    tokenName,
+    tokenSymbol,
+    tokenDesc,
+    tokenLogo,
+    tokenCategory,
+    vesting,
+    referral,
+    seedBuy,
+    autoVerify,
+    activeSubMode,
+    aiPrompt,
+    aiProjectType,
+    aiAccessControl
+  ]);
+
+  // Discard draft and reset input values
+  const handleClearDraft = () => {
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.removeItem(TOKEN_DRAFT_STORAGE_KEY);
+    }
+    setTokenName("");
+    setTokenSymbol("");
+    setTokenDesc("");
+    setTokenLogo("");
+    setTokenCategory("meme");
+    setVesting(0);
+    setReferral(0);
+    setSeedBuy("0");
+    setAutoVerify(true);
+    setIsDraftSaved(false);
+    setDraftRestored(false);
+    setLastDraftSavedAt(null);
+    showToast("Token configuration draft discarded.", "info");
+    addTerminalLog("system", "DRAFT DISCARDED: Token configuration draft cleared from local storage.");
+  };
 
   useEffect(() => {
     if (tokenName || tokenSymbol || tokenDesc || seedBuy) {
@@ -903,6 +1108,11 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
           AgunnayaDatabase.triggerMissionAction(wallet.address, "deploy");
 
           addTerminalLog("success", `CONTRACT DEPLOYED successfully at address ${newToken.address}`);
+          if (typeof window !== "undefined" && window.localStorage) {
+            localStorage.removeItem(TOKEN_DRAFT_STORAGE_KEY);
+          }
+          setIsDraftSaved(false);
+          setDraftRestored(false);
           setDeployingAI(false);
           setDeployStep("completed");
           setDeploySuccessAI(true);
@@ -1055,6 +1265,18 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
             
             setLaunchpadDeployStep("completed");
             setTimeout(() => {
+              if (typeof window !== "undefined" && window.localStorage) {
+                localStorage.removeItem(TOKEN_DRAFT_STORAGE_KEY);
+              }
+              setIsDraftSaved(false);
+              setDraftRestored(false);
+              setTokenName("");
+              setTokenSymbol("");
+              setTokenDesc("");
+              setTokenLogo("");
+              setVesting(0);
+              setReferral(0);
+              setSeedBuy("0");
               setLaunchingToken(false);
               setLaunchpadDeployStep("idle");
               onLaunchSuccess(newToken);
@@ -1378,15 +1600,87 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
         {/* STANDARD BONDING CURVE LAUNCHER UI */}
         {activeSubMode === "launchpad" && (
           <div className="glass-panel rounded-2xl border border-white/5 p-6 bg-zinc-900/10 space-y-6">
-            <div>
-              <h2 className="text-base font-bold font-display text-white flex items-center gap-2">
-                <Rocket className="w-5 h-5 text-brand-blue" />
-                Launch standard Bonding Curve Asset
-              </h2>
-              <p className="text-xs text-zinc-400 mt-1">
-                Deploys an ERC-20 token governed by a fully on-chain linear bonding curve with zero admin keys.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+              <div>
+                <h2 className="text-base font-bold font-display text-white flex items-center gap-2">
+                  <Rocket className="w-5 h-5 text-brand-blue" />
+                  Launch standard Bonding Curve Asset
+                </h2>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Deploys an ERC-20 token governed by a fully on-chain linear bonding curve with zero admin keys.
+                </p>
+              </div>
+
+              {/* Draft Auto-Save Indicator */}
+              <div className="flex items-center gap-2 shrink-0">
+                {isDraftSaved ? (
+                  <div id="draft-autosave-badge" className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-emerald-500/20 text-xs font-mono shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[11px] text-emerald-300 font-semibold flex items-center gap-1">
+                      Draft Saved
+                    </span>
+                    {lastDraftSavedAt && (
+                      <span className="text-[10px] text-zinc-500 hidden sm:inline">
+                        ({new Date(lastDraftSavedAt).toLocaleTimeString()})
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      id="discard-token-draft-btn"
+                      onClick={handleClearDraft}
+                      className="text-[10px] text-zinc-400 hover:text-rose-400 ml-1 underline decoration-dotted transition-colors cursor-pointer"
+                      title="Discard current draft from local storage"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-950/40 border border-white/5 text-[11px] font-mono text-zinc-500">
+                    <CheckCircle2 className="w-3 h-3 text-zinc-600" />
+                    <span>Auto-Save Enabled</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Restored Draft Alert Banner */}
+            {draftRestored && (
+              <div id="draft-restored-banner" className="p-3.5 rounded-xl bg-gradient-to-r from-brand-blue/15 to-purple-600/10 border border-brand-blue/30 flex items-center justify-between gap-3 text-xs font-mono text-zinc-300 animate-fade-in shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-brand-blue/20 text-brand-blue shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-[11px] flex items-center gap-1.5">
+                      Draft Restored from Local Storage
+                      {tokenName && <span className="text-brand-blue font-mono font-normal">({tokenName})</span>}
+                    </div>
+                    <p className="text-[10px] text-zinc-400 mt-0.5">
+                      Your previous in-progress token parameters were preserved across navigation/refresh.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setDraftRestored(false)}
+                    className="text-[10px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer"
+                  >
+                    Dismiss
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClearDraft();
+                      setDraftRestored(false);
+                    }}
+                    className="text-[10px] px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 transition-colors cursor-pointer font-bold"
+                  >
+                    Reset Draft
+                  </button>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleLaunchpadLaunch} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
