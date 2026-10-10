@@ -46,6 +46,7 @@ export default function ConnectedWalletMenu({
     isSyncingOnChain,
     disconnectWallet,
     switchToBase,
+    refreshBalance,
     refreshBalances,
   } = useAGLWallet();
 
@@ -141,7 +142,23 @@ export default function ConnectedWalletMenu({
         </div>
 
         {/* Live Balances Grid */}
-        <div className="grid grid-cols-3 gap-2.5 text-xs font-mono">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-1 text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
+            <span>On-Chain Balances</span>
+            <button
+              onClick={() => {
+                refreshBalance();
+                showToast?.("Refreshing live Base Mainnet balances...", "info");
+              }}
+              disabled={isSyncingOnChain}
+              className="p-1 rounded-md bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer disabled:opacity-50"
+              title="Refresh live ETH & AGL balances"
+              aria-label="Refresh balances"
+            >
+              <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncingOnChain ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2.5 text-xs font-mono">
           <div className="bg-zinc-900/60 border border-white/5 p-3 rounded-2xl">
             <span className="text-[9px] text-zinc-500 block uppercase mb-1">Native ETH</span>
             <span className="text-white font-bold block truncate">
@@ -165,6 +182,7 @@ export default function ConnectedWalletMenu({
             </span>
             <span className="text-[9px] text-zinc-500">Metering Layer</span>
           </div>
+        </div>
         </div>
 
         {/* Action Links */}

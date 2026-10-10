@@ -1,7 +1,7 @@
-import { Router, Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 import { ethers } from "ethers";
 
-export const crossChainLiquidityRoutes = Router();
+export const crossChainLiquidityRoutes = express.Router();
 
 // Supported Cross-Chain Networks Configuration
 const SUPPORTED_CHAINS = [

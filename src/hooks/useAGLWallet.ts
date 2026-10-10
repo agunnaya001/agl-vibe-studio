@@ -225,6 +225,18 @@ export function useAGLWallet() {
     });
   }, [address, isConnected, signMessageAsync]);
 
+  // Manually trigger an RPC call to Base Mainnet to fetch the latest ETH and AGL token balances
+  const refreshBalance = useCallback(async () => {
+    if (!address) {
+      console.warn("Cannot refresh balance: no wallet connected");
+      return;
+    }
+    await Promise.all([
+      syncOnChainBalances(address),
+      refetchBalance(),
+    ]);
+  }, [address, syncOnChainBalances, refetchBalance]);
+
   return {
     // Connection State
     isConnected: Boolean(isConnected && address),
@@ -263,7 +275,8 @@ export function useAGLWallet() {
     connectCoinbase,
     disconnectWallet,
     switchToBase,
-    refreshBalances: () => address && syncOnChainBalances(address),
+    refreshBalance,
+    refreshBalances: refreshBalance,
     signMessage: signCustomMessage,
     rescanEIP6963: rescan,
   };

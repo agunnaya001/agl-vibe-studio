@@ -1,11 +1,11 @@
-import { Express, Request, Response } from "express";
+import type { Express, Request, Response } from "express";
 import { Type, ThinkingLevel } from "@google/genai";
 import { ethers } from "ethers";
 import {
   executeGeminiWithFallback,
   generateStaticSecurityAuditFallback,
   safeParseJson,
-} from "./geminiHelper";
+} from "./geminiHelper.ts";
 
 // Network RPC configuration
 const BASE_RPCS: Record<string, { rpc: string; chainId: number; explorer: string; name: string }> = {

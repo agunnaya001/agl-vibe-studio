@@ -3,13 +3,13 @@ import path from "path";
 import fs from "fs";
 import { Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
 import { toNodeHandler } from "better-auth/node";
-import { auth } from "./src/lib/auth";
-import { registerAISuiteRoutes } from "./server/aiSuiteRoutes";
-import { registerAgentOrchestratorRoutes } from "./server/agentOrchestratorRoutes";
-import { registerAutonomousAgentRoutes } from "./server/autonomousAgentRoutes";
-import { crossChainLiquidityRoutes } from "./server/crossChainLiquidityRoutes";
-import { ventureGrantsRoutes } from "./server/ventureGrantsRoutes";
-import { getAIClient, safeParseJson, executeGeminiWithFallback } from "./server/geminiHelper";
+import { auth } from "./src/lib/auth.ts";
+import { registerAISuiteRoutes } from "./server/aiSuiteRoutes.ts";
+import { registerAgentOrchestratorRoutes } from "./server/agentOrchestratorRoutes.ts";
+import { registerAutonomousAgentRoutes } from "./server/autonomousAgentRoutes.ts";
+import { crossChainLiquidityRoutes } from "./server/crossChainLiquidityRoutes.ts";
+import { ventureGrantsRoutes } from "./server/ventureGrantsRoutes.ts";
+import { getAIClient, safeParseJson, executeGeminiWithFallback } from "./server/geminiHelper.ts";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -1625,12 +1625,14 @@ const startServer = async () => {
     const distPath = candidatePaths.find((p) => fs.existsSync(path.join(p, "index.html"))) || candidatePaths[0];
 
     app.use(express.static(distPath, {
-      index: false,
       maxAge: "1d",
       redirect: false,
     }));
 
     app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api/")) {
+        return next();
+      }
       const indexPath = path.join(distPath, "index.html");
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath, (err) => {

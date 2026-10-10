@@ -1,15 +1,15 @@
-import { Router, Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 import { Type } from "@google/genai";
-import { executeGeminiWithFallback } from "./geminiHelper";
-import {
+import { executeGeminiWithFallback } from "./geminiHelper.ts";
+import type {
   VentureGrant,
   VentureTreasuryState,
   StudioDeveloperProject,
   VentureInvestmentMemo,
   MilestoneTranche
-} from "../src/types/ventureGrants";
+} from "../src/types/ventureGrants.ts";
 
-export const ventureGrantsRoutes = Router();
+export const ventureGrantsRoutes = express.Router();
 
 // Official Protocol Addresses on Base Mainnet
 const AGL_TREASURY_ADDRESS = "0x725615639B760DAa64b3e794AA49B5A9a8A7632E";
