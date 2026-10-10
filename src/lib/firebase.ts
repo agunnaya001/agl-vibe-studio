@@ -14,9 +14,7 @@ async function testConnection() {
   try {
     await getDocFromServer(doc(db, "test", "connection"));
   } catch (error) {
-    if (error instanceof Error && error.message.includes("the client is offline")) {
-      console.warn("Firestore connection: Client is operating in offline/fallback mode.");
-    }
+    console.warn("Firestore connection: Client is operating in offline/fallback mode.");
   }
 }
 testConnection();

@@ -48,6 +48,7 @@ import DeveloperSdkPage from "./pages/DeveloperSdkPage";
 import CrossChainBondingCurveHub from "./components/crosschain/CrossChainBondingCurveHub";
 import TreasuryFeeMonitorComponent from "./components/TreasuryFeeMonitorComponent";
 import OnboardingTour from "./components/OnboardingTour";
+import PwaInstallBanner from "./components/PwaInstallBanner";
 import NotFoundPage from "./components/NotFoundPage";
 
 // Database & Utilities
@@ -1813,6 +1814,9 @@ export default function App() {
           }}
           showToast={showToast}
         />
+
+        {/* PWA Install Banner */}
+        <PwaInstallBanner />
 
         {/* Universal EVM Wallet Connection Modal overlay */}
         <UniversalWalletModal
