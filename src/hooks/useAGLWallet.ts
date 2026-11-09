@@ -22,7 +22,7 @@ import { AGL_TOKEN_ADDRESS } from "../lib/aglContracts";
  */
 export function useAGLWallet() {
   const { address, isConnected, isConnecting, isReconnecting, connector, status } = useAccount();
-  const { connect, connectors, error: connectError } = useConnect();
+  const { mutateAsync: connectAsync, connectors, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, error: switchChainError } = useSwitchChain();
   const chainId = useChainId();
@@ -132,7 +132,7 @@ export function useAGLWallet() {
       );
 
       if (matchingConnector) {
-        await connect({
+        await connectAsync({
           connector: matchingConnector,
           chainId: BASE_MAINNET.id,
         });
@@ -140,7 +140,7 @@ export function useAGLWallet() {
         // Fallback to injected connector
         const injectedConnector = connectors.find(c => c.id === "injected") || connectors[0];
         if (injectedConnector) {
-          await connect({
+          await connectAsync({
             connector: injectedConnector,
             chainId: BASE_MAINNET.id,
           });
@@ -150,14 +150,14 @@ export function useAGLWallet() {
       console.error("Failed to connect via EIP-6963 provider:", err);
       throw err;
     }
-  }, [connect, connectors]);
+  }, [connectAsync, connectors]);
 
   // Connect via standard Injected EIP-1193 / Browser Extension fallback
   const connectInjected = useCallback(async () => {
     try {
       const injectedConnector = connectors.find(c => c.id === "injected") || connectors[0];
       if (injectedConnector) {
-        await connect({
+        await connectAsync({
           connector: injectedConnector,
           chainId: BASE_MAINNET.id,
         });
@@ -168,36 +168,36 @@ export function useAGLWallet() {
       console.error("Failed to connect via Injected fallback:", err);
       throw err;
     }
-  }, [connect, connectors]);
+  }, [connectAsync, connectors]);
 
   // Connect via WalletConnect
   const connectWalletConnect = useCallback(async () => {
     const wcConnector = connectors.find(c => c.id === "walletConnect");
     if (wcConnector) {
-      await connect({
+      await connectAsync({
         connector: wcConnector,
         chainId: BASE_MAINNET.id,
       });
     } else {
       throw new Error("WalletConnect connector not configured.");
     }
-  }, [connect, connectors]);
+  }, [connectAsync, connectors]);
 
   // Connect via Coinbase Wallet
   const connectCoinbase = useCallback(async () => {
     const cbConnector = connectors.find(c => c.id === "coinbaseWalletSDK" || c.id === "coinbaseWallet");
     if (cbConnector) {
-      await connect({
+      await connectAsync({
         connector: cbConnector,
         chainId: BASE_MAINNET.id,
       });
     } else {
       const injectedConnector = connectors.find(c => c.id === "injected");
       if (injectedConnector) {
-        await connect({ connector: injectedConnector, chainId: BASE_MAINNET.id });
+        await connectAsync({ connector: injectedConnector, chainId: BASE_MAINNET.id });
       }
     }
-  }, [connect, connectors]);
+  }, [connectAsync, connectors]);
 
   // Switch network to Base Mainnet
   const switchToBase = useCallback(async () => {
