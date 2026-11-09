@@ -12,7 +12,9 @@ import { ventureGrantsRoutes } from "./server/ventureGrantsRoutes.ts";
 import { getAIClient, safeParseJson, executeGeminiWithFallback } from "./server/geminiHelper.ts";
 
 const app = express();
-const PORT = parseInt(process.env.PORT || "3000", 10);
+
+// Ensure the application container always binds to port 3000 as required by the runtime environment
+const PORT = (process.env.PORT && process.env.PORT !== "8080") ? parseInt(process.env.PORT, 10) : 3000;
 
 // Trust reverse proxy (Cloud Run / Nginx ingress)
 app.set("trust proxy", true);
@@ -1601,16 +1603,16 @@ app.use("/api/*", (req, res) => {
 });
 
 // Vite Middleware & Static Asset Serving Setup
+const isDev =
+  process.env.NODE_ENV === "development" ||
+  Boolean(process.env.K_SERVICE && process.env.K_SERVICE.includes("-dev-"));
+
 const isCompiledBundle = typeof __filename === "string" && (__filename.endsWith(".cjs") || __filename.includes("dist"));
 const isProduction =
-  process.env.NODE_ENV === "production" ||
-  isCompiledBundle ||
-  process.env.K_SERVICE !== undefined || // Cloud Run standard env var
-  (process.env.NODE_ENV !== "development" && fs.existsSync(path.join(process.cwd(), "dist", "index.html")));
-
-if (isProduction && process.env.NODE_ENV !== "production") {
-  process.env.NODE_ENV = "production";
-}
+  !isDev &&
+  (process.env.NODE_ENV === "production" ||
+   isCompiledBundle ||
+   Boolean(process.env.K_SERVICE && !process.env.K_SERVICE.includes("-dev-")));
 
 const startServer = async () => {
   if (isProduction) {
@@ -1618,11 +1620,10 @@ const startServer = async () => {
     const currentDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
     const candidatePaths = [
       path.join(process.cwd(), "dist"),
-      currentDir,
-      path.resolve(currentDir, "../dist"),
       path.resolve(currentDir, "dist"),
+      path.resolve(currentDir, "../dist"),
     ];
-    const distPath = candidatePaths.find((p) => fs.existsSync(path.join(p, "index.html"))) || candidatePaths[0];
+    const distPath = candidatePaths.find((p) => fs.existsSync(path.join(p, "index.html"))) || path.join(process.cwd(), "dist");
 
     app.use(express.static(distPath, {
       maxAge: "1d",
@@ -1651,6 +1652,7 @@ const startServer = async () => {
         server: {
           middlewareMode: true,
           allowedHosts: true,
+          hmr: process.env.DISABLE_HMR !== "true",
         },
         appType: "spa",
       });
