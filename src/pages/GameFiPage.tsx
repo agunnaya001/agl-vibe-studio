@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 import { GameFiProject, WalletState, NFTCollection, NFTItem } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
 import { 
@@ -38,6 +39,21 @@ import {
   Info
 } from "lucide-react";
 import ImageWithFallback from "../components/ImageWithFallback";
+
+const ARENA_CHAMPION_MINT_ABI = [
+  {
+    type: "function",
+    name: "mintChampion",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "attack", type: "uint256" },
+      { name: "defense", type: "uint256" },
+      { name: "rarity", type: "uint8" }
+    ],
+    outputs: []
+  }
+] as const;
 
 interface GameFiPageProps {
   wallet: WalletState;
@@ -252,6 +268,10 @@ const DEFAULT_TOURNAMENTS: TournamentData[] = [
 ];
 
 export default function GameFiPage({ wallet, games, onRefreshGames, addTerminalLog, showToast }: GameFiPageProps) {
+  const chainId = useChainId();
+  const publicClient = usePublicClient({ chainId: 8453 });
+  const { switchChainAsync } = useSwitchChain();
+  const { writeContractAsync } = useWriteContract();
   const [activeTab, setActiveTab] = useState<"pvp" | "battle" | "champions" | "marketplace" | "contracts" | "quests">("pvp");
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
@@ -468,31 +488,77 @@ export default function GameFiPage({ wallet, games, onRefreshGames, addTerminalL
     }, 1500);
   };
 
-  // Mint / Recruit Champion NFT
-  const handleMintChampion = () => {
-    if (!wallet.isConnected) {
-      showToast("Connect your wallet to recruit a Champion NFT.", "error");
+  // Mint / Recruit Champion NFT with a real Base Mainnet transaction
+  const handleMintChampion = async () => {
+    if (!wallet.isConnected || !wallet.address) {
+      showToast("Connect your Web3 wallet to recruit a Champion NFT.", "error");
+      return;
+    }
+
+    if (!publicClient) {
+      showToast("Base Mainnet transaction client is unavailable. Please try again.", "error");
       return;
     }
 
     setIsMintingChampion(true);
-    addTerminalLog("info", `[ArenaChampion] Minting new ERC-721 Gaming Champion NFT via ${ARENA_CHAMPION_NFT_ADDRESS}...`);
+    addTerminalLog("info", `[ArenaChampion] Preparing on-chain mint via ${ARENA_CHAMPION_NFT_ADDRESS}...`);
 
-    setTimeout(() => {
-      setIsMintingChampion(false);
+    try {
+      if (chainId !== 8453) {
+        addTerminalLog("info", "[ArenaChampion] Requesting wallet switch to Base Mainnet...");
+        await switchChainAsync({ chainId: 8453 });
+      }
+
+      // Generate visible, bounded champion attributes locally. The contract stores these values on-chain.
+      const randomValues = new Uint32Array(3);
+      window.crypto.getRandomValues(randomValues);
+      const attack = 50 + (randomValues[0] % 71);
+      const defense = 40 + (randomValues[1] % 71);
+      const rarity = 1 + (randomValues[2] % 4);
+
+      const hash = await writeContractAsync({
+        address: ARENA_CHAMPION_NFT_ADDRESS as `0x${string}`,
+        abi: ARENA_CHAMPION_MINT_ABI,
+        functionName: "mintChampion",
+        args: [
+          wallet.address as `0x${string}`,
+          BigInt(attack),
+          BigInt(defense),
+          rarity
+        ],
+        chainId: 8453
+      });
+
+      addTerminalLog("info", `[ArenaChampion] Transaction submitted: ${hash}. Waiting for Base confirmation...`);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      if (receipt.status !== "success") {
+        throw new Error("The ArenaChampion mint transaction reverted on Base.");
+      }
+
       AgunnayaDatabase.addActivity({
         type: "mint",
         tokenSymbol: "ACHAMP",
         tokenAddress: ARENA_CHAMPION_NFT_ADDRESS,
         user: wallet.address,
         amount: 1,
-        ethValue: 0.025,
-        details: `Minted new Battle Champion NFT on Base Mainnet with randomized combat attributes.`
+        ethValue: 0,
+        details: `Minted ArenaChampion on Base Mainnet. Attack: ${attack}, Defense: ${defense}, Rarity: ${rarity}. Transaction: ${hash}`
       });
 
-      addTerminalLog("success", `[ArenaChampion MINTED] Champion NFT successfully minted and registered on Base!`);
-      showToast("New Champion NFT minted! Added to your battle roster.", "success");
-    }, 1800);
+      addTerminalLog("success", `[ArenaChampion MINT CONFIRMED] Attack ${attack} • Defense ${defense} • Rarity ${rarity}. Tx: ${hash}`);
+      showToast("Champion successfully minted on Base Mainnet. Base network gas applies; the contract charges no mint fee.", "success");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown transaction error";
+      const rejected = /user rejected|user denied|rejected the request|request rejected/i.test(message);
+      const displayMessage = rejected
+        ? "Mint cancelled in your wallet. No champion was minted."
+        : message.length > 180 ? `${message.slice(0, 177)}...` : message;
+      addTerminalLog("error", `[ArenaChampion MINT FAILED] ${displayMessage}`);
+      showToast(displayMessage, "error");
+    } finally {
+      setIsMintingChampion(false);
+    }
   };
 
   return (
@@ -1124,7 +1190,7 @@ export default function GameFiPage({ wallet, games, onRefreshGames, addTerminalL
               className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold font-display text-xs shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{isMintingChampion ? "Minting Champion NFT..." : "Recruit / Mint Champion (0.025 ETH)"}</span>
+              <span>{isMintingChampion ? "Minting Champion NFT..." : "Recruit / Mint Champion (Base gas)"}</span>
             </button>
           </div>
 
