@@ -95,7 +95,6 @@ export default function BondingCurveChart({ currentSupply, maxSupply, tokenSymbo
               fill="#22c55e"
               stroke="#ffffff"
               strokeWidth={1}
-              isFront={true}
               className="animate-pulse"
             />
           </AreaChart>

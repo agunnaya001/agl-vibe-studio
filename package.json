@@ -14,10 +14,12 @@
   },
   "dependencies": {
     "@better-auth/infra": "^0.3.7",
-    "@google/genai": "^2.4.0",
+    "@google/genai": "^3.1.0",
     "@tailwindcss/vite": "^4.1.14",
     "@tanstack/react-query": "^5.102.2",
+    "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^5.0.4",
+    "@walletconnect/ethereum-provider": "^2.21.1",
     "better-auth": "^1.6.26",
     "dotenv": "^17.2.3",
     "esbuild": "^0.25.0",
@@ -34,10 +36,10 @@
     "react-helmet-async": "^3.0.0",
     "react-is": "^19.3.0",
     "recharts": "^3.9.0",
+    "three": "^0.187.0",
     "viem": "^2.45.0",
     "vite": "^6.2.3",
-    "wagmi": "^3.7.6",
-    "@walletconnect/ethereum-provider": "^2.21.1"
+    "wagmi": "^3.7.6"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.15",

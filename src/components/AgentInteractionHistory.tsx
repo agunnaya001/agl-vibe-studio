@@ -173,9 +173,9 @@ export const AgentInteractionHistory: React.FC<AgentInteractionHistoryProps> = (
       
       // Group consecutive user & assistant messages or extract pairs
       for (let i = 0; i < history.length; i++) {
-        const item = history[i];
+        const item: any = history[i];
         if (item.role === "user") {
-          const nextItem = history[i + 1];
+          const nextItem: any = history[i + 1];
           const responseText = nextItem && nextItem.role === "assistant" ? nextItem.content : "";
           
           pairs.push({

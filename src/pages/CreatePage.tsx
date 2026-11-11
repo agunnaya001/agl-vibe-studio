@@ -2356,17 +2356,13 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
               <div className={`flex items-start gap-3 p-3 rounded-xl transition-all border ${
                 launchpadDeployStep === "compiling" 
                   ? "bg-brand-blue/5 border-brand-blue/30 text-white font-semibold" 
-                  : launchpadDeployStep !== "idle" && launchpadDeployStep !== "compiling"
-                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
-                    : "bg-zinc-900/50 border-white/5 text-zinc-500"
+                  : "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
               }`}>
                 <div className="mt-0.5">
                   {launchpadDeployStep === "compiling" ? (
                     <Loader2 className="w-4 h-4 text-brand-blue animate-spin" />
-                  ) : launchpadDeployStep !== "idle" && launchpadDeployStep !== "compiling" ? (
-                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full border border-current opacity-50"></div>
+                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
                   )}
                 </div>
                 <div className="flex-1">
@@ -2547,17 +2543,13 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
               <div className={`flex items-start gap-3 p-3 rounded-xl transition-all border ${
                 deployStep === "compiling" 
                   ? "bg-brand-purple/5 border-brand-purple/30 text-white font-semibold" 
-                  : deployStep !== "idle" && deployStep !== "compiling"
-                    ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-400" 
-                    : "bg-zinc-900/50 border-white/5 text-zinc-500"
+                  : "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
               }`}>
                 <div className="mt-0.5">
                   {deployStep === "compiling" ? (
                     <Loader2 className="w-4 h-4 text-brand-purple animate-spin" />
-                  ) : deployStep !== "idle" && deployStep !== "compiling" ? (
-                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
                   ) : (
-                    <Code className="w-4 h-4" />
+                    <Check className="w-4 h-4 text-emerald-400 animate-pulse" />
                   )}
                 </div>
                 <div className="space-y-0.5">

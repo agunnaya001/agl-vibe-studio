@@ -220,9 +220,9 @@ export default function App() {
 
   // Terminal Logs state
   const [terminalLogs, setTerminalLogs] = useState<TerminalLine[]>([
-    { type: "system", text: "AGUNNAYA_CORE: System booting successfully..." },
-    { type: "system", text: "AGUNNAYA_CORE: Linear bonding curve mathematical model verified." },
-    { type: "info", text: "Connected to simulated Base Sepolia nodes. Network status: online." }
+    { id: "1", timestamp: new Date().toLocaleTimeString(), type: "system", message: "AGUNNAYA_CORE: System booting successfully..." },
+    { id: "2", timestamp: new Date().toLocaleTimeString(), type: "system", message: "AGUNNAYA_CORE: Linear bonding curve mathematical model verified." },
+    { id: "3", timestamp: new Date().toLocaleTimeString(), type: "info", message: "Connected to simulated Base Sepolia nodes. Network status: online." }
   ]);
 
   // Refresh data from local db
@@ -613,7 +613,15 @@ export default function App() {
 
   // Adds logs to terminal stream
   const addTerminalLog = (type: TerminalLine["type"], text: string) => {
-    setTerminalLogs(prev => [...prev, { type, text }]);
+    setTerminalLogs(prev => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substring(2, 9),
+        timestamp: new Date().toLocaleTimeString(),
+        type,
+        message: text
+      }
+    ]);
   };
 
   const handleWalletConnect = async (type: "metamask" | "coinbase" | "walletconnect" | "smart") => {
@@ -1284,6 +1292,15 @@ export default function App() {
         return (
           <AISuitePage
             initialSubTab="auditor"
+            showToast={showToast}
+            walletAddress={wallet.address}
+            onNavigateTab={handleTabChange}
+          />
+        );
+      case "gemini-chat":
+        return (
+          <AISuitePage
+            initialSubTab="chatbot"
             showToast={showToast}
             walletAddress={wallet.address}
             onNavigateTab={handleTabChange}

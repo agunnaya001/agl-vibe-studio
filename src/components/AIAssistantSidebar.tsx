@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Bot, Send, BrainCircuit, X, MessageSquare, Zap, Coins, Pin, PinOff, Save, Trash2 } from "lucide-react";
-import { chatWithAgentAI } from "../lib/gemini";
+import { Bot, Send, BrainCircuit, X, MessageSquare, Zap, Coins, Pin, PinOff, Save, Trash2, Sparkles } from "lucide-react";
+import { chatWithAgentAI, sendMultiTurnChatMessage } from "../lib/gemini";
 import { WalletState } from "../types";
 import { AgunnayaDatabase } from "../lib/db";
 import { validateAndConsumeCredits, CREDIT_COSTS } from "../lib/credits";
@@ -25,8 +25,9 @@ export default function AIAssistantSidebar({
   isLocked = false,
   onToggleLock
 }: AIAssistantSidebarProps) {
+  const [selectedModel, setSelectedModel] = useState<"gemini-4-carbon" | "gemini-4-argon" | "gemini-3.8-flash" | "gemini-3.1-flash-lite">("gemini-3.8-flash");
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
-    { role: "assistant", content: "Greetings! I am the Agunnaya Labs AI Assistant. Ask me anything about building dApps, deploying on Base, staking, or modeling bonding curve mathematics." }
+    { role: "assistant", content: "Greetings! I am the Agunnaya Labs AI Assistant powered by Gemini. Ask me anything about building dApps, deploying on Base, staking, or modeling bonding curve mathematics." }
   ]);
   const [input, setInput] = useState(() => {
     if (typeof window !== "undefined") {
@@ -110,15 +111,30 @@ export default function AIAssistantSidebar({
     setIsLoading(true);
 
     try {
-      const response = await chatWithAgentAI(
-        [...messages, { role: "user", content: userMsg }],
-        {
-          name: "Agunnaya General Assistant",
-          symbol: "AGL-AI",
-          description: "Decentralized AI Assistant powering Agunnaya Labs Studio.",
-          contractAddress: "0xGeneralAssistantContractAddress"
-        }
-      );
+      let response = "";
+      try {
+        const turnHistory = [...messages, { role: "user" as const, content: userMsg }].map(m => ({
+          role: m.role as "user" | "assistant",
+          content: m.content
+        }));
+        const chatRes = await sendMultiTurnChatMessage({
+          messages: turnHistory,
+          model: selectedModel,
+          roleId: "flash-advisor"
+        });
+        response = chatRes.reply;
+      } catch (geminiErr: any) {
+        console.warn("Falling back to chatWithAgentAI:", geminiErr);
+        response = await chatWithAgentAI(
+          [...messages, { role: "user", content: userMsg }],
+          {
+            name: "Agunnaya General Assistant",
+            symbol: "AGL-AI",
+            description: "Decentralized AI Assistant powering Agunnaya Labs Studio.",
+            contractAddress: "0xGeneralAssistantContractAddress"
+          }
+        );
+      }
 
       const words = response.split(" ");
       let currentText = "";
@@ -199,7 +215,10 @@ export default function AIAssistantSidebar({
                   </span>
                 )}
               </div>
-              <span className="text-[10px] text-zinc-500 font-mono">Powered by Gemini 3.6</span>
+              <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-brand-purple" />
+                Gemini Multi-Turn
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -225,6 +244,36 @@ export default function AIAssistantSidebar({
             >
               <X className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+
+        {/* Gemini Model Selector Bar */}
+        <div className="px-3 py-2 bg-black/40 border-b border-white/5">
+          <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono mb-1.5 px-0.5">
+            <span>MODEL ENGINE</span>
+            <span className="text-brand-purple font-semibold">Multi-Turn Active</span>
+          </div>
+          <div className="grid grid-cols-4 gap-1">
+            {[
+              { id: "gemini-4-carbon" as const, label: "Carbon", desc: "Reasoning" },
+              { id: "gemini-4-argon" as const, label: "Argon", desc: "Complex" },
+              { id: "gemini-3.8-flash" as const, label: "Flash", desc: "General" },
+              { id: "gemini-3.1-flash-lite" as const, label: "Lite", desc: "Fast" }
+            ].map(m => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setSelectedModel(m.id)}
+                className={`px-1.5 py-1 rounded text-[10px] font-mono flex flex-col items-center transition-all ${
+                  selectedModel === m.id
+                    ? "bg-brand-purple text-white font-bold shadow-sm shadow-brand-purple/40 border border-purple-400/50"
+                    : "bg-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/10 border border-transparent"
+                }`}
+              >
+                <span>{m.label}</span>
+                <span className="text-[8px] opacity-75">{m.desc}</span>
+              </button>
+            ))}
           </div>
         </div>
 

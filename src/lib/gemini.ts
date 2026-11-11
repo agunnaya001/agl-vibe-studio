@@ -462,4 +462,55 @@ export async function rebalancePortfolioAI(
   }
 }
 
+export interface MultiTurnChatMessage {
+  role: "user" | "assistant" | "model" | "system";
+  content: string;
+}
 
+export interface MultiTurnChatRequest {
+  messages: MultiTurnChatMessage[];
+  model?: "gemini-4-carbon" | "gemini-4-argon" | "gemini-3.8-flash" | "gemini-3.1-flash-lite" | string;
+  roleId?: string;
+  customSystemInstruction?: string;
+  thinkingLevel?: "HIGH" | "LOW" | "MINIMAL";
+}
+
+export interface MultiTurnChatResponse {
+  success: boolean;
+  reply: string;
+  modelRequested: string;
+  modelUsed: string;
+  roleId: string;
+  roleName: string;
+  latencyMs: number;
+  timestamp: number;
+  isFallback?: boolean;
+}
+
+export async function sendMultiTurnChatMessage(payload: MultiTurnChatRequest): Promise<MultiTurnChatResponse> {
+  const response = await fetch("/api/ai/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    let errMsg = `Chat request failed (${response.status})`;
+    try {
+      const errJson = await safeFetchJson(response);
+      if (errJson?.error) errMsg = errJson.error;
+    } catch {}
+    throw new Error(errMsg);
+  }
+  return safeFetchJson<MultiTurnChatResponse>(response);
+}
+
+export async function fetchChatRoles(): Promise<any[]> {
+  try {
+    const response = await fetch("/api/ai/chat/roles");
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.roles || [];
+  } catch {
+    return [];
+  }
+}

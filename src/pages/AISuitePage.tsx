@@ -9,7 +9,8 @@ import {
   Cpu, 
   Activity,
   Layers,
-  Terminal
+  Terminal,
+  MessageSquare
 } from "lucide-react";
 import SecurityAuditorWorkspace from "../components/ai/SecurityAuditorWorkspace";
 import DAppGeneratorWorkspace from "../components/ai/DAppGeneratorWorkspace";
@@ -17,11 +18,12 @@ import ContractExplainerWorkspace from "../components/ai/ContractExplainerWorksp
 import OnchainAgentWorkspace from "../components/ai/OnchainAgentWorkspace";
 import GameBuilderWorkspace from "../components/ai/GameBuilderWorkspace";
 import AgentWorkflowStudio from "../components/agent/AgentWorkflowStudio";
+import GeminiChatbotView from "../components/GeminiChatbotView";
 import { NetworkKey } from "../types/aiSuite";
 
 interface AISuitePageProps {
   showToast?: (msg: string, type: "success" | "error" | "info") => void;
-  initialSubTab?: "orchestrator" | "auditor" | "dapp" | "explainer" | "agent" | "game";
+  initialSubTab?: "orchestrator" | "auditor" | "dapp" | "explainer" | "agent" | "game" | "chatbot";
   walletAddress?: string;
   onNavigateTab?: (tab: string) => void;
 }
@@ -32,7 +34,7 @@ export default function AISuitePage({
   walletAddress,
   onNavigateTab
 }: AISuitePageProps) {
-  const [activeWorkspace, setActiveWorkspace] = useState<"orchestrator" | "auditor" | "dapp" | "explainer" | "agent" | "game">(initialSubTab);
+  const [activeWorkspace, setActiveWorkspace] = useState<"orchestrator" | "auditor" | "dapp" | "explainer" | "agent" | "game" | "chatbot">(initialSubTab);
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkKey>("base-mainnet");
 
   const WORKSPACES = [
@@ -90,6 +92,15 @@ export default function AISuitePage({
       color: "text-rose-400 border-rose-500/30 bg-rose-500/10",
       activeTabClass: "bg-rose-600 text-white shadow-lg shadow-rose-500/20",
     },
+    {
+      id: "chatbot" as const,
+      name: "Gemini Chatbot",
+      badge: "Multi-Turn Intelligence",
+      description: "Conversational reasoning with Gemini 4 Carbon, Argon, 3.8 Flash & 3.1 Flash Lite",
+      icon: MessageSquare,
+      color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10",
+      activeTabClass: "bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-lg shadow-cyan-500/20",
+    },
   ];
 
   return (
@@ -138,7 +149,7 @@ export default function AISuitePage({
         </div>
 
         {/* Workspace Tab Selector Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-6 mt-6 border-t border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 pt-6 mt-6 border-t border-white/10">
           {WORKSPACES.map((ws) => {
             const Icon = ws.icon;
             const isActive = activeWorkspace === ws.id;
@@ -173,6 +184,13 @@ export default function AISuitePage({
 
       {/* Active Workspace Container */}
       <div className="transition-all duration-300">
+        {activeWorkspace === "chatbot" && (
+          <GeminiChatbotView
+            showToast={showToast}
+            standalone={true}
+          />
+        )}
+
         {activeWorkspace === "orchestrator" && (
           <AgentWorkflowStudio
             walletAddress={walletAddress}

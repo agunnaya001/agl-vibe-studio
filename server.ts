@@ -9,6 +9,7 @@ import { registerAgentOrchestratorRoutes } from "./server/agentOrchestratorRoute
 import { registerAutonomousAgentRoutes } from "./server/autonomousAgentRoutes.ts";
 import { crossChainLiquidityRoutes } from "./server/crossChainLiquidityRoutes.ts";
 import { ventureGrantsRoutes } from "./server/ventureGrantsRoutes.ts";
+import { registerGeminiChatRoutes } from "./server/geminiChatRoutes.ts";
 import { getAIClient, safeParseJson, executeGeminiWithFallback } from "./server/geminiHelper.ts";
 
 const app = express();
@@ -36,6 +37,9 @@ app.use(express.json());
 
 // Register Gemini Web3 AI Suite routes (Security Auditor, dApp Generator, Contract Explainer, Onchain Agent, Game Builder)
 registerAISuiteRoutes(app);
+
+// Register Gemini Multi-Turn Chatbot API (gemini-4-carbon, gemini-4-argon, gemini-3.8-flash, gemini-3.1-flash-lite)
+registerGeminiChatRoutes(app);
 
 // Register Agentic Web3 Orchestrator & Tool routes
 registerAgentOrchestratorRoutes(app);

@@ -40,7 +40,8 @@ import {
   Store,
   Award,
   User,
-  Code2
+  Code2,
+  MessageSquare
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
@@ -137,6 +138,7 @@ export default function Sidebar({
     { id: "ecosystem-dashboard", label: "Ecosystem Analytics", icon: BarChart3, category: "Ecosystem Layer", description: "Verified On-Chain & Studio Metrics" },
     { id: "developer-sdk", label: "Developer SDK & APIs", icon: Code2, category: "Ecosystem Layer", description: "TypeScript SDK & REST Documentation" },
     { id: "ai-suite", label: "Gemini AI Suite Hub", icon: Sparkles, category: "Gemini Web3 AI Suite", highlight: true, description: "All 5 AI Web3 Workspaces" },
+    { id: "gemini-chat", label: "Gemini AI Chatbot", icon: MessageSquare, category: "Gemini Web3 AI Suite", highlight: true, description: "Multi-Turn Roles: Carbon, Argon, Flash" },
     { id: "ai-security-auditor", label: "AI Security Auditor", icon: ShieldCheck, category: "Gemini Web3 AI Suite", highlight: true, description: "Solidity Auditing & CEI Checks" },
     { id: "ai-dapp-generator", label: "AI dApp Generator", icon: Zap, category: "Gemini Web3 AI Suite", highlight: true, description: "Prompt to Full-Stack Web3" },
     { id: "ai-contract-explainer", label: "Contract Explainer", icon: BrainCircuit, category: "Gemini Web3 AI Suite", description: "ABI, Functions & Interactive Q&A" },

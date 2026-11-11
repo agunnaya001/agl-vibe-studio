@@ -527,7 +527,7 @@ export default function GameFiPage({ wallet, games, onRefreshGames, addTerminalL
           rarity
         ],
         chainId: 8453
-      });
+      } as any);
 
       addTerminalLog("info", `[ArenaChampion] Transaction submitted: ${hash}. Waiting for Base confirmation...`);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });

@@ -417,8 +417,8 @@ export default function OnchainAgentWorkspace({
                   <div className="space-y-1">
                     {simResult.dangerFlags.map((flag, idx) => (
                       <div key={idx} className={`p-2 rounded-lg text-[10px] flex items-start gap-1.5 border ${
-                        flag.level === "Critical" ? "bg-rose-500/10 border-rose-500/30 text-rose-300" :
-                        flag.level === "Warning" ? "bg-amber-500/10 border-amber-500/30 text-amber-300" :
+                        flag.level.toLowerCase() === "critical" ? "bg-rose-500/10 border-rose-500/30 text-rose-300" :
+                        flag.level.toLowerCase() === "warning" ? "bg-amber-500/10 border-amber-500/30 text-amber-300" :
                         "bg-blue-500/10 border-blue-500/30 text-blue-300"
                       }`}>
                         <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />

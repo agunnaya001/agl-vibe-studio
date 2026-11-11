@@ -78,6 +78,7 @@ export interface BatchBurnCertificate {
   txHash: string;
   multicallAddress: string;
   tokens: BatchBurnItem[];
+  items?: BatchBurnItem[];
   totalAmountUsd: number;
   totalTokensCount: number;
   burnerAddress: string;
@@ -1744,17 +1745,17 @@ export default function TokenBurnerPage({
                     ${activeBatchCertificate.totalAmountUsd.toFixed(2)} USD
                   </span>
                   <span className="text-xs text-amber-300 block font-bold">
-                    {activeBatchCertificate.items.length} Distinct Token Supplies Reduced
+                    {(activeBatchCertificate.tokens || activeBatchCertificate.items || []).length} Distinct Token Supplies Reduced
                   </span>
                 </div>
 
                 {/* Items Breakdown Table */}
                 <div className="p-3 rounded-xl bg-black/60 border border-white/5 space-y-2 text-left text-xs">
                   <span className="text-[10px] text-zinc-500 uppercase tracking-wider block border-b border-white/5 pb-1">
-                    Burned Assets Breakdown ({activeBatchCertificate.items.length} tokens):
+                    Burned Assets Breakdown ({(activeBatchCertificate.tokens || activeBatchCertificate.items || []).length} tokens):
                   </span>
                   <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                    {activeBatchCertificate.items.map((item, idx) => (
+                    {(activeBatchCertificate.tokens || activeBatchCertificate.items || []).map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between text-[11px] py-1 border-b border-white/5 last:border-0">
                         <div className="flex items-center gap-2">
                           <Flame className="w-3.5 h-3.5 text-red-500" />

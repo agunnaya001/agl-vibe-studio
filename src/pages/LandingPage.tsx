@@ -245,7 +245,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
             </ul>
             <button
               id="plan-start-free"
-              onClick={onLaunchApp}
+              onClick={() => onLaunchApp("ai-builder")}
               className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-750 transition-all text-xs font-semibold font-display"
             >
               Start Free Prototyping
@@ -285,7 +285,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
             </ul>
             <button
               id="plan-start-pro"
-              onClick={onLaunchApp}
+              onClick={() => onLaunchApp("ai-builder")}
               className="w-full py-3 rounded-xl bg-brand-purple hover:bg-purple-600 transition-all text-xs font-semibold font-display text-white shadow-lg shadow-brand-purple/20"
             >
               Configure Live Deployments

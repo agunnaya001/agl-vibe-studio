@@ -1908,7 +1908,9 @@ export default function TokenFactoryPage({
                             {item.name || `Token #${idx + 1}`}
                           </span>
                           {item.isVerified && (
-                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" title="Verified Token" />
+                            <span title="Verified Token">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            </span>
                           )}
                           {isMine && (
                             <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono text-[9px] font-bold border border-purple-500/30">
