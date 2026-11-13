@@ -300,6 +300,43 @@ Agunnaya Labs Studio utilizes the standard OpenZeppelin ERC-20 contract ABI stru
 
 ---
 
+## 🔐 Local Setup & Runtime Configuration
+
+### Requirements
+- Node.js 22 or newer
+- npm (or a compatible package manager)
+
+### Install and run
+```bash
+npm install
+cp .env.example .env
+# Replace placeholder values in .env with your own configuration.
+npm run dev
+```
+
+### Required authentication configuration
+- `BETTER_AUTH_SECRET`: unique cryptographically random secret, at least 32 characters. Never commit it or expose it through a `VITE_` / browser environment variable.
+- `BETTER_AUTH_URL`: public origin used by Better Auth. In production, set this to the canonical app URL. `APP_URL` is accepted as a fallback.
+- In non-production local development only, the auth URL defaults to `http://localhost:3000`; the secret is still required.
+
+Generate a high-entropy secret with a password manager or a local secure generator. Store it only in your local environment file and the deployment platform's secret manager. Do not paste secret values into issues, pull requests, logs, or source control.
+
+### Build and start
+```bash
+npm run lint
+npm run build
+npm start
+```
+
+The production start command runs the compiled server at `dist/server.cjs`; run `npm run build` before `npm start`. The container platform must provide `PORT` and the runtime environment variables. This repository currently contains no checked-in Dockerfile or Cloud Build manifest, so the exact Cloud Run build/deploy command still needs to be confirmed against the active service configuration.
+
+### Environment variable handling
+- Use `.env.example` as a names-only template; replace all `MY_...` placeholders locally.
+- Keep `.env`, `.env.local`, private keys, API keys, and auth secrets out of Git. The repository's `.gitignore` excludes `.env*` while allowing `.env.example`.
+- `PRIVATE_KEY` is sensitive and must never be exposed to the browser or committed. Only configure it in a protected server-side secret store when a deployment task explicitly requires it.
+
+---
+
 ## 💻 Developer Scripts & Commands
 
 Run and build the project locally or in container environments using standard npm commands:
