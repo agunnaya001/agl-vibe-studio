@@ -39,14 +39,7 @@ interface LifiChain {
 }
 
 const CHAIN_CONFIG: Record<number, { chainIdHex: string; name: string; rpcUrl: string; symbol: string; explorer: string }> = {
-  8453: { chainIdHex: "0x2105", name: "Base Mainnet", rpcUrl: "https://mainnet.base.org", symbol: "ETH", explorer: "https://basescan.org" },
-  1: { chainIdHex: "0x1", name: "Ethereum Mainnet", rpcUrl: "https://eth.llamarpc.com", symbol: "ETH", explorer: "https://etherscan.io" },
-  42161: { chainIdHex: "0xa4b1", name: "Arbitrum One", rpcUrl: "https://arb1.arbitrum.io/rpc", symbol: "ETH", explorer: "https://arbiscan.io" },
-  10: { chainIdHex: "0xa", name: "Optimism", rpcUrl: "https://mainnet.optimism.io", symbol: "ETH", explorer: "https://optimistic.etherscan.io" },
-  130: { chainIdHex: "0x82", name: "Unichain", rpcUrl: "https://mainnet.unichain.org", symbol: "ETH", explorer: "https://uniscan.xyz" },
-  137: { chainIdHex: "0x89", name: "Polygon PoS", rpcUrl: "https://polygon-rpc.com", symbol: "POL", explorer: "https://polygonscan.com" },
-  56: { chainIdHex: "0x38", name: "BNB Smart Chain", rpcUrl: "https://bsc-dataseed.binance.org", symbol: "BNB", explorer: "https://bscscan.com" },
-  43114: { chainIdHex: "0xa86a", name: "Avalanche C-Chain", rpcUrl: "https://api.avax.network/ext/bc/C/rpc", symbol: "AVAX", explorer: "https://snowtrace.io" }
+  8453: { chainIdHex: "0x2105", name: "Base Mainnet", rpcUrl: "https://mainnet.base.org", symbol: "ETH", explorer: "https://basescan.org" }
 };
 
 const STANDARD_ERC20_ABI = [
@@ -68,14 +61,7 @@ const BASE_COMMON_TOKENS = [
 ];
 
 const SUPPORTED_CHAINS: LifiChain[] = [
-  { id: 8453, key: "bas", name: "Base Mainnet", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/base.png", coin: "ETH" },
-  { id: 10, key: "opt", name: "Optimism", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/optimism.png", coin: "ETH" },
-  { id: 42161, key: "arb", name: "Arbitrum One", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/arbitrum.png", coin: "ETH" },
-  { id: 130, key: "uni", name: "Unichain", logoURI: "https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png", coin: "ETH" },
-  { id: 137, key: "pol", name: "Polygon PoS", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/polygon.png", coin: "POL" },
-  { id: 1, key: "eth", name: "Ethereum Mainnet", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/ethereum.png", coin: "ETH" },
-  { id: 56, key: "bsc", name: "BNB Smart Chain", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/bsc.png", coin: "BNB" },
-  { id: 43114, key: "ava", name: "Avalanche C-Chain", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/avalanche.png", coin: "AVAX" }
+  { id: 8453, key: "bas", name: "Base Mainnet", logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/base.png", coin: "ETH" }
 ];
 
 export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTerminalLog, showToast, targetToken, compact }: LiFiBridgeProps) {
@@ -306,7 +292,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
       addTerminalLog("success", `LIFI_SWAP: Confirmed on Base. Transaction: ${confirmedHash}`);
       showToast(`LI.FI route confirmed: ${confirmedHash.slice(0, 10)}...`, "success");
       onRefreshWallet();
-      await fetchQuote();
+      setFromAmount("");
     } catch (err: any) {
       console.error("LI.FI execution error:", err);
       const message = err?.message || "LI.FI execution failed.";
@@ -342,7 +328,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white font-display">
-                  LI.FI Cross-Chain DEX Aggregator & Bridge Engine
+                  LI.FI Base DEX Swap Engine
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[10px] font-mono font-semibold">
                   API Integrated
@@ -702,7 +688,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
           ) : (
             <div className="py-12 flex flex-col items-center justify-center space-y-2 text-center text-zinc-500">
               <Info className="w-8 h-8 text-zinc-600" />
-              <p className="text-xs font-mono">Enter a valid amount to preview the LI.FI cross-chain route.</p>
+              <p className="text-xs font-mono">Enter a valid amount to preview the LI.FI Base swap route.</p>
             </div>
           )}
         </div>
