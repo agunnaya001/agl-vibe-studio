@@ -35,6 +35,12 @@ No production branch or live deployment was changed during this audit.
 - `StakingVaultPage.tsx` implements a second, incompatible local simulation.
 - Consolidate to one canonical on-chain staking implementation; do not migrate or invent positions from local storage.
 
+### P0 — AGL Credits UI called methods absent from the declared ABI
+
+- The old credits page called `creditsPerAGL`, `totalAGLBurned`, `aglToken`, and `purchaseCredits`, while the checked-in ABI exposes `creditsPerAgl`, `creditPriceEth`, `getCreditBalance`, `burnAglForCredits`, and `buyCreditsWithEth`.
+- The credits page now reads the declared methods and uses the Wagmi connector for approval/burn/purchase transactions, with confirmed receipt checks and no sandbox path.
+- The contract has no spend/debit method. AI feature usage therefore remains an off-chain Firestore ledger; the wallet model now tracks on-chain granted credits separately so refreshing the contract balance does not restore consumed application credits.
+
 ### P0 — Staking ABI does not match the previous UI
 
 - The checked-in `AGL_STAKING_ABI` declares `getUserStakes`, `calculateReward`, `claimRewards`, `stake(amount, lockPeriodDays)`, and `unstake(stakeIndex)`.
