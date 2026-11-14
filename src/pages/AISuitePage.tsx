@@ -115,7 +115,7 @@ export default function AISuitePage({
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-brand-purple/20 text-brand-purple border border-brand-purple/30 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                Gemini 3.7 Flash Engine
+                Gemini 3.8 Flash Engine
               </span>
               <span className="px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                 <Activity className="w-3 h-3" />
