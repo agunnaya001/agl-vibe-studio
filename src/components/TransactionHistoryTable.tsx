@@ -497,14 +497,14 @@ export default function TransactionHistoryTable({ activities, onRefresh }: Trans
                       Transaction Details
                     </h3>
                     <p className="text-[10px] text-zinc-400">
-                      Asset: <span className="text-brand-purple font-bold">{selectedActivity.tokenSymbol}</span>
+                      Activity asset: <span className="text-brand-purple font-bold">{selectedActivity.tokenSymbol}</span>
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    <ShieldCheck className="w-3 h-3" /> Base Mainnet Confirmed
+                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                    <Info className="w-3 h-3" /> Activity record; chain status unavailable
                   </span>
                   <button
                     onClick={() => {
@@ -520,188 +520,109 @@ export default function TransactionHistoryTable({ activities, onRefresh }: Trans
 
               {/* Modal Body Content */}
               <div className="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
-                {/* Transaction Hash banner */}
-                {(() => {
-                  const fullTxHash = `0x${(selectedActivity.id.replace(/[^a-f0-9]/gi, '') + '8a9f02c17d3b5e4a129087c5361094ba').slice(0, 64)}`;
-                  const blockNum = 21840000 + Math.floor((selectedActivity.timestamp % 1000000) / 10);
-                  const gasUsed = 21000 + (Math.abs(selectedActivity.id.length * 1337) % 35000);
-                  const gasFeeEth = (gasUsed * 0.000000002).toFixed(6);
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-white/10 space-y-1.5">
+                    <span className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
+                      <Hash className="w-3.5 h-3.5 text-brand-purple" /> Local Activity Record ID
+                    </span>
+                    <span className="text-[11px] text-white font-mono break-all select-all">
+                      {selectedActivity.id}
+                    </span>
+                  </div>
 
-                  return (
-                    <div className="space-y-4">
-                      {/* Full Hash Card */}
-                      <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-white/10 space-y-1.5">
-                        <span className="text-[10px] text-zinc-400 uppercase font-bold flex items-center gap-1">
-                          <Hash className="w-3.5 h-3.5 text-brand-purple" /> Transaction Hash (TxHash)
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
+                      <span className="text-[9px] text-zinc-500 uppercase font-bold block">On-Chain Transaction Status</span>
+                      <span className="text-amber-300 font-bold text-xs">Unavailable in this activity record</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
+                      <span className="text-[9px] text-zinc-500 uppercase font-bold block">Block Height</span>
+                      <span className="text-zinc-300 font-bold text-xs">Unavailable in this activity record</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
+                      <span className="text-[9px] text-zinc-500 uppercase font-bold block">Activity Timestamp</span>
+                      <span className="text-white font-bold text-xs block">
+                        {new Date(selectedActivity.timestamp).toUTCString()}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 block">
+                        ({new Date(selectedActivity.timestamp).toLocaleString()})
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
+                      <span className="text-[9px] text-zinc-500 uppercase font-bold block">Gas Used & Fee</span>
+                      <span className="text-zinc-300 font-bold text-xs">Unavailable in this activity record</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-white/10 space-y-3">
+                    <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-brand-purple" /> User & Contract Metadata
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-[9px] text-zinc-500 uppercase font-bold block">From / Initiator</span>
+                        <span className="text-zinc-200 font-mono text-[11px] break-all">{selectedActivity.user}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-zinc-500 uppercase font-bold block">Token / Contract Address</span>
+                        <span className="text-brand-purple font-mono text-[11px] break-all">
+                          {selectedActivity.tokenAddress || "Unavailable in this activity record"}
                         </span>
-                        <div className="flex items-center justify-between gap-2 bg-zinc-950 p-2 rounded-lg border border-white/5">
-                          <span className="text-[11px] text-white font-mono break-all select-all">
-                            {fullTxHash}
-                          </span>
-                          <button
-                            onClick={() => handleCopy(fullTxHash, "full-tx")}
-                            className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded transition-colors flex-shrink-0"
-                            title="Copy Full Hash"
-                          >
-                            {copiedId === "full-tx" ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Metadata Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Status */}
-                        <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
-                          <span className="text-[9px] text-zinc-500 uppercase font-bold block">Execution Status</span>
-                          <span className="text-emerald-400 font-bold text-xs flex items-center gap-1">
-                            <ShieldCheck className="w-3.5 h-3.5" /> 100% Success (0 Reversion Risk)
-                          </span>
-                        </div>
-
-                        {/* Block Height */}
-                        <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
-                          <span className="text-[9px] text-zinc-500 uppercase font-bold block">Base Block Height</span>
-                          <span className="text-white font-bold text-xs flex items-center gap-1">
-                            <Layers className="w-3.5 h-3.5 text-brand-blue" /> #{blockNum.toLocaleString()}
-                          </span>
-                        </div>
-
-                        {/* Exact Timestamp */}
-                        <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
-                          <span className="text-[9px] text-zinc-500 uppercase font-bold block">Exact Timestamp</span>
-                          <span className="text-white font-bold text-xs block">
-                            {new Date(selectedActivity.timestamp).toUTCString()}
-                          </span>
-                          <span className="text-[10px] text-zinc-400 block">
-                            ({new Date(selectedActivity.timestamp).toLocaleString()})
-                          </span>
-                        </div>
-
-                        {/* Gas Used */}
-                        <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
-                          <span className="text-[9px] text-zinc-500 uppercase font-bold block">Gas Used & Fee</span>
-                          <span className="text-amber-400 font-bold text-xs flex items-center gap-1">
-                            <Zap className="w-3.5 h-3.5" /> {gasUsed.toLocaleString()} Gas ({gasFeeEth} ETH)
-                          </span>
-                          <span className="text-[9px] text-emerald-400 block">
-                            ✓ L2 Paymaster Fee Sponsored
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Accounts & Asset Flow */}
-                      <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-white/10 space-y-3">
-                        <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-brand-purple" /> User & Contract Metadata
-                        </h4>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">From / Initiator</span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-zinc-200 font-mono text-[11px] break-all">{selectedActivity.user}</span>
-                              <button
-                                onClick={() => handleCopy(selectedActivity.user, "user-modal")}
-                                className="text-zinc-500 hover:text-white transition-colors"
-                              >
-                                {copiedId === "user-modal" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">Token / Contract Address</span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-brand-purple font-mono text-[11px] break-all">
-                                {selectedActivity.tokenAddress || "0xBaseContractModule"}
-                              </span>
-                              {selectedActivity.tokenAddress && (
-                                <button
-                                  onClick={() => handleCopy(selectedActivity.tokenAddress!, "contract-modal")}
-                                  className="text-zinc-500 hover:text-white transition-colors"
-                                >
-                                  {copiedId === "contract-modal" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Transacted Amounts */}
-                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">Token Amount</span>
-                            <span className="text-white font-bold text-xs">
-                              {selectedActivity.amount > 0 ? `${selectedActivity.amount.toLocaleString()} ${selectedActivity.tokenSymbol}` : "N/A"}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] text-zinc-500 uppercase font-bold block">Value (ETH)</span>
-                            <span className="text-emerald-400 font-bold text-xs">
-                              {selectedActivity.ethValue > 0 ? `${selectedActivity.ethValue.toFixed(4)} ETH (~$${(selectedActivity.ethValue * 3200).toFixed(2)})` : "0.00 ETH"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Activity Details Summary Box */}
-                      <div className="p-3.5 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
-                        <span className="text-[9px] text-zinc-500 uppercase font-bold block flex items-center gap-1">
-                          <Info className="w-3 h-3 text-brand-blue" /> Action Audit Log Details
-                        </span>
-                        <p className="text-zinc-200 text-xs leading-relaxed">
-                          {selectedActivity.details}
-                        </p>
-                      </div>
-
-                      {/* Raw JSON Toggle */}
-                      <div className="space-y-2">
-                        <button
-                          onClick={() => setShowRawJson(!showRawJson)}
-                          className="text-[10px] text-brand-purple hover:text-purple-300 font-bold flex items-center gap-1 transition-colors"
-                        >
-                          <FileText className="w-3 h-3" />
-                          {showRawJson ? "Hide Raw Activity Payload" : "View Raw Event JSON Payload"}
-                        </button>
-
-                        {showRawJson && (
-                          <pre className="p-3 rounded-xl bg-black border border-white/10 text-[10px] text-emerald-400 font-mono overflow-x-auto max-h-40 leading-tight">
-                            {JSON.stringify({
-                              ...selectedActivity,
-                              txHash: fullTxHash,
-                              blockNumber: blockNum,
-                              gasUsed,
-                              chain: "Base Mainnet (8453)",
-                              status: "0x1 (SUCCESS)"
-                            }, null, 2)}
-                          </pre>
-                        )}
                       </div>
                     </div>
-                  );
-                })()}
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                      <div>
+                        <span className="text-[9px] text-zinc-500 uppercase font-bold block">Token Amount</span>
+                        <span className="text-white font-bold text-xs">
+                          {selectedActivity.amount > 0 ? `${selectedActivity.amount.toLocaleString()} ${selectedActivity.tokenSymbol}` : "Unavailable"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-zinc-500 uppercase font-bold block">Value (ETH)</span>
+                        <span className="text-emerald-400 font-bold text-xs">
+                          {selectedActivity.ethValue > 0 ? `${selectedActivity.ethValue.toFixed(4)} ETH` : "Unavailable"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-zinc-900/40 border border-white/5 space-y-1">
+                    <span className="text-[9px] text-zinc-500 uppercase font-bold block flex items-center gap-1">
+                      <Info className="w-3 h-3 text-brand-blue" /> Activity Log Details
+                    </span>
+                    <p className="text-zinc-200 text-xs leading-relaxed">{selectedActivity.details}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setShowRawJson(!showRawJson)}
+                      className="text-[10px] text-brand-purple hover:text-purple-300 font-bold flex items-center gap-1 transition-colors"
+                    >
+                      <FileText className="w-3 h-3" />
+                      {showRawJson ? "Hide Raw Activity Payload" : "View Raw Activity Record JSON"}
+                    </button>
+                    {showRawJson && (
+                      <pre className="p-3 rounded-xl bg-black border border-white/10 text-[10px] text-emerald-400 font-mono overflow-x-auto max-h-40 leading-tight">
+                        {JSON.stringify(selectedActivity, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Modal Footer */}
               <div className="p-4 border-t border-white/10 bg-zinc-900/80 flex items-center justify-between">
                 <button
-                  onClick={() => {
-                    const fullTxHash = `0x${(selectedActivity.id.replace(/[^a-f0-9]/gi, '') + '8a9f02c17d3b5e4a129087c5361094ba').slice(0, 64)}`;
-                    handleCopy(fullTxHash, "modal-footer-tx");
-                  }}
+                  onClick={() => handleCopy(selectedActivity.id, "modal-footer-id")}
                   className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5"
                 >
-                  {copiedId === "modal-footer-tx" ? (
+                  {copiedId === "modal-footer-id" ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied Hash!
+                      <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied Record ID
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5" /> Copy Tx Hash
+                      <Copy className="w-3.5 h-3.5" /> Copy Record ID
                     </>
                   )}
                 </button>

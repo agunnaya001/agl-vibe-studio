@@ -330,7 +330,7 @@ export default function AGLPollsGovernanceComponent({
                     </>
                   ) : (
                     <>
-                      <Vote className="w-4 h-4" /> Cast On-Chain Vote
+                      <Vote className="w-4 h-4" /> Record Off-Chain Poll Vote
                     </>
                   )}
                 </button>

@@ -31,9 +31,9 @@ export interface OnChainTransaction {
   to: string;
   value: string;
   valueEth: number;
-  gasUsed: string;
-  gasPrice: string;
-  gasFeeEth: number;
+  gasUsed: string | null;
+  gasPrice: string | null;
+  gasFeeEth: number | null;
   isError: boolean;
   status: "confirmed" | "failed";
   functionName?: string;
@@ -446,10 +446,12 @@ export default function RecentTransactionsModal({
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {tx.gasFeeEth > 0 && (
+                      {typeof tx.gasFeeEth === "number" && tx.gasFeeEth > 0 ? (
                         <span className="text-zinc-500 hidden sm:inline">
                           Fee: {tx.gasFeeEth.toFixed(6)} ETH
                         </span>
+                      ) : (
+                        <span className="text-zinc-500 hidden sm:inline">Fee unavailable</span>
                       )}
 
                       <a

@@ -327,70 +327,7 @@ const SEED_DAOS: DAO[] = [
     governanceTokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", // AGL token as gov token
     treasuryBalanceEth: 25.5,
     memberCount: 142,
-    proposals: [
-      {
-        id: "prop-1",
-        title: "Sponsor Base Memefest Hackathon 2026",
-        description: "Deploy 5 ETH from the guild treasury to provide cash prizes for the best bonding curve meme coin created using Agunnaya Studio.",
-        creator: "0x6123456789012345678901234567890123456789",
-        status: "Active",
-        votesFor: 852000,
-        votesAgainst: 12000,
-        endTime: Date.now() + 5 * 24 * 60 * 60 * 1000,
-        executed: false,
-        category: "treasury",
-        requestedEth: 5.0,
-        recipientAddress: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
-        quorumThreshold: 500000,
-        createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-        comments: [
-          {
-            id: "c-1",
-            author: "0x8123...4567",
-            text: "Fully support this! Memefest will bring huge volume to our bonding curve pools.",
-            timestamp: Date.now() - 3600000
-          }
-        ]
-      },
-      {
-        id: "prop-2",
-        title: "Integrate Gas sponsorship and Account Abstraction",
-        description: "Deploy 2 ETH to sponsor gas fees for new users launching their first contract via Agunnaya AI Builder.",
-        creator: "0x5123456789012345678901234567890123456789",
-        status: "Passed",
-        votesFor: 1200000,
-        votesAgainst: 5000,
-        endTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
-        executed: false, // Ready to execute!
-        category: "upgrade",
-        requestedEth: 2.0,
-        recipientAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698",
-        quorumThreshold: 500000,
-        createdAt: Date.now() - 6 * 24 * 60 * 60 * 1000,
-        comments: [
-          {
-            id: "c-2",
-            author: "0x3123...9876",
-            text: "Quorum reached! Ready for executive multi-sig execution.",
-            timestamp: Date.now() - 86400000
-          }
-        ]
-      },
-      {
-        id: "prop-3",
-        title: "Lower Proposal Voting Quorum Threshold to 250k AGL",
-        description: "Adjust governance voting parameters to enable smaller token holders to pass community initiatives faster.",
-        creator: "0x4123456789012345678901234567890123456789",
-        status: "Active",
-        votesFor: 320000,
-        votesAgainst: 150000,
-        endTime: Date.now() + 3 * 24 * 60 * 60 * 1000,
-        executed: false,
-        category: "parameter",
-        quorumThreshold: 400000,
-        createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000
-      }
-    ],
+    proposals: [],
     createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000
   },
   {
@@ -402,24 +339,7 @@ const SEED_DAOS: DAO[] = [
     governanceTokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698",
     treasuryBalanceEth: 12.8,
     memberCount: 89,
-    proposals: [
-      {
-        id: "prop-4",
-        title: "Fund Autonomous AI Agent Compute Server Pool",
-        description: "Grant 3 ETH from SAAC treasury to fund high-throughput server compute for autonomous market making agents.",
-        creator: "0x2222333344445555666677778888999900001111",
-        status: "Active",
-        votesFor: 640000,
-        votesAgainst: 80000,
-        endTime: Date.now() + 4 * 24 * 60 * 60 * 1000,
-        executed: false,
-        category: "treasury",
-        requestedEth: 3.0,
-        recipientAddress: "0x2222333344445555666677778888999900001111",
-        quorumThreshold: 300000,
-        createdAt: Date.now() - 12 * 3600 * 1000
-      }
-    ],
+    proposals: [],
     createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000
   }
 ];
@@ -518,7 +438,6 @@ const SEED_ACTIVITIES: Activity[] = [
   { id: "a-1", type: "create", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", amount: 1000000000, ethValue: 0, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000, details: "Platform genesis launch of Agunnaya Labs Utility Token" },
   { id: "a-2", type: "buy", tokenSymbol: "CHAD", tokenAddress: "0x89ABCDEF0123456789012345678901234567BCDE", user: "0x98219483A12b059e93847aB19d72e73110555523", amount: 12000, ethValue: 0.015, timestamp: Date.now() - 1 * 24 * 60 * 60 * 1000, details: "Bought 12,000 CHAD tokens on the bonding curve" },
   { id: "a-3", type: "mint", tokenSymbol: "AGK", tokenAddress: "0x789012345678901234567890123456789012CDEF", user: "0x98219483A12b059e93847aB19d72e73110555523", amount: 1, ethValue: 0.05, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000, details: "Minted Agunnaya Genesis Key #1 access NFT" },
-  { id: "a-4", type: "vote", tokenSymbol: "BBG", tokenAddress: "0xDAD100000000000000000000000000000000EADE", user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", amount: 50000, ethValue: 0, timestamp: Date.now() - 12 * 24 * 60 * 60 * 1000, details: "Voted FOR Proposal #2 'AA integration' with 50,000 voting weight" },
   { id: "a-burn-1", type: "burn", tokenSymbol: "AGL", tokenAddress: "0xEA1221b4d80a89bd8c75248fae7c176bd1854698", user: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E", amount: 50000, ethValue: 2.5, timestamp: Date.now() - 2 * 3600000, details: "Burned 50,000 AGL tokens to Null Address 0x000000000000000000000000000000000000dEaD" },
   { id: "a-burn-2", type: "burn", tokenSymbol: "USDC", tokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", user: "0x7890123456789012345678901234567890123456", amount: 2500, ethValue: 0.77, timestamp: Date.now() - 5 * 3600000, details: "Burned 2,500 USDC for Agunnaya Studio Compute Credits" },
   { id: "a-burn-3", type: "burn", tokenSymbol: "AERO", tokenAddress: "0x9940181a94A35A4569E4529A3CDfB74e38FD98631", user: "0x98219483A12b059e93847aB19d72e73110555523", amount: 15000, ethValue: 5.8, timestamp: Date.now() - 18 * 3600000, details: "Deflated 15,000 AERO tokens via null destination" },
@@ -536,6 +455,36 @@ const DEFAULT_WALLET: WalletState = {
   aglTokenBalance: 0, // starts at 0 until on-chain connect
   aglCredits: 0
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isStoredAGLPollOption = (value: unknown): value is AGLPoll["options"][number] =>
+  isRecord(value) &&
+  typeof value.id === "string" &&
+  typeof value.label === "string" &&
+  typeof value.votes === "number" &&
+  Number.isFinite(value.votes) &&
+  Array.isArray(value.voters) &&
+  value.voters.every((voter) => typeof voter === "string");
+
+const isStoredAGLPoll = (value: unknown): value is AGLPoll =>
+  isRecord(value) &&
+  typeof value.id === "string" &&
+  typeof value.title === "string" &&
+  typeof value.description === "string" &&
+  (value.category === "pair" || value.category === "fee" || value.category === "grant" || value.category === "param") &&
+  (value.pairSymbol === undefined || typeof value.pairSymbol === "string") &&
+  Array.isArray(value.options) &&
+  value.options.every(isStoredAGLPollOption) &&
+  typeof value.totalVotes === "number" &&
+  Number.isFinite(value.totalVotes) &&
+  (value.status === "active" || value.status === "passed" || value.status === "expired") &&
+  typeof value.endTime === "number" &&
+  Number.isFinite(value.endTime) &&
+  typeof value.creator === "string" &&
+  typeof value.createdAt === "number" &&
+  Number.isFinite(value.createdAt);
 
 // PERSISTENCE WRAPPER
 export class AgunnayaDatabase {
@@ -625,7 +574,10 @@ export class AgunnayaDatabase {
             const daosSnap = await withTimeout(getDocs(collection(db, "daos")));
             if (!daosSnap.empty) {
               const firestoreDAOs: DAO[] = [];
-              daosSnap.forEach(doc => firestoreDAOs.push(doc.data() as DAO));
+              daosSnap.forEach((daoDoc) => {
+                const dao = daoDoc.data() as DAO;
+                firestoreDAOs.push({ ...dao, proposals: [] });
+              });
               const localDAOs = this.getDAOs();
               const merged = [...localDAOs];
               firestoreDAOs.forEach(fd => {
@@ -860,13 +812,19 @@ export class AgunnayaDatabase {
   }
 
   static getDAOs(): DAO[] {
-    return this.safeParse<DAO[]>("agl_daos", SEED_DAOS);
+    const daos = this.safeParse<DAO[]>("agl_daos", SEED_DAOS);
+    const sanitizedDaos = daos.map((dao) => ({ ...dao, proposals: [] }));
+    if (daos.some((dao) => Array.isArray(dao.proposals) && dao.proposals.length > 0)) {
+      localStorage.setItem("agl_daos", JSON.stringify(sanitizedDaos));
+    }
+    return sanitizedDaos;
   }
 
   static saveDAOs(daos: DAO[]) {
-    localStorage.setItem("agl_daos", JSON.stringify(daos));
-    daos.forEach(d => {
-      this.saveToFirestore("daos", d.contractAddress, d);
+    const sanitizedDaos = daos.map((dao) => ({ ...dao, proposals: [] }));
+    localStorage.setItem("agl_daos", JSON.stringify(sanitizedDaos));
+    sanitizedDaos.forEach((dao) => {
+      this.saveToFirestore("daos", dao.contractAddress, dao);
     });
   }
 
@@ -1188,8 +1146,12 @@ export class AgunnayaDatabase {
   }
 
   static getActivities(): Activity[] {
-    const items = this.safeParse<Activity[]>("agl_activities", SEED_ACTIVITIES);
-    return [...items].sort((a: Activity, b: Activity) => b.timestamp - a.timestamp);
+  const items = this.safeParse<Activity[]>("agl_activities", SEED_ACTIVITIES);
+  const verifiedActivities = items.filter((activity) => activity.id !== "a-4");
+  if (verifiedActivities.length !== items.length) {
+    localStorage.setItem("agl_activities", JSON.stringify(verifiedActivities));
+  }
+  return [...verifiedActivities].sort((a: Activity, b: Activity) => b.timestamp - a.timestamp);
   }
 
   static saveActivities(activities: Activity[]) {
@@ -1848,64 +1810,21 @@ export class AgunnayaDatabase {
     if (typeof window === "undefined" || !window.localStorage) return [];
     try {
       const data = localStorage.getItem("agl_polls");
-      if (!data) {
-        const defaults: AGLPoll[] = [
-          {
-            id: "poll_pair_boost",
-            title: "AGL Liquidity Pair Boost: Which coin pairs with AGL for 2x Staking APY?",
-            description: "Vote on the next high-volume coin to receive official $AGL liquidity pairing and double yield multipliers on Base L2.",
-            category: "pair",
-            pairSymbol: "AGL / USDC",
-            options: [
-              { id: "opt_usdc", label: "AGL / USDC (Stable Liquidity Depth)", votes: 1425000, voters: ["0x4795...", "0x89ab..."] },
-              { id: "opt_aero", label: "AGL / AERO (Aerodrome Yield Synergy)", votes: 980000, voters: ["0x3456..."] },
-              { id: "opt_sol", label: "AGL / SOL (Cross-chain Bridge Pair)", votes: 620000, voters: [] },
-              { id: "opt_uni", label: "AGL / UNI (Uniswap V3 Concentrated Pool)", votes: 310000, voters: [] }
-            ],
-            totalVotes: 3335000,
-            status: "active",
-            endTime: Date.now() + 86400000 * 6,
-            creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
-            createdAt: Date.now() - 86400000 * 2
-          },
-          {
-            id: "poll_fee_split",
-            title: "AGL Protocol Fee Distribution: 0.3% DEX Swap Fee Allocation",
-            description: "Determine how collected DEX swap fees across all AGL liquidity pools should be split between LP Providers, AGL Buyback/Burn, and Treasury.",
-            category: "fee",
-            options: [
-              { id: "opt_100_lp", label: "100% to Liquidity Providers (Max LP Yield)", votes: 2100000, voters: ["0x7256..."] },
-              { id: "opt_80_20", label: "80% LPs / 20% Automated AGL Token Burn", votes: 3450000, voters: ["0x3456...", "0x89ab..."] },
-              { id: "opt_70_30", label: "70% LPs / 30% AI Developer Grants Treasury", votes: 890000, voters: [] }
-            ],
-            totalVotes: 6440000,
-            status: "active",
-            endTime: Date.now() + 86400000 * 4,
-            creator: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
-            createdAt: Date.now() - 86400000 * 4
-          },
-          {
-            id: "poll_agent_grant",
-            title: "Approve 50,000 $AGL Grant for Autonomous Arbitrage Agent #04",
-            description: "Proposal to fund Agent #04 with 50,000 $AGL from treasury to execute cross-DEX liquidity rebalancing automatically.",
-            category: "grant",
-            options: [
-              { id: "opt_approve", label: "Approve 50k $AGL Grant", votes: 4200000, voters: ["0x4795...", "0x3456..."] },
-              { id: "opt_reject", label: "Reject Grant Request", votes: 150000, voters: [] }
-            ],
-            totalVotes: 4350000,
-            status: "active",
-            endTime: Date.now() + 86400000 * 8,
-            creator: "0x3456...ef01",
-            createdAt: Date.now() - 86400000 * 1
-          }
-        ];
+      if (!data) return [];
+
+      const storedPolls: unknown = JSON.parse(data);
+      if (!Array.isArray(storedPolls)) return [];
+
+      const seededPollIds = new Set(["poll_pair_boost", "poll_fee_split", "poll_agent_grant"]);
+      const polls = storedPolls.filter(
+        (poll): poll is AGLPoll => isStoredAGLPoll(poll) && !seededPollIds.has(poll.id),
+      );
+      if (polls.length !== storedPolls.length) {
         try {
-          localStorage.setItem("agl_polls", JSON.stringify(defaults));
+          localStorage.setItem("agl_polls", JSON.stringify(polls));
         } catch {}
-        return defaults;
       }
-      return JSON.parse(data);
+      return polls;
     } catch {
       return [];
     }

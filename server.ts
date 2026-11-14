@@ -328,11 +328,8 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
       }
     );
 
-    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-
-    res.json({ 
+    res.json({
       content: response.text || "Decompressing agent core response...",
-      groundingMetadata 
     });
   } catch (error: any) {
     console.error("AI Agent Chat provider error:", error?.message || error);
@@ -1025,9 +1022,11 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
       const isContractCreation = !tx.to || tx.to === "" || tx.contractAddress;
       const rawValue = BigInt(tx.value || "0");
       const valueEth = Number(rawValue) / 1e18;
-      const gasUsed = BigInt(tx.gasUsed || "21000");
-      const gasPrice = BigInt(tx.gasPrice || "10000000");
-      const gasFeeEth = Number(gasUsed * gasPrice) / 1e18;
+      const gasUsed = tx.gasUsed ? BigInt(tx.gasUsed) : null;
+      const gasPrice = tx.gasPrice ? BigInt(tx.gasPrice) : null;
+      const gasFeeEth = gasUsed !== null && gasPrice !== null
+        ? Number(gasUsed * gasPrice) / 1e18
+        : null;
       
       let type = isSender ? "send" : "receive";
       if (isContractCreation) type = "deploy";
@@ -1047,8 +1046,8 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
         to: tx.to || tx.contractAddress || "",
         value: tx.value,
         valueEth,
-        gasUsed: tx.gasUsed,
-        gasPrice: tx.gasPrice,
+        gasUsed: gasUsed?.toString() ?? null,
+        gasPrice: gasPrice?.toString() ?? null,
         gasFeeEth,
         isError: tx.isError === "1",
         status: tx.isError === "1" ? "failed" : "confirmed",
@@ -1069,10 +1068,6 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
         const decimals = parseInt(ttx.tokenDecimal || "18", 10);
         const rawValue = BigInt(ttx.value || "0");
         const tokenAmount = Number(rawValue) / Math.pow(10, decimals);
-        const gasUsed = BigInt(ttx.gasUsed || "50000");
-        const gasPrice = BigInt(ttx.gasPrice || "10000000");
-        const gasFeeEth = Number(gasUsed * gasPrice) / 1e18;
-
         formattedTxs.push({
           hash: ttx.hash,
           blockNumber: ttx.blockNumber,
@@ -1081,9 +1076,9 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
           to: ttx.to,
           value: ttx.value,
           valueEth: tokenAmount,
-          gasUsed: ttx.gasUsed,
-          gasPrice: ttx.gasPrice,
-          gasFeeEth,
+          gasUsed: null,
+          gasPrice: null,
+          gasFeeEth: null,
           isError: false,
           status: "confirmed",
           functionName: `Transfer ${ttx.tokenSymbol || "Tokens"}`,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { ethers } from "ethers";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -59,6 +59,8 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
   // Modals & Action States
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [showVoteModal, setShowVoteModal] = useState<boolean>(false);
+  const [isSubmittingVote, setIsSubmittingVote] = useState<boolean>(false);
+  const voteSubmissionLock = useRef(false);
   const [selectedVoteType, setSelectedVoteType] = useState<number | null>(null); // 1 = For, 0 = Against, 2 = Abstain
   const [voteReason, setVoteReason] = useState<string>("");
 
@@ -242,9 +244,20 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
   };
 
   // Keep the modal's action fail-closed until a verified on-chain Governor write is available.
-  const handleCastVote = () => {
-    showToast("On-chain voting is unavailable. No vote was submitted.", "error");
-    setShowVoteModal(false);
+  const handleCastVote = async () => {
+    if (voteSubmissionLock.current) return;
+    voteSubmissionLock.current = true;
+    setIsSubmittingVote(true);
+    try {
+      showToast("On-chain voting is unavailable. No vote was submitted.", "error");
+      setShowVoteModal(false);
+    } catch (error) {
+      console.error("On-chain vote error:", error);
+      showToast(error instanceof Error ? error.message : "On-chain vote could not be submitted.", "error");
+    } finally {
+      voteSubmissionLock.current = false;
+      setIsSubmittingVote(false);
+    }
   };
 
   // Handle Create Proposal
@@ -508,6 +521,13 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
               <div className="p-12 text-center text-zinc-500">
                 <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-3 text-brand-purple" />
                 Loading on-chain proposals...
+              </div>
+            ) : proposalLoadError ? (
+              <div role="status" className="p-6 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-center">
+                <AlertCircle className="w-8 h-8 mx-auto text-amber-400 mb-2" />
+                <h3 className="text-base font-semibold text-white">On-chain proposal data unavailable</h3>
+                <p className="text-xs text-zinc-300 mt-1">{proposalLoadError}</p>
+                <p className="text-xs text-zinc-400 mt-2">No proposals or vote totals are being shown until a verified on-chain source is available.</p>
               </div>
             ) : filteredProposals.length === 0 ? (
               <div className="p-12 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">

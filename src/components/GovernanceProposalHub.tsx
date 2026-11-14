@@ -126,183 +126,30 @@ export default function GovernanceProposalHub({
     showToast("AI proposal draft generated!", "success");
   };
 
-  // Submit Proposal Handler
+  // The UI has no verified on-chain proposal submission path; fail closed.
   const handleSubmitProposal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wallet.isConnected) {
-      showToast("Connect wallet first.", "error");
-      return;
-    }
-    if (!targetDaoAddress || !propTitle || !propDesc) return;
-    setSubmittingProp(true);
-
-    addTerminalLog("info", `Broadcasting governance proposal transaction to Governor Assembly ${targetDaoAddress}...`);
-
-    setTimeout(() => {
-      const all = AgunnayaDatabase.getDAOs();
-      const dao = all.find(d => d.contractAddress === targetDaoAddress);
-
-      if (dao) {
-        const newProp: Proposal = {
-          id: "prop_" + Math.random().toString(36).substr(2, 6),
-          title: propTitle,
-          description: propDesc,
-          creator: wallet.address,
-          status: "Active",
-          votesFor: wallet.aglTokenBalance || 500, // Initial votes from creator
-          votesAgainst: 0,
-          endTime: Date.now() + 5 * 24 * 60 * 60 * 1000,
-          executed: false,
-          category: propCategory,
-          requestedEth: propCategory === "treasury" ? parseFloat(requestedEth) || 0 : undefined,
-          recipientAddress: propCategory === "treasury" ? recipientAddress : undefined,
-          quorumThreshold: parseInt(quorumThreshold) || 500000,
-          createdAt: Date.now(),
-          comments: [
-            {
-              id: "comm_init",
-              author: wallet.address.slice(0, 6) + "..." + wallet.address.slice(-4),
-              text: "Proposal created and submitted to on-chain governance queue.",
-              timestamp: Date.now()
-            }
-          ]
-        };
-
-        dao.proposals.unshift(newProp);
-        AgunnayaDatabase.saveDAOs(all);
-
-        // Deduct small gas
-        const updatedWallet = { ...wallet, balanceEth: Math.max(0, wallet.balanceEth - 0.002) };
-        AgunnayaDatabase.saveWallet(updatedWallet);
-        onRefreshDAOs();
-
-        AgunnayaDatabase.addActivity({
-          type: "vote",
-          tokenSymbol: dao.symbol,
-          tokenAddress: dao.contractAddress,
-          user: wallet.address,
-          amount: wallet.aglTokenBalance || 500,
-          ethValue: 0,
-          details: `Submitted Proposal: "${propTitle}" in ${dao.name}`
-        });
-
-        addTerminalLog("success", `Proposal ${newProp.id} broadcast successfully to ${dao.name}!`);
-        showToast("Governance proposal submitted successfully!", "success");
-      }
-
-      setPropTitle("");
-      setPropDesc("");
-      setSubmittingProp(false);
-      setActiveTab("proposals");
-    }, 1500);
+    showToast("On-chain proposal submission is unavailable. No proposal was created.", "error");
   };
 
-  // Vote Handler
-  const handleCastVote = (daoAddress: string, propId: string, support: boolean) => {
-    if (!wallet.isConnected) {
-      showToast("Connect wallet first.", "error");
-      return;
-    }
+  // The UI has no verified Governor write path; fail closed.
+  const handleCastVote = (_daoAddress: string, propId: string, _support: boolean) => {
     setVotingId(propId);
-
-    const voteWeight = wallet.aglTokenBalance || 500;
-
-    addTerminalLog("info", `Signing cryptographic vote transaction (${voteWeight.toLocaleString()} AGL weight ${support ? "FOR" : "AGAINST"})...`);
-
-    setTimeout(() => {
-      const all = AgunnayaDatabase.getDAOs();
-      const dao = all.find(d => d.contractAddress === daoAddress);
-
-      if (dao) {
-        const prop = dao.proposals.find(p => p.id === propId);
-        if (prop) {
-          if (support) {
-            prop.votesFor += voteWeight;
-          } else {
-            prop.votesAgainst += voteWeight;
-          }
-
-          // Track voter record
-          if (!prop.voters) prop.voters = [];
-          prop.voters.push({
-            address: wallet.address,
-            support,
-            weight: voteWeight,
-            timestamp: Date.now()
-          });
-
-          // Quorum check
-          const q = prop.quorumThreshold || 500000;
-          if (prop.votesFor >= q && prop.votesFor > prop.votesAgainst) {
-            prop.status = "Passed";
-          }
-
-          AgunnayaDatabase.saveDAOs(all);
-          onRefreshDAOs();
-
-          AgunnayaDatabase.addActivity({
-            type: "vote",
-            tokenSymbol: dao.symbol,
-            tokenAddress: dao.contractAddress,
-            user: wallet.address,
-            amount: voteWeight,
-            ethValue: 0,
-            details: `Cast ${voteWeight.toLocaleString()} votes ${support ? "FOR" : "AGAINST"} proposal "${prop.title}"`
-          });
-
-          addTerminalLog("success", `Vote recorded! Current FOR: ${prop.votesFor.toLocaleString()}, AGAINST: ${prop.votesAgainst.toLocaleString()}`);
-          showToast(`Voted ${support ? "FOR" : "AGAINST"} using ${voteWeight.toLocaleString()} AGL voting power!`, "success");
-        }
-      }
+    try {
+      showToast("On-chain voting is unavailable. No vote was submitted.", "error");
+    } finally {
       setVotingId(null);
-    }, 1200);
+    }
   };
 
-  // Execute Passed Proposal Handler
-  const handleExecuteProposal = (daoAddress: string, propId: string) => {
-    if (!wallet.isConnected) {
-      showToast("Connect wallet first.", "error");
-      return;
-    }
+  // The UI has no verified Governor execution path; fail closed.
+  const handleExecuteProposal = (_daoAddress: string, propId: string) => {
     setExecutingId(propId);
-
-    addTerminalLog("info", `Executing passed governance proposal transaction via Governor Alpha Multi-Sig...`);
-
-    setTimeout(() => {
-      const all = AgunnayaDatabase.getDAOs();
-      const dao = all.find(d => d.contractAddress === daoAddress);
-
-      if (dao) {
-        const prop = dao.proposals.find(p => p.id === propId);
-        if (prop) {
-          prop.executed = true;
-          prop.status = "Executed";
-          prop.executionTxHash = "0x" + Math.random().toString(16).substr(2, 40);
-
-          // If treasury grant, deduct requested ETH from treasury
-          if (prop.category === "treasury" && prop.requestedEth) {
-            dao.treasuryBalanceEth = Math.max(0, dao.treasuryBalanceEth - prop.requestedEth);
-          }
-
-          AgunnayaDatabase.saveDAOs(all);
-          onRefreshDAOs();
-
-          AgunnayaDatabase.addActivity({
-            type: "create",
-            tokenSymbol: dao.symbol,
-            tokenAddress: dao.contractAddress,
-            user: wallet.address,
-            amount: prop.requestedEth || 0,
-            ethValue: prop.requestedEth || 0,
-            details: `Executed Proposal #${prop.id}: "${prop.title}" (Tx: ${prop.executionTxHash.slice(0, 10)}...)`
-          });
-
-          addTerminalLog("success", `Governance proposal #${prop.id} executed successfully! Execution Hash: ${prop.executionTxHash}`);
-          showToast(`Proposal executed! Treasury updated.`, "success");
-        }
-      }
+    try {
+      showToast("On-chain proposal execution is unavailable. No transaction was sent.", "error");
+    } finally {
       setExecutingId(null);
-    }, 1800);
+    }
   };
 
   // Comment Submission Handler
@@ -331,71 +178,16 @@ export default function GovernanceProposalHub({
     }
   };
 
-  // Create DAO Handler
+  // The UI has no verified Governor deployment path; fail closed.
   const handleCreateDAO = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wallet.isConnected) {
-      showToast("Connect wallet first.", "error");
-      return;
-    }
-    if (!daoName || !daoSymbol || !daoDesc) return;
-    setCreatingDao(true);
-
-    addTerminalLog("info", `Deploying GovernorAlpha Multi-Sig DAO structure: ${daoName}...`);
-
-    setTimeout(() => {
-      const generatedAddress = "0x" + Math.random().toString(16).substr(2, 40);
-      const newDAO: DAO = {
-        contractAddress: generatedAddress,
-        name: daoName,
-        symbol: daoSymbol.toUpperCase(),
-        description: daoDesc,
-        creator: wallet.address,
-        governanceTokenAddress: govToken,
-        treasuryBalanceEth: 5.0, // starts with 5 mock ETH treasury
-        memberCount: 1,
-        proposals: [],
-        createdAt: Date.now()
-      };
-
-      const current = AgunnayaDatabase.getDAOs();
-      current.push(newDAO);
-      AgunnayaDatabase.saveDAOs(current);
-
-      // Charge gas
-      const updatedWallet = { ...wallet, balanceEth: Math.max(0, wallet.balanceEth - 0.01) };
-      AgunnayaDatabase.saveWallet(updatedWallet);
-      onRefreshDAOs();
-
-      AgunnayaDatabase.addActivity({
-        type: "create",
-        tokenSymbol: newDAO.symbol,
-        tokenAddress: newDAO.contractAddress,
-        user: wallet.address,
-        amount: 0,
-        ethValue: 0.01,
-        details: `Created decentralized governance DAO: ${newDAO.name} (${newDAO.symbol})`
-      });
-
-      addTerminalLog("success", `Governor contract deployed at ${newDAO.contractAddress}`);
-      showToast(`DAO Assembly "${newDAO.name}" successfully created!`, "success");
-      setCreatingDao(false);
-      setDaoName("");
-      setDaoSymbol("");
-      setDaoDesc("");
-      setTargetDaoAddress(generatedAddress);
-      setActiveTab("daos");
-    }, 2000);
+    showToast("DAO deployment is unavailable. No contract was deployed.", "error");
   };
 
-  // Delegate Votes Handler
+  // The UI has no verified delegation transaction path; fail closed.
   const handleSaveDelegation = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!delegateAddress) return;
-    setCurrentDelegate(delegateAddress === wallet.address ? "Self-Delegated" : delegateAddress.slice(0, 8) + "...");
-    setShowDelegationModal(false);
-    showToast(`Voting power delegated to ${delegateAddress.slice(0, 10)}...`, "success");
-    addTerminalLog("success", `Delegated ${wallet.aglTokenBalance.toLocaleString()} AGL voting power to ${delegateAddress}`);
+    showToast("On-chain delegation is unavailable. No transaction was sent.", "error");
   };
 
   return (

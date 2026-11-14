@@ -1,4 +1,21 @@
-import { generateText, jsonSchema, Output } from "ai";
+import { generateText, jsonSchema, Output, type GatewayModelId } from "ai";
+import { GoogleGenAI } from "@google/genai";
+
+let aiClientInstance: GoogleGenAI | null = null;
+
+export function getAIClient(): GoogleGenAI {
+  if (!aiClientInstance) {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "AIzaSy_placeholder_key") {
+      throw new Error("GEMINI_API_KEY is not configured. Add a valid server-side Gemini API key to the deployment environment.");
+    }
+    aiClientInstance = new GoogleGenAI({
+      apiKey,
+      httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+    });
+  }
+  return aiClientInstance;
+}
 
 const DEFAULT_MODELS = [
   "google/gemini-3.8-flash",
@@ -21,7 +38,7 @@ export const ThinkingLevel = {
   HIGH: "HIGH",
 } as const;
 
-export function toGatewayModelId(model: string): string {
+export function toGatewayModelId(model: string): GatewayModelId {
   return model.includes("/") ? model : `google/${model}`;
 }
 
@@ -97,6 +114,7 @@ interface GeminiGenerateContentInput {
     maxOutputTokens?: number;
     responseMimeType?: string;
     responseSchema?: any;
+    thinkingConfig?: { thinkingLevel?: "MINIMAL" | "LOW" | "HIGH" };
   };
 }
 
@@ -130,9 +148,12 @@ const gatewayClient: GeminiCompatibleClient = {
         ...(input.config?.maxOutputTokens !== undefined
           ? { maxOutputTokens: input.config.maxOutputTokens }
           : {}),
+        ...(input.config?.thinkingConfig
+          ? { providerOptions: { google: { thinkingConfig: input.config.thinkingConfig } } }
+          : {}),
         ...(output ? { output } : {}),
         maxRetries: 0,
-      } as any);
+      });
 
       const text = result.output === undefined ? result.text : JSON.stringify(result.output);
       if (!text?.trim()) throw new Error("The AI Gateway returned an empty model response.");
