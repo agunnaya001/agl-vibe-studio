@@ -35,6 +35,12 @@ No production branch or live deployment was changed during this audit.
 - `StakingVaultPage.tsx` implements a second, incompatible local simulation.
 - Consolidate to one canonical on-chain staking implementation; do not migrate or invent positions from local storage.
 
+### P0 — Staking ABI does not match the previous UI
+
+- The checked-in `AGL_STAKING_ABI` declares `getUserStakes`, `calculateReward`, `claimRewards`, `stake(amount, lockPeriodDays)`, and `unstake(stakeIndex)`.
+- The former UI called different selectors, including `positionCount`, `getPosition`, `pendingReward`, `paused`, `tiers`, and `emergencyWithdraw`, which are absent from the declared ABI.
+- The staking workspace now performs read-only calls using functions present in the checked-in ABI. APR is shown as a raw contract value because its units are not documented. All staking writes remain disabled pending verification of the deployed Base contract source and ABI.
+
 ### P0 — Fake staking and dividend activity
 
 - The active staking component contained a 30-second local auto-compound loop, simulated weekly ETH/AGL dividends, and static weekly pool/payout claims.
@@ -82,7 +88,7 @@ No production branch or live deployment was changed during this audit.
 
 1. Establish a verified contract registry for Base Mainnet (chain ID 8453), including AGL token, AGL Credits, AGL staking, governance and any supported DEX/router contracts. Verify deployed bytecode and ABI/function selectors before enabling writes.
 2. Make one shared wallet/provider layer authoritative for all pages; require connected account and Base chain for writes.
-3. Verify the deployed AGL staking contract and ABI against Base Mainnet; then complete staking reads/writes using the single canonical Wagmi-connected component. Local demo positions, reward accrual, auto-compounding and simulated deposits/claims have been removed/disabled.
+3. Verify the deployed AGL staking contract and ABI against Base Mainnet. The current component uses the checked-in ABI for read-only calls; enable writes only after function signatures, lock rules, APR units and receipt handling are confirmed. Local demo positions, reward accrual, auto-compounding and simulated deposits/claims have been removed/disabled.
 4. Replace the disabled swap form with a real supported quote source and verified router. Show no quote when unavailable. Never infer market price from credits conversion.
 5. Consolidate AI navigation around one hub with five distinct core workspaces. Keep optional chatbot/orchestrator clearly labelled as separate additional tools, without duplicate sidebar entries.
 6. Remove generated-looking AI fallback success responses. Return actionable HTTP errors when provider access, quota, model permission or parsing fails. Clearly label static analysis if retained.
