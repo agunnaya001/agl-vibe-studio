@@ -14,6 +14,12 @@ No production branch or live deployment was changed during this audit.
 
 ## Confirmed findings
 
+### P0 — Legacy swap form did not execute a swap
+
+- The old DeFi swap handler sent native ETH directly to the AGL ERC-20 contract address, or transferred AGL to the dead address, then credited the browser wallet with a fabricated exchange output.
+- It derived the displayed “spot price” from `creditsPerAGL()`, which is a compute-credit conversion and not a DEX quote.
+- The legacy swap form is now disabled until a supported quote source and verified router are integrated.
+
 ### P0 — Financial UI can report simulated staking as real
 
 - `src/pages/StakingVaultPage.tsx` seeds two sample positions when local storage is empty.
@@ -29,15 +35,29 @@ No production branch or live deployment was changed during this audit.
 - `StakingVaultPage.tsx` implements a second, incompatible local simulation.
 - Consolidate to one canonical on-chain staking implementation; do not migrate or invent positions from local storage.
 
+### P0 — Fake staking and dividend activity
+
+- The active staking component contained a 30-second local auto-compound loop, simulated weekly ETH/AGL dividends, and static weekly pool/payout claims.
+- The legacy staking page seeded local positions, incremented rewards in the browser, and simulated deposits/claims.
+- The duplicate legacy staking page has been removed from navigation and source. Its historical route now resolves to the canonical DeFi staking workspace.
+- Auto-compounding and weekly dividend claims are disabled until the deployed contracts expose verified methods and a real distribution source.
+
 ### P1 — AI route duplication and misleading fallback behavior
 
 - The five core AI workspaces (auditor, dApp generator, contract explainer, on-chain agent, game builder) are all mounted through `AISuitePage`.
 - Sidebar additionally lists the suite hub and standalone entries for those same workspaces; these routes all render the same page with different initial tabs. This is overlapping navigation, not five independent applications.
 - `AISuitePage.tsx` currently declares seven workspace tabs (orchestrator, auditor, dApp, explainer, on-chain agent, game builder, chatbot) while the banner says “5 AI Modules”.
 - `server/aiSuiteRoutes.ts` returns a deterministic static audit when the Gemini audit call fails. This can be useful as a clearly labelled static scan, but must not be represented as an AI audit.
-- The dApp generation endpoint returns a generated-looking template project with HTTP 200 when model generation fails. This is a false-success path and must return an explicit provider error instead.
+- The dApp generation endpoint returned a generated-looking template project with HTTP 200 when model generation failed. It now returns an explicit provider error instead.
 - The on-chain agent has a server-side RPC context lookup followed by Gemini; errors are returned as 500. The client must display provider/RPC errors clearly and not imply it has verified unavailable data.
 - The game builder uses a local random coinflip demo and virtual balance. It must be clearly separated from real on-chain gameplay and never described as a transaction or provably fair outcome.
+
+### P1 — Unsupported model aliases and inconsistent AI provider paths
+
+- Chat UI and API routes referenced unsupported model IDs such as `gemini-4-carbon` and `gemini-4-argon`, while autonomous agent routes referenced retired Gemini 2.0 models.
+- The chat UI now uses documented model IDs and keeps Carbon/Argon as role profiles rather than invented model identifiers.
+- Several server endpoints and client helpers returned fabricated token proposals, rebalance plans, contract code, or email drafts after provider failure. These now return explicit provider errors.
+- Autonomous wallet/transaction endpoints generated simulated transaction hashes and synthetic wallet operations. They are now fail-closed until secure custody, approval and receipt verification exist.
 
 ### P1 — Gemini provider configuration is unsafe/incomplete
 
@@ -48,9 +68,8 @@ No production branch or live deployment was changed during this audit.
 
 ### P1 — Contract identity inconsistency
 
-- `src/components/ai/ContractExplainerWorkspace.tsx` has an AGL Token preset at `0x3F8a1B92003c20058bA524d4eAc32204c3D66F48`.
-- The known AGL token address used elsewhere in the app is `0xEA1221B4d80A89BD8C75248Fae7c176BD1854698`.
-- Verify against BaseScan and the canonical deployment manifest before replacing any contract references. Preset must never point to a different token while labelling it AGL.
+- `src/components/ai/ContractExplainerWorkspace.tsx` had an AGL Token preset at `0x3F8a1B92003c20058bA524d4eAc32204c3D66F48`, inconsistent with the canonical AGL token address `0xEA1221B4d80A89BD8C75248Fae7c176BD1854698`.
+- The preset now imports the canonical token address constant. Deployed bytecode and the staking ABI still require independent Base Mainnet verification.
 
 ### P1 — DeFi price source is not a price oracle
 
@@ -63,11 +82,11 @@ No production branch or live deployment was changed during this audit.
 
 1. Establish a verified contract registry for Base Mainnet (chain ID 8453), including AGL token, AGL Credits, AGL staking, governance and any supported DEX/router contracts. Verify deployed bytecode and ABI/function selectors before enabling writes.
 2. Make one shared wallet/provider layer authoritative for all pages; require connected account and Base chain for writes.
-3. Consolidate staking into one implementation backed by the deployed AGL staking contract. Remove seeded demo positions, local reward accrual and simulated deposits/claims.
-4. Replace swap pricing with a real supported quote source and show no quote when unavailable. Never infer market price from credits conversion.
+3. Verify the deployed AGL staking contract and ABI against Base Mainnet; then complete staking reads/writes using the single canonical Wagmi-connected component. Local demo positions, reward accrual, auto-compounding and simulated deposits/claims have been removed/disabled.
+4. Replace the disabled swap form with a real supported quote source and verified router. Show no quote when unavailable. Never infer market price from credits conversion.
 5. Consolidate AI navigation around one hub with five distinct core workspaces. Keep optional chatbot/orchestrator clearly labelled as separate additional tools, without duplicate sidebar entries.
 6. Remove generated-looking AI fallback success responses. Return actionable HTTP errors when provider access, quota, model permission or parsing fails. Clearly label static analysis if retained.
-7. Correct and verify all contract presets against a canonical manifest.
+7. Correct contract presets against a canonical manifest; verify deployed bytecode and all read/write selectors before enabling financial actions.
 8. Add unit/integration tests for route mapping, API contracts, error states, wallet chain gating, contract read/write flows and absence of fake financial success.
 9. Run typecheck, production build, server build and route smoke tests; then review the Vercel preview before any production promotion.
 
@@ -78,6 +97,16 @@ No production branch or live deployment was changed during this audit.
 - Never fabricate balances, APY, TVL, token prices, audit results, transaction hashes or confirmations.
 - Never sign, submit or execute transactions without an explicit wallet action and user confirmation.
 - Treat the current branch as an isolated recovery workspace until build and preview validation pass.
+
+## Changes made on recovery branch so far
+
+- Canonical AI hub navigation; duplicate standalone AI links removed.
+- Gemini model IDs and server-side API key validation corrected.
+- False-success AI fallbacks removed from the audited endpoints.
+- Duplicate simulated staking page removed; legacy route aliases the canonical DeFi workspace.
+- Active staking component now uses the Wagmi connector provider for signer access and Base RPC for reads; simulated positions, compounding, and dividend claims are removed/disabled.
+- Legacy swap route is disabled because no verified router/quote source is configured.
+- Autonomous execution endpoints are fail-closed pending secure execution infrastructure.
 
 ## Verification still required
 
