@@ -1526,16 +1526,22 @@ const startServer = async () => {
   process.on("SIGINT", () => shutdown("SIGINT"));
 };
 
-// Process-level crash prevention
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("[Process] Unhandled Promise Rejection:", reason);
-});
+// Export the configured Express app so Vercel can serve the API routes as a serverless function.
+export { app };
 
-process.on("uncaughtException", (error) => {
-  console.error("[Process] Uncaught Exception:", error);
-});
+// Cloud Run / local container entrypoint. Vercel imports the Express app through api/[...path].ts
+// and must not start a second listening server inside the function runtime.
+if (process.env.VERCEL !== "1") {
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("[Process] Unhandled Promise Rejection:", reason);
+  });
 
-startServer().catch((err) => {
-  console.error("Failed to start Agunnaya Labs Studio server:", err);
-  process.exit(1);
-});
+  process.on("uncaughtException", (error) => {
+    console.error("[Process] Uncaught Exception:", error);
+  });
+
+  startServer().catch((err) => {
+    console.error("Failed to start Agunnaya Labs Studio server:", err);
+    process.exit(1);
+  });
+}
