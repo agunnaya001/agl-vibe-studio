@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import { useAccount } from "wagmi";
 import { getBaseProvider } from "../lib/tokenFactory";
 import { 
   Landmark, 
@@ -58,7 +59,8 @@ export default function StakingComponent({
   addTerminalLog, 
   showToast 
 }: StakingComponentProps) {
-  
+  const { connector, chainId, address: connectedAddress, isConnected } = useAccount();
+
   // Connection and Global State
   const [web3Active, setWeb3Active] = useState<boolean>(false);
   const [onWrongNetwork, setOnWrongNetwork] = useState<boolean>(false);
@@ -67,11 +69,9 @@ export default function StakingComponent({
   const [stakingLoading, setStakingLoading] = useState<boolean>(false);
 
   // Staking details
-  const [totalStakedProtocol, setTotalStakedProtocol] = useState<string>("1,450,250");
+  const [totalStakedProtocol, setTotalStakedProtocol] = useState<string>("Unavailable");
   const [stakingPaused, setStakingPaused] = useState<boolean>(false);
-  const [stakingTiers, setStakingTiers] = useState<any[]>([
-    { id: 0, name: "30-Day Locked Staking", durationDays: 30, durationSec: 2592000, apr: 8.00, aprBps: 800 }
-  ]);
+  const [stakingTiers, setStakingTiers] = useState<any[]>([]);
 
   // User State
   const [userAllowance, setUserAllowance] = useState<bigint>(0n);
@@ -96,33 +96,40 @@ export default function StakingComponent({
     return () => clearInterval(timer);
   }, []);
 
-  // Check Web3 connectivity and set providers
-  const checkWeb3Connectivity = useCallback(async () => {
-    if (typeof window !== "undefined" && (window as any).ethereum) {
-      try {
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        const accounts = await browserProvider.send("eth_accounts", []).catch(() => []);
-        const network = await browserProvider.getNetwork().catch(() => ({ chainId: 0n }));
-
-        if (accounts.length > 0 && wallet.isConnected && accounts[0].toLowerCase() === wallet.address.toLowerCase()) {
-          if (network.chainId === 8453n) {
-            setWeb3Active(true);
-            setOnWrongNetwork(false);
-            return true;
-          } else {
-            setWeb3Active(false);
-            setOnWrongNetwork(true);
-            return false;
-          }
-        }
-      } catch (err) {
-        console.error("Web3 connectivity check error:", err);
-      }
+  // Resolve the active Wagmi connector for injected wallets and WalletConnect alike.
+  const getConnectedSigner = useCallback(async () => {
+    if (!isConnected || !connectedAddress || !wallet.isConnected || connectedAddress.toLowerCase() !== wallet.address.toLowerCase()) {
+      throw new Error("Connect the wallet shown in AGL Studio before continuing.");
     }
-    setWeb3Active(false);
-    setOnWrongNetwork(false);
-    return false;
-  }, [wallet.isConnected, wallet.address]);
+    if (chainId !== 8453) {
+      throw new Error("Switch your wallet to Base Mainnet (chain ID 8453) before continuing.");
+    }
+    if (!connector) {
+      throw new Error("The active wallet connector is unavailable. Reconnect your wallet and retry.");
+    }
+
+    const eip1193Provider = await connector.getProvider();
+    const browserProvider = new ethers.BrowserProvider(eip1193Provider as any);
+    const signer = await browserProvider.getSigner();
+    const signerAddress = await signer.getAddress();
+    if (signerAddress.toLowerCase() !== wallet.address.toLowerCase()) {
+      throw new Error("The connected wallet account changed. Reconnect and retry.");
+    }
+    return signer;
+  }, [connector, chainId, connectedAddress, isConnected, wallet.address, wallet.isConnected]);
+
+  const checkWeb3Connectivity = useCallback(async () => {
+    const connectedOnBase = Boolean(
+      isConnected &&
+      connectedAddress &&
+      wallet.isConnected &&
+      connectedAddress.toLowerCase() === wallet.address.toLowerCase() &&
+      chainId === 8453
+    );
+    setWeb3Active(connectedOnBase);
+    setOnWrongNetwork(Boolean(isConnected && chainId !== 8453));
+    return connectedOnBase;
+  }, [chainId, connectedAddress, isConnected, wallet.address, wallet.isConnected]);
 
   // Load contract details and active tiers
   const loadGlobalStakingStats = async () => {
@@ -182,9 +189,8 @@ export default function StakingComponent({
       }
     } catch (err) {
       console.error("Failed to query global staking contract:", err);
-      // Fallback design stats
-      setTotalStakedProtocol("1,450,250");
-      setStakingPaused(false);
+      setTotalStakedProtocol("Unavailable");
+      setStakingPaused(true);
     } finally {
       setLoadingGlobal(false);
     }
@@ -194,92 +200,53 @@ export default function StakingComponent({
   const loadUserStakingData = useCallback(async () => {
     if (!wallet.isConnected || !wallet.address) {
       setUserPositions([]);
+      setUserAllowance(0n);
       return;
     }
 
     setLoadingUser(true);
-    const isWeb3 = await checkWeb3Connectivity();
-
     try {
-      if (isWeb3) {
-        // Direct Web3 Queries from Smart Contract
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, browserProvider);
-        const tokenContract = new ethers.Contract(AGL_TOKEN_ADDRESS, ERC20_ABI, browserProvider);
+      // Reads always come from Base RPC; they do not depend on window.ethereum.
+      const provider = getBaseProvider(BASE_RPC_URL);
+      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, provider);
+      const tokenContract = new ethers.Contract(AGL_TOKEN_ADDRESS, ERC20_ABI, provider);
 
-        const [allowanceVal, pCountRaw] = await Promise.all([
-          tokenContract.allowance(wallet.address, STAKING_CONTRACT_ADDRESS).catch(() => 0n),
-          stakingContract.positionCount(wallet.address).catch(() => 0n)
-        ]);
+      const [allowanceVal, pCountRaw] = await Promise.all([
+        tokenContract.allowance(wallet.address, STAKING_CONTRACT_ADDRESS),
+        stakingContract.positionCount(wallet.address)
+      ]);
+      setUserAllowance(allowanceVal);
 
-        setUserAllowance(allowanceVal);
-
-        const count = Number(pCountRaw);
-        const fetchedPositions: StakingPosition[] = [];
-
-        for (let i = 0; i < count; i++) {
-          try {
-            const pos = await stakingContract.getPosition(wallet.address, i);
-            
-            // Query pending reward using contract function: pendingReward(user, positionId)
-            let pending = await stakingContract.pendingReward(wallet.address, i).catch(() => 0n);
-            if (pending === 0n) {
-              pending = await stakingContract.totalClaimable(wallet.address, i).catch(() => 0n);
-            }
-
-            fetchedPositions.push({
-              id: i,
-              amount: parseFloat(ethers.formatEther(pos[0])),
-              startTime: Number(pos[1]),
-              unlockTime: Number(pos[2]),
-              tierId: Number(pos[3]),
-              aprBasisPoints: Number(pos[4]),
-              withdrawn: pos[5],
-              pendingReward: parseFloat(ethers.formatEther(pending))
-            });
-          } catch (posErr) {
-            console.warn(`Failed to fetch position ${i}:`, posErr);
-          }
-        }
-
-        setUserPositions(fetchedPositions);
-      } else {
-        // Sandbox Simulation Mode using localStorage persistence
-        let positionsList: StakingPosition[] = [];
+      const count = Number(pCountRaw);
+      const fetchedPositions: StakingPosition[] = [];
+      for (let i = 0; i < count; i++) {
         try {
-          const cached = localStorage.getItem("agl_staking_positions");
-          if (cached) positionsList = JSON.parse(cached);
-        } catch {}
-
-        // Calculate dynamic live rewards in Sandbox
-        const updatedList = positionsList.map((pos) => {
-          if (pos.withdrawn) return pos;
-
-          // Reward calculation: amount * (apr / 100) * (timeElapsedSec / 365 days)
-          const elapsedSec = currentTimeSec - pos.startTime;
-          const aprDecimal = pos.aprBasisPoints / 10000;
-          const timeFraction = elapsedSec / (365 * 24 * 3600);
-          
-          // Sandbox accelerates simulation: reward accrues 100x faster for user testing
-          const sandboxAcc = 100;
-          const rewardAmount = pos.amount * aprDecimal * timeFraction * sandboxAcc;
-
-          return {
-            ...pos,
-            pendingReward: Number(rewardAmount.toFixed(6))
-          };
-        });
-
-        setUserPositions(updatedList);
-        // Infinite allowance for simulated sandbox
-        setUserAllowance(ethers.parseEther("1000000000"));
+          const pos = await stakingContract.getPosition(wallet.address, i);
+          let pending = await stakingContract.pendingReward(wallet.address, i).catch(() => 0n);
+          if (pending === 0n) pending = await stakingContract.totalClaimable(wallet.address, i).catch(() => 0n);
+          fetchedPositions.push({
+            id: i,
+            amount: parseFloat(ethers.formatEther(pos[0])),
+            startTime: Number(pos[1]),
+            unlockTime: Number(pos[2]),
+            tierId: Number(pos[3]),
+            aprBasisPoints: Number(pos[4]),
+            withdrawn: pos[5],
+            pendingReward: parseFloat(ethers.formatEther(pending))
+          });
+        } catch (positionError) {
+          console.warn(`Failed to fetch on-chain staking position ${i}:`, positionError);
+        }
       }
+      setUserPositions(fetchedPositions);
     } catch (err) {
-      console.error("Error loading user staking data:", err);
+      console.error("Error loading on-chain staking data:", err);
+      setUserPositions([]);
+      setUserAllowance(0n);
     } finally {
       setLoadingUser(false);
     }
-  }, [wallet.isConnected, wallet.address, checkWeb3Connectivity, currentTimeSec]);
+  }, [wallet.isConnected, wallet.address]);
 
   // Load everything on mount and wallet transition
   useEffect(() => {
@@ -371,29 +338,17 @@ export default function StakingComponent({
   // ERC20 Approve Token Spender
   const handleApprove = async () => {
     setStakingLoading(true);
-    addTerminalLog("info", "Requesting allowance approval for Agunnaya Labs Token (AGL)...");
-
+    addTerminalLog("info", "Requesting AGL token allowance for the verified staking contract...");
     try {
-      if (web3Active && !onWrongNetwork) {
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        const signer = await browserProvider.getSigner();
-        const tokenContract = new ethers.Contract(AGL_TOKEN_ADDRESS, ERC20_ABI, signer);
-
-        const approveTx = await tokenContract.approve(STAKING_CONTRACT_ADDRESS, ethers.MaxUint256);
-        addTerminalLog("info", `Approval TX submitted: ${approveTx.hash}. Awaiting confirmation...`);
-        await approveTx.wait();
-
-        showToast("AGL token spending approved!", "success");
-        addTerminalLog("success", `Approved contract to spend AGL on Base. Tx: ${approveTx.hash}`);
-        await loadUserStakingData();
-      } else {
-        // Sandbox mock approval
-        setTimeout(() => {
-          setUserAllowance(ethers.parseEther("1000000000"));
-          showToast("AGL approved (Sandbox)!", "success");
-          addTerminalLog("success", "Sandbox: Multi-million token spending approved successfully.");
-        }, 1000);
-      }
+      const signer = await getConnectedSigner();
+      const tokenContract = new ethers.Contract(AGL_TOKEN_ADDRESS, ERC20_ABI, signer);
+      const approveTx = await tokenContract.approve(STAKING_CONTRACT_ADDRESS, ethers.MaxUint256);
+      addTerminalLog("info", `Approval transaction submitted: ${approveTx.hash}. Waiting for confirmation...`);
+      const receipt = await approveTx.wait();
+      if (!receipt || receipt.status !== 1) throw new Error("Approval transaction was not confirmed successfully.");
+      showToast("AGL token spending approved on Base.", "success");
+      addTerminalLog("success", `AGL allowance confirmed. Transaction: ${approveTx.hash}`);
+      await loadUserStakingData();
     } catch (err: any) {
       console.error("Approval failed:", err);
       showToast(err.message || "Approval transaction failed.", "error");
@@ -406,69 +361,39 @@ export default function StakingComponent({
   // Stake transaction execution
   const handleStake = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amt = parseFloat(stakeAmount);
-    if (isNaN(amt) || amt <= 0) {
-      showToast("Please enter a valid amount.", "error");
+    if (!wallet.isConnected || !wallet.address) {
+      showToast("Connect your wallet first.", "error");
       return;
     }
-    if (amt > wallet.aglTokenBalance) {
+    const amount = Number(stakeAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showToast("Enter a valid AGL amount.", "error");
+      return;
+    }
+    if (amount > wallet.aglTokenBalance) {
       showToast("Insufficient AGL balance.", "error");
+      return;
+    }
+    if (!stakingTiers[selectedTierId]) {
+      showToast("No verified staking tier is currently available.", "error");
       return;
     }
 
     setStakingLoading(true);
-    const selectedTier = stakingTiers[selectedTierId] || stakingTiers[0];
-    addTerminalLog("info", `Staking ${amt.toLocaleString()} AGL into ${selectedTier.name} on Base Mainnet...`);
-
+    const selectedTier = stakingTiers[selectedTierId];
+    addTerminalLog("info", `Submitting ${amount.toLocaleString()} AGL to staking tier ${selectedTier.name} on Base...`);
     try {
-      if (web3Active && !onWrongNetwork) {
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        const signer = await browserProvider.getSigner();
-        const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, signer);
-
-        const tx = await stakingContract.stake(ethers.parseEther(stakeAmount), selectedTierId);
-        addTerminalLog("info", `Staking TX broadcast. Hash: ${tx.hash}. Waiting for confirmations...`);
-        await tx.wait();
-
-        showToast(`Staked ${amt.toLocaleString()} AGL successfully!`, "success");
-        addTerminalLog("success", `Staked ${amt.toLocaleString()} AGL on-chain. TX Hash: ${tx.hash}`);
-        setStakeAmount("");
-        
-        onRefreshWallet();
-        await loadUserStakingData();
-      } else {
-        // Sandbox Simulation Mode
-        setTimeout(() => {
-          const tier = stakingTiers[selectedTierId] || stakingTiers[0];
-          const newPos: StakingPosition = {
-            id: userPositions.length + 100, // mock unique id
-            amount: amt,
-            startTime: Math.floor(Date.now() / 1000),
-            // Lock is 60 seconds in Sandbox for beautiful immediate testing!
-            unlockTime: Math.floor(Date.now() / 1000) + 60,
-            tierId: selectedTierId,
-            aprBasisPoints: tier.aprBps,
-            withdrawn: false,
-            pendingReward: 0
-          };
-
-          const updatedPositions = [...userPositions, newPos];
-          localStorage.setItem("agl_staking_positions", JSON.stringify(updatedPositions));
-          setUserPositions(updatedPositions);
-
-          const updatedWallet = { 
-            ...wallet, 
-            aglTokenBalance: wallet.aglTokenBalance - amt 
-          };
-          AgunnayaDatabase.saveWallet(updatedWallet);
-          onRefreshWallet();
-
-          showToast(`Staked ${amt.toLocaleString()} AGL successfully (Sandbox)!`, "success");
-          addTerminalLog("success", `Sandbox: Staked ${amt.toLocaleString()} AGL. Demo lock set to 60 seconds for instant testing.`);
-          setStakeAmount("");
-          setActiveTab("positions");
-        }, 1500);
-      }
+      const signer = await getConnectedSigner();
+      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, signer);
+      const tx = await stakingContract.stake(ethers.parseEther(stakeAmount), selectedTierId);
+      addTerminalLog("info", `Stake transaction submitted: ${tx.hash}. Waiting for confirmation...`);
+      const receipt = await tx.wait();
+      if (!receipt || receipt.status !== 1) throw new Error("Stake transaction was not confirmed successfully.");
+      showToast(`Staked ${amount.toLocaleString()} AGL on Base.`, "success");
+      addTerminalLog("success", `On-chain stake confirmed. Transaction: ${tx.hash}`);
+      setStakeAmount("");
+      onRefreshWallet();
+      await loadUserStakingData();
     } catch (err: any) {
       console.error("Staking error:", err);
       showToast(err.message || "Staking transaction failed.", "error");
@@ -481,66 +406,18 @@ export default function StakingComponent({
   // Unstaking position execution
   const handleUnstake = async (positionId: number) => {
     setStakingLoading(true);
-    addTerminalLog("info", `Unstaking position #${positionId} and claiming accumulated rewards...`);
-
+    addTerminalLog("info", `Submitting unstake for on-chain position #${positionId}...`);
     try {
-      if (web3Active && !onWrongNetwork) {
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        const signer = await browserProvider.getSigner();
-        const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, signer);
-
-        const tx = await stakingContract.unstake(positionId);
-        addTerminalLog("info", `Unstake TX broadcast. Hash: ${tx.hash}. Confirming on-chain...`);
-        await tx.wait();
-
-        showToast("Position unstaked successfully! Funds and rewards returned.", "success");
-        addTerminalLog("success", `On-Chain: Unstaked Position #${positionId}. Check your wallet balance.`);
-        onRefreshWallet();
-        await loadUserStakingData();
-      } else {
-        // Sandbox Unstake Simulation
-        setTimeout(() => {
-          const index = userPositions.findIndex(p => p.id === positionId);
-          if (index === -1) {
-            showToast("Position not found.", "error");
-            setStakingLoading(false);
-            return;
-          }
-
-          const pos = userPositions[index];
-          const lockDurationSec = currentTimeSec - pos.startTime;
-          
-          // Calculate reward dynamically: reward = amount * (apr/100) * (timeStaked / 365 days) * acceleration
-          const aprDecimal = pos.aprBasisPoints / 10000;
-          const timeFraction = lockDurationSec / (365 * 24 * 3600);
-          const sandboxAcc = 100;
-          const calculatedReward = pos.amount * aprDecimal * timeFraction * sandboxAcc;
-          const finalReward = calculatedReward > 0 ? calculatedReward : pos.amount * 0.005;
-
-          // Mark withdrawn
-          const updatedPositions = userPositions.map((p) => {
-            if (p.id === positionId) {
-              return { ...p, withdrawn: true, pendingReward: finalReward };
-            }
-            return p;
-          });
-
-          localStorage.setItem("agl_staking_positions", JSON.stringify(updatedPositions));
-          setUserPositions(updatedPositions);
-
-          // Return staked amount + reward to wallet
-          const refund = pos.amount + finalReward;
-          const updatedWallet = { 
-            ...wallet, 
-            aglTokenBalance: wallet.aglTokenBalance + refund 
-          };
-          AgunnayaDatabase.saveWallet(updatedWallet);
-          onRefreshWallet();
-
-          showToast(`Position #${positionId} unstaked successfully (Sandbox)!`, "success");
-          addTerminalLog("success", `Sandbox: Returned ${pos.amount.toLocaleString()} AGL principal + ${finalReward.toLocaleString(undefined, { maximumFractionDigits: 4 })} AGL reward to wallet.`);
-        }, 1500);
-      }
+      const signer = await getConnectedSigner();
+      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, signer);
+      const tx = await stakingContract.unstake(positionId);
+      addTerminalLog("info", `Unstake transaction submitted: ${tx.hash}. Waiting for confirmation...`);
+      const receipt = await tx.wait();
+      if (!receipt || receipt.status !== 1) throw new Error("Unstake transaction was not confirmed successfully.");
+      showToast("Position unstaked on Base.", "success");
+      addTerminalLog("success", `On-chain unstake confirmed for position #${positionId}. Transaction: ${tx.hash}`);
+      onRefreshWallet();
+      await loadUserStakingData();
     } catch (err: any) {
       console.error("Unstaking error:", err);
       showToast(err.message || "Unstaking failed.", "error");
@@ -552,62 +429,21 @@ export default function StakingComponent({
 
   // Emergency exit/unstake execution (forfeits rewards)
   const handleEmergencyWithdraw = async (positionId: number) => {
-    if (!window.confirm("WARNING: Emergency withdrawal will immediately withdraw your staked tokens, but you may FORFEIT all accumulated rewards or pay a contract penalty. Are you sure you want to proceed?")) {
-      return;
-    }
-    
+    if (!window.confirm("Emergency withdrawal is an on-chain contract action and may forfeit rewards or apply contract rules. Continue?")) return;
+
     setStakingLoading(true);
-    addTerminalLog("info", `Executing emergency exit for staking position #${positionId} on-chain...`);
-
+    addTerminalLog("info", `Submitting emergency withdrawal for on-chain position #${positionId}...`);
     try {
-      if (web3Active && !onWrongNetwork) {
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        const signer = await browserProvider.getSigner();
-        const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, signer);
-
-        const tx = await stakingContract.emergencyWithdraw(positionId);
-        addTerminalLog("info", `Emergency Exit TX broadcast. Hash: ${tx.hash}. Confirming...`);
-        await tx.wait();
-
-        showToast("Emergency withdrawal completed!", "success");
-        addTerminalLog("success", `On-Chain: Emergency withdrew position #${positionId}. Principal recovered.`);
-        onRefreshWallet();
-        await loadUserStakingData();
-      } else {
-        // Sandbox Emergency Unstake
-        setTimeout(() => {
-          const index = userPositions.findIndex(p => p.id === positionId);
-          if (index === -1) {
-            showToast("Position not found.", "error");
-            setStakingLoading(false);
-            return;
-          }
-
-          const pos = userPositions[index];
-
-          // Mark withdrawn but WITH zero rewards!
-          const updatedPositions = userPositions.map((p) => {
-            if (p.id === positionId) {
-              return { ...p, withdrawn: true, pendingReward: 0 };
-            }
-            return p;
-          });
-
-          localStorage.setItem("agl_staking_positions", JSON.stringify(updatedPositions));
-          setUserPositions(updatedPositions);
-
-          // Return ONLY principal, NO rewards
-          const updatedWallet = { 
-            ...wallet, 
-            aglTokenBalance: wallet.aglTokenBalance + pos.amount 
-          };
-          AgunnayaDatabase.saveWallet(updatedWallet);
-          onRefreshWallet();
-
-          showToast(`Emergency withdrew position #${positionId} (Sandbox)!`, "success");
-          addTerminalLog("success", `Sandbox: Emergency exit completed. Returned ${pos.amount.toLocaleString()} AGL principal with 0 reward.`);
-        }, 1500);
-      }
+      const signer = await getConnectedSigner();
+      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, signer);
+      const tx = await stakingContract.emergencyWithdraw(positionId);
+      addTerminalLog("info", `Emergency withdrawal submitted: ${tx.hash}. Waiting for confirmation...`);
+      const receipt = await tx.wait();
+      if (!receipt || receipt.status !== 1) throw new Error("Emergency withdrawal was not confirmed successfully.");
+      showToast("Emergency withdrawal confirmed on Base.", "success");
+      addTerminalLog("success", `On-chain emergency withdrawal confirmed for position #${positionId}. Transaction: ${tx.hash}`);
+      onRefreshWallet();
+      await loadUserStakingData();
     } catch (err: any) {
       console.error("Emergency exit error:", err);
       showToast(err.message || "Emergency exit failed.", "error");
