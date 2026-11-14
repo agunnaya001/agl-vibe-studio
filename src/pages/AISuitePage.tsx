@@ -96,7 +96,7 @@ export default function AISuitePage({
       id: "chatbot" as const,
       name: "Gemini Chatbot",
       badge: "Multi-Turn Intelligence",
-      description: "Conversational reasoning with Gemini 4 Carbon, Argon, 3.8 Flash & 3.1 Flash Lite",
+      description: "Conversational reasoning with Carbon/Argon role profiles and supported Gemini models",
       icon: MessageSquare,
       color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10",
       activeTabClass: "bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-lg shadow-cyan-500/20",
