@@ -1,5 +1,4 @@
 import { AGL_TREASURY_ADDRESS } from "./aglContracts";
-import { AgunnayaDatabase } from "./db";
 
 export interface TreasurySweepLog {
   id: string;
