@@ -506,7 +506,9 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
     return res.status(503).json({
       error: "AI agent chat is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
       code: "AI_PROVIDER_UNAVAILABLE",
-    });});
+    });
+  }
+});
 
 // AI Prompt Optimizer Endpoint
 app.post("/api/ai/optimize-prompt", async (req, res) => {
@@ -552,7 +554,9 @@ Return only the optimized prompt text directly. No quotes, no preamble, no comme
     return res.status(503).json({
       error: "AI prompt optimization is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
       code: "AI_PROVIDER_UNAVAILABLE",
-    });});
+    });
+  }
+});
 
 // AI Gmail Assistant / Drafting Endpoint
 app.post("/api/ai/draft-email", async (req, res) => {
