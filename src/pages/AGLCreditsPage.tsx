@@ -64,9 +64,15 @@ export default function AGLCreditsPage({ wallet, onRefreshWallet, addTerminalLog
         setAglBalance(nextAgl);
         setEthBalance(nextEth);
         setAllowance(allowanceRaw);
+        const onChainCreditTotal = Number(creditRaw);
+        const previousOnChainTotal = wallet.aglCreditsOnChain;
+        const nextAvailableCredits = previousOnChainTotal === undefined
+          ? Math.max(wallet.aglCredits || 0, onChainCreditTotal)
+          : (wallet.aglCredits || 0) + Math.max(0, onChainCreditTotal - previousOnChainTotal);
         setWalletState({
           ...wallet,
-          aglCredits: Number(creditRaw),
+          aglCreditsOnChain: onChainCreditTotal,
+          aglCredits: nextAvailableCredits,
           aglTokenBalance: Number(nextAgl),
           balanceEth: Number(nextEth)
         });
@@ -217,8 +223,10 @@ export default function AGLCreditsPage({ wallet, onRefreshWallet, addTerminalLog
           </button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="text-xs text-zinc-400">On-chain credit balance</div><div className="mt-2 text-lg font-mono font-bold text-white">{creditBalance}</div></div>
+        <p className="text-[11px] leading-relaxed text-zinc-400">AGL burns and ETH purchases grant credits on-chain. AI feature usage is deducted from the Firestore application ledger because the current credits contract does not expose a spend/debit method. The on-chain grant total is tracked separately so a refresh does not restore previously consumed app credits.</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="text-xs text-zinc-400">On-chain credits granted</div><div className="mt-2 text-lg font-mono font-bold text-white">{creditBalance}</div></div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="text-xs text-zinc-400">Available AI usage credits</div><div className="mt-2 text-lg font-mono font-bold text-white">{Number(wallet.aglCredits || 0).toLocaleString()}</div><p className="mt-1 text-[10px] text-zinc-500">Off-chain Firestore usage ledger</p></div>
           <div className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="text-xs text-zinc-400">AGL wallet balance</div><div className="mt-2 text-lg font-mono font-bold text-white">{Number(aglBalance).toLocaleString(undefined, { maximumFractionDigits: 6 })} AGL</div></div>
           <div className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="text-xs text-zinc-400">Credits per AGL (raw)</div><div className="mt-2 text-lg font-mono font-bold text-white">{creditsPerAgl ?? "Unavailable"}</div></div>
           <div className="rounded-xl border border-white/10 bg-black/30 p-4"><div className="text-xs text-zinc-400">ETH price per credit</div><div className="mt-2 text-lg font-mono font-bold text-white">{creditPriceEth === null ? "Unavailable" : `${creditPriceEth} ETH`}</div></div>
