@@ -827,17 +827,8 @@ export default function StakingComponent({
                     const timeRemaining = pos.unlockTime - currentTimeSec;
                     const daysLeft = Math.ceil(timeRemaining / (24 * 3600));
 
-                    // Dynamic reward visual representation using current pending rewards with real-time sandbox fallback
-                    let estReward = pos.pendingReward;
-                    if (!web3Active || onWrongNetwork) {
-                      if (!pos.withdrawn) {
-                        const elapsedSec = currentTimeSec - pos.startTime;
-                        const aprDecimal = pos.aprBasisPoints / 10000;
-                        const timeFraction = elapsedSec / (365 * 24 * 3600);
-                        const sandboxAcc = 100;
-                        estReward = pos.amount * aprDecimal * timeFraction * sandboxAcc;
-                      }
-                    }
+                    // Only display reward amounts returned by the deployed staking contract.
+                    const estReward = pos.pendingReward;
 
                     return (
                       <tr key={pos.id} className={`transition-all ${pos.withdrawn ? "opacity-45 bg-black/10" : "hover:bg-white/[0.02]"}`}>
