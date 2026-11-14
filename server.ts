@@ -132,7 +132,9 @@ Format the output strictly as JSON.`;
     return res.status(503).json({
       error: "AI project generation is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
       code: "AI_PROVIDER_UNAVAILABLE",
-    });});
+    });
+  }
+});
 
 // AI Deployment Wizard Proposal Endpoint
 app.post("/api/ai/propose-deployment", async (req, res) => {
@@ -208,7 +210,9 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
     return res.status(503).json({
       error: "AI deployment proposals are temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
       code: "AI_PROVIDER_UNAVAILABLE",
-    });});
+    });
+  }
+});
 
 // AI Portfolio Rebalancer Endpoint
 app.post("/api/ai/rebalance-portfolio", async (req, res) => {
@@ -311,7 +315,9 @@ User Custom Directives/Preferences: "${customDirectives || "Maximize yield while
     return res.status(503).json({
       error: "AI portfolio analysis is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
       code: "AI_PROVIDER_UNAVAILABLE",
-    });});
+    });
+  }
+});
 
 // AI Agent Chat proxy endpoint
 app.post("/api/ai/agent-chat", async (req, res) => {
@@ -555,7 +561,9 @@ User instruction/guideline for response: ${prompt}`
     return res.status(503).json({
       error: "AI email drafting is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
       code: "AI_PROVIDER_UNAVAILABLE",
-    });});
+    });
+  }
+});
 
 // AI Audio Transcription endpoint
 app.post("/api/ai/transcribe", async (req, res) => {
