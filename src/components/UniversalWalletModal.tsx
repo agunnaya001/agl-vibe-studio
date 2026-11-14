@@ -417,7 +417,7 @@ export default function UniversalWalletModal({
                   <p id="walletconnect-setup-help" className="sm:col-span-2 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2.5 text-xs leading-relaxed text-amber-100">
                     WalletConnect is unavailable until a project ID is configured. Create one at{" "}
                     <a href="https://cloud.reown.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">Reown Cloud</a>, allow this app&apos;s domain, then set{" "}
-                    <code className="font-mono text-amber-200">VITE_WALLETCONNECT_PROJECT_ID</code> in the project&apos;s Vercel Vars and redeploy. Browser-injected and Coinbase wallets remain available.
+                    <code className="font-mono text-amber-200">WALLETCONNECT_PROJECT_ID</code> in the project&apos;s Vercel Vars and redeploy. Browser-injected and Coinbase wallets remain available.
                   </p>
                 )}
 

@@ -23,7 +23,7 @@ import { isWalletConnectConfigured } from "../lib/wagmi";
  */
 export function useAGLWallet() {
   const { address, isConnected, isConnecting, isReconnecting, connector, status } = useAccount();
-  const { mutateAsync: connectAsync, connectors, error: connectError } = useConnect();
+  const { connectAsync, connectors, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, error: switchChainError } = useSwitchChain();
   const chainId = useChainId();
@@ -174,7 +174,7 @@ export function useAGLWallet() {
   // Connect via WalletConnect
   const connectWalletConnect = useCallback(async () => {
     if (!isWalletConnectConfigured) {
-      throw new Error("WalletConnect is not configured. Add VITE_WALLETCONNECT_PROJECT_ID in the project environment variables, then redeploy.");
+      throw new Error("WalletConnect is not configured. Add WALLETCONNECT_PROJECT_ID in the project environment variables, then redeploy.");
     }
 
     const wcConnector = connectors.find(c => c.id === "walletConnect");
