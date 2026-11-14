@@ -139,8 +139,8 @@ export default function StakingComponent({
       const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, provider);
 
       const [totalStakedRaw, isPaused] = await Promise.all([
-        stakingContract.totalStaked().catch(() => 0n),
-        stakingContract.paused().catch(() => false)
+        stakingContract.totalStaked(),
+        stakingContract.paused()
       ]);
 
       setTotalStakedProtocol(
@@ -383,7 +383,7 @@ export default function StakingComponent({
     if (cleanedAmount && !isNaN(Number(cleanedAmount)) && /^[0-9]*\.?[0-9]*$/.test(cleanedAmount) && cleanedAmount !== ".") {
       isApproved = userAllowance >= ethers.parseEther(cleanedAmount);
     } else {
-      isApproved = userAllowance >= 0n;
+      isApproved = false;
     }
   } catch (err) {
     isApproved = false;
@@ -472,7 +472,7 @@ export default function StakingComponent({
               Weekly Yield & Fee Share Payout Engine
             </h3>
             <p className="text-xs text-zinc-400 max-w-xl">
-              0.3% DEX swap fees, bonding curve migration revenue, and AI compute gas fees are pooled weekly. Platform owners and stakers receive direct weekly ETH & AGL dividend payouts every Sunday.
+              The weekly distribution contract is not yet configured or verified. No dividend balance or claim can be displayed until an on-chain distribution source is connected.
             </p>
           </div>
 
@@ -541,7 +541,7 @@ export default function StakingComponent({
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400">
-                Automatically reinvests earned yield rewards back into your staking pool every 30s to maximize compounding APY.
+                Auto-compounding is unavailable because the deployed staking contract does not expose a verified compound method.
               </p>
             </div>
           </div>
@@ -552,9 +552,9 @@ export default function StakingComponent({
                 id="btn-manual-compound"
                 type="button"
                 onClick={triggerManualCompound}
-                disabled={isCompounding}
+                disabled
                 className="px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-300 hover:text-white transition-all text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                title="Immediately compound pending rewards into principal"
+                title="Auto-compounding is not supported by the deployed contract"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isCompounding ? "animate-spin text-purple-300" : ""}`} />
                 <span>{isCompounding ? "Compounding..." : "Compound Now"}</span>
@@ -683,7 +683,7 @@ export default function StakingComponent({
                   <Sparkles className={`w-4 h-4 ${autoCompoundEnabled ? "text-purple-400" : "text-zinc-500"}`} />
                   <div>
                     <span className="block text-[11px] font-mono font-bold text-white">Auto-Compound Rewards</span>
-                    <span className="block text-[9px] text-zinc-500">Reinvest yield automatically every 30s</span>
+                    <span className="block text-[9px] text-zinc-500">Unavailable — contract method not deployed</span>
                   </div>
                 </div>
                 <button
