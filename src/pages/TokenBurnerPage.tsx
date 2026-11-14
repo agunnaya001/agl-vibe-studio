@@ -390,6 +390,9 @@ export default function TokenBurnerPage({
 
   // Execute Batch Multicall Burn Flow
   const handleExecuteBatchBurn = async () => {
+    showToast("Burn execution is temporarily disabled while the on-chain burn flow is audited. No tokens were moved and no transaction was submitted.", "error");
+    return;
+
     if (!wallet.isConnected) {
       onOpenConnectWallet();
       return;
@@ -543,6 +546,9 @@ export default function TokenBurnerPage({
 
   // Execute Burn Flow
   const handleExecuteBurn = async () => {
+    showToast("Burn execution is temporarily disabled while the on-chain burn flow is audited. No tokens were moved and no transaction was submitted.", "error");
+    return;
+
     if (!wallet.isConnected) {
       onOpenConnectWallet();
       return;
