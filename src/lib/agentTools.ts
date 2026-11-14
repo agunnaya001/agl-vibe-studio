@@ -375,7 +375,15 @@ export class AgentToolService {
       };
     }
 
-    // 2. Real Web3 Execution: Requires User Wallet Interaction
+    // Real deployment is disabled until actual compiled creation bytecode and constructor data are supplied.
+    // A zero-value self-transfer is not a contract deployment and must never be reported as one.
+    return {
+      success: false,
+      error: "Contract deployment is unavailable: this tool does not yet submit compiled contract creation bytecode. No transaction was sent.",
+      durationMs: Date.now() - startTime,
+    };
+
+    // 2. Legacy implementation retained below but unreachable until real bytecode deployment is implemented.
     try {
       if (typeof window === "undefined" || !(window as any).ethereum) {
         throw new Error("No Web3 wallet provider (MetaMask / Coinbase) detected. Please switch to Hackathon Demo Mode or install a Web3 wallet.");
