@@ -442,7 +442,7 @@ export default function StakingComponent({
             ) : onWrongNetwork ? (
               <span className="text-red-300 font-bold">WRONG NETWORK: Please switch your browser extension wallet to **Base Mainnet (8453)** to load details on-chain.</span>
             ) : (
-              <span>**Sandbox Simulation Mode**: Using simulated, durable localStorage. Stakes will unlock in 60 seconds for instant testability!</span>
+              <span>Wallet is not connected to Base Mainnet through AGL Studio. Connect a supported wallet on Base to access on-chain staking. No simulated deposits or rewards are created.</span>
             )}
           </div>
           <button 
@@ -483,7 +483,7 @@ export default function StakingComponent({
               className="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
             >
               <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-              <span>Claim Weekly Dividend (+0.125 ETH / +1.25k AGL)</span>
+              <span>Weekly claims unavailable</span>
             </button>
           </div>
         </div>
@@ -537,7 +537,7 @@ export default function StakingComponent({
                     ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-300" 
                     : "bg-zinc-900 border-white/10 text-zinc-400"
                 }`}>
-                  {autoCompoundEnabled ? "Auto-Reinvesting Active" : "Manual Harvest"}
+                  Auto-compound unavailable
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400">
@@ -716,7 +716,7 @@ export default function StakingComponent({
                     <button
                       type="button"
                       onClick={handleApprove}
-                      disabled={stakingLoading || stakingPaused}
+                      disabled={stakingLoading || stakingPaused || stakingTiers.length === 0}
                       className="flex-1 py-3 bg-brand-purple hover:bg-brand-purple/90 disabled:bg-zinc-800 disabled:text-zinc-600 text-white rounded-xl text-xs font-bold font-display transition-all shadow-lg shadow-purple-500/10 flex items-center justify-center gap-1.5"
                     >
                       {stakingLoading ? "Approving AGL..." : "Approve Agunnaya Smart Contract"}
@@ -735,7 +735,11 @@ export default function StakingComponent({
             </form>
 
             {/* Right Card: Selected Tier Info */}
-            {(() => {
+            {stakingTiers.length === 0 ? (
+              <div className="p-5 bg-zinc-950/40 rounded-xl border border-white/5 text-xs text-zinc-400">
+                Verified staking tiers are currently unavailable. The staking contract could not provide a valid tier configuration, so deposits are disabled.
+              </div>
+            ) : (() => {
               const activeTier = stakingTiers[selectedTierId] || stakingTiers[0];
               const estReward = stakeAmount ? parseFloat(stakeAmount) * (activeTier.apr / 100) * (activeTier.durationDays / 365) : 0;
               return (
