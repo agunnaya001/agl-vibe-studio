@@ -76,7 +76,7 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
             <Droplets className="w-4 h-4 text-emerald-400" />
             <span>AGL Liquidity Pairs</span>
             <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
-              0.3% Fee
+              Not configured
             </span>
           </button>
 
