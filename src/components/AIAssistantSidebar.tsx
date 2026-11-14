@@ -253,12 +253,11 @@ export default function AIAssistantSidebar({
             <span>MODEL ENGINE</span>
             <span className="text-brand-purple font-semibold">Multi-Turn Active</span>
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-3 gap-1">
             {[
-              { id: "gemini-4-carbon" as const, label: "Carbon", desc: "Reasoning" },
-              { id: "gemini-4-argon" as const, label: "Argon", desc: "Complex" },
               { id: "gemini-3.8-flash" as const, label: "Flash", desc: "General" },
-              { id: "gemini-3.1-flash-lite" as const, label: "Lite", desc: "Fast" }
+              { id: "gemini-3.7-flash" as const, label: "Reason", desc: "Complex" },
+              { id: "gemini-3.5-flash-lite" as const, label: "Lite", desc: "Fast" }
             ].map(m => (
               <button
                 key={m.id}
