@@ -321,7 +321,7 @@ export default function OnchainAgentWorkspace({
                   <div key={b.symbol} className="p-2.5 rounded-xl bg-zinc-900/60 border border-white/5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white">{b.symbol}</span>
-                      <span className="text-[10px] text-zinc-500 font-mono">${b.usdValue || "0.00"}</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">{b.usdValue ? `${b.usdValue}` : "USD unavailable"}</span>
                     </div>
                     <div className="text-sm font-mono font-bold text-emerald-400 mt-0.5">
                       {b.balanceFormatted}
