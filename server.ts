@@ -119,7 +119,7 @@ Format the output strictly as JSON.`;
       },
       {
         operationName: "AI Build Project",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -218,7 +218,7 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
       },
       {
         operationName: "AI Propose Deployment",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -345,7 +345,7 @@ User Custom Directives/Preferences: "${customDirectives || "Maximize yield while
       },
       {
         operationName: "Portfolio Rebalancer",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -553,7 +553,7 @@ Return only the optimized prompt text directly. No quotes, no preamble, no comme
       },
       {
         operationName: "Optimize Prompt",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -622,7 +622,7 @@ User instruction/guideline for response: ${prompt}`
       },
       {
         operationName: "Draft Email",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -667,7 +667,7 @@ app.post("/api/ai/transcribe", async (req, res) => {
       },
       {
         operationName: "Transcribe Audio",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
