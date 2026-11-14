@@ -79,7 +79,7 @@ export default function AGLPollsGovernanceComponent({
         if (addTerminalLog) {
           addTerminalLog("success", `Off-chain poll vote recorded with ${voteWeight.toLocaleString()} displayed AGL weight on "${chosenOption?.label}" in "${updatedPoll.title}"`);
         }
-        showToast(`Cast ${voteWeight.toLocaleString()} $AGL vote on "${chosenOption?.label}"!`, "success");
+        showToast(`Recorded an off-chain poll vote using ${voteWeight.toLocaleString()} displayed AGL weight on "${chosenOption?.label}".`, "success");
       } catch (err: any) {
         setIsVoting(false);
         showToast(`Failed to cast vote: ${err.message}`, "error");
@@ -126,7 +126,7 @@ export default function AGLPollsGovernanceComponent({
     }
   };
 
-  const votingWeight = Math.max(1000, (wallet.aglTokenBalance || 0) + (wallet.aglLiquidityStaked || 0));
+  const votingWeight = wallet.aglTokenBalance || 0;
 
   return (
     <div id="agl-polls-governance-container" className="space-y-6 animate-fade-in font-sans">
@@ -315,7 +315,7 @@ export default function AGLPollsGovernanceComponent({
               {/* Vote Submit Action */}
               <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5 space-y-3">
                 <div className="flex justify-between items-center text-xs font-mono text-zinc-400">
-                  <span>Voting Weight (AGL + Staked):</span>
+                  <span>App poll weight (displayed AGL balance):</span>
                   <span className="font-bold text-emerald-400">{votingWeight.toLocaleString()} $AGL</span>
                 </div>
 
@@ -326,7 +326,7 @@ export default function AGLPollsGovernanceComponent({
                 >
                   {isVoting ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Recording On-Chain Vote...
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Recording Off-Chain Poll Vote...
                     </>
                   ) : (
                     <>
