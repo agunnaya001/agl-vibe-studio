@@ -438,16 +438,14 @@ export default function TokenBurnerPage({
           </div>
 
           <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-            <span className="text-zinc-500 block text-[10px] uppercase">Standard Dead Target</span>
-            <span className="text-zinc-300 font-bold text-xs truncate mt-1 block">
-              0x000...dEaD
-            </span>
+            <span className="text-zinc-500 block text-[10px] uppercase">Burn destination</span>
+            <span className="text-amber-300 font-bold text-xs truncate mt-1 block">Not configured</span>
           </div>
 
           <div className="bg-black/40 p-3 rounded-xl border border-white/5">
             <span className="text-zinc-500 block text-[10px] uppercase">Paymaster Status</span>
             <span className="text-amber-300 font-bold text-xs flex items-center gap-1 mt-1">
-              <Fuel className="w-3.5 h-3.5 text-amber-300" /> 100% Sponsored AA
+              <Fuel className="w-3.5 h-3.5 text-amber-300" /> Not verified
             </span>
           </div>
         </div>
@@ -698,10 +696,8 @@ export default function TokenBurnerPage({
                     </div>
 
                     <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
-                      <span className="text-[10px] text-zinc-500 block">Null Target</span>
-                      <span className="text-xs font-bold text-red-400 truncate block mt-0.5">
-                        0x000...dEaD
-                      </span>
+                      <span className="text-[10px] text-zinc-500 block">Burn destination</span>
+                      <span className="text-xs font-bold text-amber-300 truncate block mt-0.5">Not configured</span>
                     </div>
                   </div>
 
