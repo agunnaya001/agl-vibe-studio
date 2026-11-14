@@ -23,7 +23,6 @@ import {
   RotateCcw
 } from "lucide-react";
 import { WalletState } from "../types";
-import { AgunnayaDatabase } from "../lib/db";
 import APYCalculator from "./APYCalculator";
 
 import { 
@@ -81,12 +80,9 @@ export default function StakingComponent({
   const [currentTimeSec, setCurrentTimeSec] = useState<number>(Math.floor(Date.now() / 1000));
   const [activeTab, setActiveTab] = useState<"stake" | "positions" | "calculator">("stake");
 
-  // Auto-Compound Yield Strategy State
-  const [autoCompoundEnabled, setAutoCompoundEnabled] = useState<boolean>(() => {
-    return localStorage.getItem("agl_auto_compound_enabled") === "true";
-  });
-  const [isCompounding, setIsCompounding] = useState<boolean>(false);
-  const [lastCompoundedTime, setLastCompoundedTime] = useState<number | null>(null);
+  // Auto-compounding is intentionally unavailable until the deployed contract exposes a verified compound method.
+  const autoCompoundEnabled = false;
+  const isCompounding = false;
 
   // Keep clock running for countdowns and real-time reward accrual
   useEffect(() => {
@@ -130,6 +126,10 @@ export default function StakingComponent({
     setOnWrongNetwork(Boolean(isConnected && chainId !== 8453));
     return connectedOnBase;
   }, [chainId, connectedAddress, isConnected, wallet.address, wallet.isConnected]);
+
+  useEffect(() => {
+    void checkWeb3Connectivity();
+  }, [checkWeb3Connectivity]);
 
   // Load contract details and active tiers
   const loadGlobalStakingStats = async () => {
@@ -254,85 +254,9 @@ export default function StakingComponent({
     loadUserStakingData();
   }, [wallet.address, wallet.isConnected]);
 
-  // Execute Auto-Compound routine on active staking positions
-  const executeAutoCompound = useCallback((positions: StakingPosition[]) => {
-    const active = positions.filter((p) => !p.withdrawn);
-    if (active.length === 0) return positions;
-
-    const now = Math.floor(Date.now() / 1000);
-    let totalReinvested = 0;
-
-    const updatedPositions = positions.map((p) => {
-      if (p.withdrawn) return p;
-
-      let reward = p.pendingReward;
-      if (!web3Active || onWrongNetwork) {
-        const elapsedSec = now - p.startTime;
-        const aprDecimal = p.aprBasisPoints / 10000;
-        const timeFraction = elapsedSec / (365 * 24 * 3600);
-        const sandboxAcc = 100; // sandbox acceleration multiplier
-        reward = p.amount * aprDecimal * timeFraction * sandboxAcc;
-      }
-
-      if (reward >= 0.0001) {
-        totalReinvested += reward;
-        return {
-          ...p,
-          amount: p.amount + reward,
-          startTime: now,
-          pendingReward: 0
-        };
-      }
-      return p;
-    });
-
-    if (totalReinvested > 0) {
-      localStorage.setItem("agl_staking_positions", JSON.stringify(updatedPositions));
-      setUserPositions(updatedPositions);
-      setLastCompoundedTime(Date.now());
-      showToast(
-        `Auto-Compounded +${totalReinvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} AGL into active principal!`,
-        "success"
-      );
-      addTerminalLog(
-        "success",
-        `AUTO_COMPOUND: Reinvested +${totalReinvested.toFixed(6)} AGL yield rewards directly back into active staking principal.`
-      );
-    }
-
-    return updatedPositions;
-  }, [web3Active, onWrongNetwork, showToast, addTerminalLog]);
-
-  // Automated background timer for auto-compounding when enabled
-  useEffect(() => {
-    localStorage.setItem("agl_auto_compound_enabled", String(autoCompoundEnabled));
-
-    if (!autoCompoundEnabled || !wallet.isConnected) return;
-
-    // Compound every 30 seconds automatically
-    const compoundTimer = setInterval(() => {
-      setUserPositions((prevPositions) => executeAutoCompound(prevPositions));
-    }, 30000);
-
-    return () => clearInterval(compoundTimer);
-  }, [autoCompoundEnabled, wallet.isConnected, executeAutoCompound]);
-
-  // Manual trigger button handler for instant compounding
+  // The deployed staking ABI does not expose an auto-compound method.
   const triggerManualCompound = () => {
-    setIsCompounding(true);
-    setTimeout(() => {
-      const active = userPositions.filter((p) => !p.withdrawn);
-      if (active.length === 0) {
-        showToast("No active staking positions available to compound.", "info");
-        setIsCompounding(false);
-        return;
-      }
-      const updated = executeAutoCompound(userPositions);
-      if (updated === userPositions) {
-        showToast("Yield rewards compounded into your active staking pool.", "info");
-      }
-      setIsCompounding(false);
-    }, 600);
+    showToast("Auto-compounding is not supported by the deployed AGL staking contract. No transaction was submitted.", "info");
   };
 
   // ERC20 Approve Token Spender
@@ -467,19 +391,9 @@ export default function StakingComponent({
   const activePositions = userPositions.filter(p => !p.withdrawn);
   const totalUserStaked = activePositions.reduce((acc, p) => acc + p.amount, 0);
   
-  // Calculate total pending rewards with real-time sandbox ticking fallback
-  const totalPendingRewards = activePositions.reduce((acc, p) => {
-    if (!web3Active || onWrongNetwork) {
-      // Sandbox mode: calculate dynamically based on time elapsed
-      const elapsedSec = currentTimeSec - p.startTime;
-      const aprDecimal = p.aprBasisPoints / 10000;
-      const timeFraction = elapsedSec / (365 * 24 * 3600);
-      const sandboxAcc = 100; // sandbox accelerator
-      const currentReward = p.amount * aprDecimal * timeFraction * sandboxAcc;
-      return acc + currentReward;
-    }
-    return acc + p.pendingReward;
-  }, 0);
+  // Rewards shown here are the values returned by the staking contract's read methods.
+  const totalPendingRewards = activePositions.reduce((acc, position) => acc + position.pendingReward, 0);
+
 
   return (
     <div className="space-y-6">
@@ -507,7 +421,7 @@ export default function StakingComponent({
           <div className="h-6 w-px bg-white/10"></div>
           <div className="text-center md:text-left">
             <span className="block text-[8px] text-zinc-500 uppercase font-mono font-bold">Yield APR Range</span>
-            <span className="text-xs font-mono font-bold text-emerald-400">8.00% - 15.00%</span>
+            <span className="text-xs font-mono font-bold text-emerald-400">{stakingTiers.length ? `${Math.min(...stakingTiers.map((tier) => tier.apr)).toFixed(2)}% - ${Math.max(...stakingTiers.map((tier) => tier.apr)).toFixed(2)}%` : "Unavailable"}</span>
           </div>
         </div>
       </div>
@@ -551,7 +465,7 @@ export default function StakingComponent({
               <Coins className="w-4 h-4 text-emerald-400" />
               <span>WEEKLY PROTOCOL REVENUE SHARE & DIVIDENDS</span>
               <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] rounded-full border border-emerald-500/40">
-                AUTO-PAYOUT ACTIVE
+                DISTRIBUTION NOT CONFIGURED
               </span>
             </div>
             <h3 className="text-lg font-bold font-display text-white">
@@ -564,39 +478,8 @@ export default function StakingComponent({
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => {
-                if (!wallet.isConnected) {
-                  showToast("Connect your Web3 wallet to claim weekly revenue share.", "error");
-                  return;
-                }
-                
-                addTerminalLog("info", "Processing Weekly Revenue Share Dividend Claim...");
-                setTimeout(() => {
-                  const weeklyEthReward = 0.125;
-                  const weeklyAglReward = 1250;
-
-                  const updatedWallet = {
-                    ...wallet,
-                    balanceEth: wallet.balanceEth + weeklyEthReward,
-                    aglTokenBalance: wallet.aglTokenBalance + weeklyAglReward
-                  };
-                  AgunnayaDatabase.saveWallet(updatedWallet);
-                  onRefreshWallet();
-
-                  AgunnayaDatabase.addActivity({
-                    type: "stake",
-                    tokenSymbol: "ETH / AGL",
-                    tokenAddress: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
-                    user: wallet.address || "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
-                    amount: weeklyAglReward,
-                    ethValue: weeklyEthReward,
-                    details: `Weekly Protocol Fee Dividends Claimed: +${weeklyEthReward} ETH ($406.25) + ${weeklyAglReward.toLocaleString()} AGL sent to Treasury/Wallet`
-                  });
-
-                  addTerminalLog("success", `Weekly Revenue Claimed! Received +${weeklyEthReward} ETH ($406.25) & +${weeklyAglReward.toLocaleString()} AGL in your wallet.`);
-                  showToast(`🎉 Weekly Dividend Claimed! +${weeklyEthReward} ETH ($406.25) + ${weeklyAglReward.toLocaleString()} AGL added to balance.`, "success");
-                }, 1000);
-              }}
+              onClick={() => showToast("Weekly dividend claims are unavailable: no verified distribution contract is configured. No balance was changed.", "info")}
+              disabled
               className="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-xs font-mono transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
             >
               <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
@@ -609,28 +492,28 @@ export default function StakingComponent({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs relative z-10">
           <div className="p-3 rounded-xl bg-black/50 border border-white/10 space-y-1">
             <span className="text-[10px] text-zinc-500 uppercase font-bold block">Current Weekly Pool</span>
-            <span className="text-base font-bold text-emerald-400">0.852 ETH ($2,769.00)</span>
+            <span className="text-base font-bold text-zinc-400">Unavailable</span>
             <span className="text-[10px] text-zinc-400 block font-sans">Accumulating from 0.3% protocol fee sweep</span>
           </div>
 
           <div className="p-3 rounded-xl bg-black/50 border border-white/10 space-y-1">
             <span className="text-[10px] text-zinc-500 uppercase font-bold block">Your Weekly Share</span>
-            <span className="text-base font-bold text-purple-300">0.125 ETH + 1,250 AGL</span>
+            <span className="text-base font-bold text-zinc-400">Unavailable</span>
             <span className="text-[10px] text-zinc-400 block font-sans">Based on 14.6% treasury & staking weight</span>
           </div>
 
           <div className="p-3 rounded-xl bg-black/50 border border-white/10 space-y-1">
             <span className="text-[10px] text-zinc-500 uppercase font-bold block">Next Distribution Cycle</span>
             <span className="text-base font-bold text-amber-300 flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-amber-400" /> 3d 14h 22m
+              <Clock className="w-4 h-4 text-amber-400" /> Not scheduled
             </span>
             <span className="text-[10px] text-zinc-400 block font-sans">Automatic Sunday 00:00 UTC dispatch</span>
           </div>
 
           <div className="p-3 rounded-xl bg-black/50 border border-white/10 space-y-1">
             <span className="text-[10px] text-zinc-500 uppercase font-bold block">Historical Lifetime Payouts</span>
-            <span className="text-base font-bold text-white">4.85 ETH ($15,762.50)</span>
-            <span className="text-[10px] text-emerald-400 block font-sans">100% verified on BaseScan</span>
+            <span className="text-base font-bold text-zinc-400">Unavailable</span>
+            <span className="text-[10px] text-emerald-400 block font-sans">Awaiting verified distribution contract</span>
           </div>
         </div>
       </div>
@@ -687,15 +570,8 @@ export default function StakingComponent({
                 type="button"
                 role="switch"
                 aria-checked={autoCompoundEnabled}
-                onClick={() => {
-                  const nextState = !autoCompoundEnabled;
-                  setAutoCompoundEnabled(nextState);
-                  showToast(
-                    nextState ? "Auto-Compound enabled! Rewards will auto-reinvest." : "Auto-Compound disabled. Manual harvest required.",
-                    nextState ? "success" : "info"
-                  );
-                  addTerminalLog("system", `Auto-Compound yield strategy toggled: ${nextState ? "ENABLED" : "DISABLED"}`);
-                }}
+                onClick={triggerManualCompound}
+                disabled
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/50 ${
                   autoCompoundEnabled ? "bg-gradient-to-r from-purple-600 to-emerald-500" : "bg-zinc-800"
                 }`}
@@ -815,11 +691,8 @@ export default function StakingComponent({
                   type="button"
                   role="switch"
                   aria-checked={autoCompoundEnabled}
-                  onClick={() => {
-                    const next = !autoCompoundEnabled;
-                    setAutoCompoundEnabled(next);
-                    showToast(next ? "Auto-Compound enabled for staking positions!" : "Auto-Compound disabled.", next ? "success" : "info");
-                  }}
+                  onClick={triggerManualCompound}
+                  disabled
                   className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
                     autoCompoundEnabled ? "bg-purple-600" : "bg-zinc-800"
                   }`}
