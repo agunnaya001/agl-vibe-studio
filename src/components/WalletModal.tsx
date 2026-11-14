@@ -118,7 +118,7 @@ export default function WalletModal({
       walletType: newAddressType,
       balanceEth: ethVal,
       aglTokenBalance: aglVal,
-      aglCredits: newAddressType === "smart" ? 200 : 50,
+      aglCredits: 0,
       isSmartAccount: newAddressType === "smart"
     });
 
@@ -149,13 +149,12 @@ export default function WalletModal({
 
     const updated = AgunnayaDatabase.updateSubAccount(subId, {
       balanceEth: target.balanceEth + 0.1,
-      aglTokenBalance: target.aglTokenBalance + 250,
-      aglCredits: target.aglCredits + 50
+      aglTokenBalance: target.aglTokenBalance + 250
     });
 
     setSubAccounts(updated);
     if (onRefreshWallet) onRefreshWallet();
-    showToast?.(`Funded ${target.label} with +0.10 ETH, +250 AGL & +50 Credits!`, "success");
+    showToast?.(`Funded ${target.label} with +0.10 ETH and +250 AGL (prototype balances).`, "success");
   };
 
   const handleRemoveSubAccount = (subId: string) => {

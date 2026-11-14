@@ -534,7 +534,7 @@ const DEFAULT_WALLET: WalletState = {
   isSmartAccount: false,
   sponsoredGasEth: 0.0,
   aglTokenBalance: 0, // starts at 0 until on-chain connect
-  aglCredits: 500 // Generous starter developer credit grant for AI Studio & Agents
+  aglCredits: 0
 };
 
 // PERSISTENCE WRAPPER
@@ -946,9 +946,9 @@ export class AgunnayaDatabase {
 
   static getWallet(): WalletState {
     const wallet = this.safeParse<WalletState>("agl_wallet", DEFAULT_WALLET);
-    // Ensure default starter credits if zero/undefined
+    // Credits here are a local prototype quota, not an on-chain balance.
     if (wallet.aglCredits === undefined || wallet.aglCredits === null) {
-      wallet.aglCredits = 500;
+      wallet.aglCredits = 0;
     }
     // Ensure subAccounts is populated
     const subAccounts = this.getSubAccounts();
@@ -956,17 +956,6 @@ export class AgunnayaDatabase {
       ...wallet,
       subAccounts
     };
-  }
-
-  static claimStarterCredits(amount: number = 500): WalletState {
-    const current = this.getWallet();
-    const updatedCredits = (current.aglCredits || 0) + amount;
-    const updatedWallet: WalletState = {
-      ...current,
-      aglCredits: updatedCredits
-    };
-    this.saveWallet(updatedWallet);
-    return updatedWallet;
   }
 
   static saveWallet(wallet: WalletState) {
@@ -998,7 +987,7 @@ export class AgunnayaDatabase {
         walletType: "metamask",
         balanceEth: 0.15,
         aglTokenBalance: 500,
-        aglCredits: 200,
+        aglCredits: 0,
         isSmartAccount: false,
         isActive: true,
         createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000
@@ -1010,7 +999,7 @@ export class AgunnayaDatabase {
         walletType: "coinbase",
         balanceEth: 0.35,
         aglTokenBalance: 1250,
-        aglCredits: 85,
+        aglCredits: 0,
         isSmartAccount: false,
         isActive: false,
         createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000
@@ -1022,7 +1011,7 @@ export class AgunnayaDatabase {
         walletType: "smart",
         balanceEth: 0.08,
         aglTokenBalance: 2500,
-        aglCredits: 350,
+        aglCredits: 0,
         isSmartAccount: true,
         isActive: false,
         createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000

@@ -136,17 +136,17 @@ export default function AGLPollsGovernanceComponent({
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-brand-purple font-mono text-[10px] font-bold uppercase tracking-widest">
+            <div className="flex flex-col items-start gap-2 text-brand-purple font-mono text-[10px] font-bold uppercase tracking-widest sm:flex-row sm:items-center">
               <Vote className="w-4 h-4 text-brand-purple" />
-              <span>Community Polls · Off-Chain (not an on-chain DAO proposal)</span>
+              <span>Community Polls · Nonbinding · Off-Chain</span>
               <p className="text-xs text-zinc-400 max-w-2xl">
-                These polls are stored in the AGL Studio application database. They do not submit proposals to the AgunnayaDAO Governor, do not lock AGL, and do not represent on-chain voting power.
+                These are nonbinding community polls. They do not submit proposals to the AgunnayaDAO Governor, lock AGL, or represent on-chain voting power.
               </p>
             </div>
             <h2 className="text-2xl lg:text-3xl font-display font-bold text-white flex items-center gap-3">
               AGL Liquidity & Protocol Polls
               <span className="text-xs font-mono font-bold bg-brand-purple/20 text-purple-300 border border-brand-purple/30 px-2.5 py-1 rounded-full">
-                OFF-CHAIN WEIGHT: {votingWeight.toLocaleString()} AGL
+                NONBINDING · DISPLAYED WEIGHT: {votingWeight.toLocaleString()} AGL
               </span>
             </h2>
             <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">

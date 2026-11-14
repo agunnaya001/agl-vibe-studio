@@ -674,7 +674,7 @@ export default function App() {
       isSmartAccount: type === "smart",
       walletType: type,
       sponsoredGasEth: type === "smart" ? 0.05 : 0,
-      aglCredits: wallet.aglCredits || 500
+      aglCredits: wallet.aglCredits ?? 0
     };
 
     AgunnayaDatabase.saveWallet(newWallet);
