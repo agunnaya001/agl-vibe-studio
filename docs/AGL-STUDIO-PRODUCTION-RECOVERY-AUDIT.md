@@ -14,6 +14,13 @@ No production branch or live deployment was changed during this audit.
 
 ## Confirmed findings
 
+### P0 — Vercel frontend had no serverless handler for the Express API
+
+- The repository had a Vite frontend and an Express backend in `server.ts`, but no Vercel `api/` function entrypoint. The build generated `dist/server.cjs`, which does not by itself expose Express routes on Vercel.
+- AI suites, credits, LI.FI proxy, wallet transaction history and other `/api/*` calls could therefore fail on the Vercel static deployment even when the frontend loaded.
+- The recovery branch now exports the Express app, prevents it from calling `listen()` inside Vercel Functions, and adds `api/[...path].ts` as a catch-all Node function for the existing API routes. Cloud Run/container startup remains enabled outside Vercel.
+- This needs a Vercel preview deployment test before it can be considered fixed.
+
 ### P0 — Legacy swap form did not execute a swap
 
 - The old DeFi swap handler sent native ETH directly to the AGL ERC-20 contract address, or transferred AGL to the dead address, then credited the browser wallet with a fabricated exchange output.
@@ -123,6 +130,7 @@ No production branch or live deployment was changed during this audit.
 ## Changes made on recovery branch so far
 
 - Canonical AI hub navigation; duplicate standalone AI links removed.
+- Added a Vercel catch-all serverless function for the existing Express API and guarded container startup so Vercel imports do not open a second listening socket.
 - Gemini model IDs and server-side API key validation corrected.
 - False-success AI fallbacks removed from the audited endpoints.
 - Duplicate simulated staking page removed; legacy route aliases the canonical DeFi workspace.
@@ -131,6 +139,8 @@ No production branch or live deployment was changed during this audit.
 - Autonomous execution endpoints are fail-closed pending secure execution infrastructure.
 
 ## Verification still required
+
+- Confirm the Vercel preview function responds successfully for `/api/ai/gateway-status`, `/api/ai/chat`, `/api/lifi/quote`, and contract read endpoints. Confirm the Express API routes run in Vercel Node Functions with the required environment variables.
 
 - Full runtime test of all five AI workspaces and their API endpoints.
 - Verify server registration and production environment variables, including Gemini provider access.
