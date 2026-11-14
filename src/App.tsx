@@ -318,24 +318,8 @@ export default function App() {
       const state = TreasuryFeeService.getState();
       if (!state.autoSweepEnabled) return;
 
-      // Simulate incoming micro-fees from protocol activity (e.g. DEX swaps, bonding curve trades, AI agent executions)
-      if (Math.random() < 0.40) {
-        const ethFee = parseFloat((Math.random() * 0.0035 + 0.0012).toFixed(5));
-        const aglFee = Math.floor(Math.random() * 120 + 30);
-        
-        const { swept, sweepLog } = TreasuryFeeService.addProtocolFees(ethFee, aglFee, "Base Mainnet Protocol Activity");
-        
-        if (swept && sweepLog) {
-          addTerminalLog(
-            "success",
-            `TREASURY_AUTO_SWEEP: Target threshold reached (${sweepLog.amountEth} ETH)! Automatically dispatched Web3 transaction (${sweepLog.txHash.slice(0, 10)}...) to Treasury Wallet (${AGL_TREASURY_ADDRESS.slice(0, 6)}...${AGL_TREASURY_ADDRESS.slice(-4)}).`
-          );
-          showToast(
-            `⚡ Automated Treasury Sweep Executed! Transferred ${sweepLog.amountEth} ETH ($${sweepLog.amountUsd.toFixed(2)}) to Treasury Wallet`,
-            "success"
-          );
-        }
-      }
+      // No synthetic protocol fees or background treasury transactions are generated.
+      // A sweep can only be reported after a real wallet-signed transaction and receipt verification.
     };
 
     const currentState = TreasuryFeeService.getState();
