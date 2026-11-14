@@ -29,14 +29,10 @@ export interface TreasuryFeeState {
   sweepHistory: TreasurySweepLog[];
 }
 
-const STORAGE_KEY = "agunnaya_treasury_fee_service_v1";
-const ETH_PRICE_USD = 3250;
-const AGL_PRICE_USD = 0.1625;
-
 const DEFAULT_STATE: TreasuryFeeState = {
   accumulatedFeesEth: 0,
   accumulatedFeesAgl: 0,
-  accumulatedFeesUsd: 0
+  accumulatedFeesUsd: 0,
   thresholdEth: 0.05,
   thresholdAgl: 2000,
   autoSweepEnabled: false,
@@ -46,46 +42,7 @@ const DEFAULT_STATE: TreasuryFeeState = {
   totalSweptAgl: 0,
   sweepCount: 0,
   treasuryRecipient: AGL_TREASURY_ADDRESS,
-  sweepHistory: [],
-  /* historical demo entries removed; only verified on-chain receipts may populate this history
-  [
-    {
-      id: "swp-101",
-      timestamp: Date.now() - 3600000 * 3,
-      amountEth: 0.052,
-      amountAgl: 2100,
-      amountUsd: 0.052 * ETH_PRICE_USD + 2100 * AGL_PRICE_USD,
-      txHash: "0x9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e",
-      sourceProtocol: "DEX Swaps & Bonding Curve Fees",
-      treasuryRecipient: AGL_TREASURY_ADDRESS,
-      status: "completed",
-      triggerReason: "threshold_reached"
-    },
-    {
-      id: "swp-100",
-      timestamp: Date.now() - 3600000 * 12,
-      amountEth: 0.068,
-      amountAgl: 3400,
-      amountUsd: 0.068 * ETH_PRICE_USD + 3400 * AGL_PRICE_USD,
-      txHash: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
-      sourceProtocol: "Token Factory & NFT Mint Fees",
-      treasuryRecipient: AGL_TREASURY_ADDRESS,
-      status: "completed",
-      triggerReason: "periodic_cron"
-    },
-    {
-      id: "swp-099",
-      timestamp: Date.now() - 3600000 * 24,
-      amountEth: 0.051,
-      amountAgl: 2050,
-      amountUsd: 0.051 * ETH_PRICE_USD + 2050 * AGL_PRICE_USD,
-      txHash: "0x8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b",
-      sourceProtocol: "AI Agent Compute Charges",
-      treasuryRecipient: AGL_TREASURY_ADDRESS,
-      status: "completed",
-      triggerReason: "threshold_reached"
-    }
-  ] */
+  sweepHistory: []
 };
 
 type Listener = (state: TreasuryFeeState, lastSweep?: TreasurySweepLog) => void;
@@ -93,123 +50,56 @@ const listeners: Set<Listener> = new Set();
 
 export class TreasuryFeeService {
   public static getState(): TreasuryFeeState {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return DEFAULT_STATE;
-      const parsed = JSON.parse(raw);
-      return {
-        ...DEFAULT_STATE,
-        ...parsed,
-        accumulatedFeesEth: 0,
-        accumulatedFeesAgl: 0,
-        accumulatedFeesUsd: 0,
-        totalSweptEth: 0,
-        totalSweptAgl: 0,
-        sweepCount: 0,
-        sweepHistory: [],
-        autoSweepEnabled: false,
-        treasuryRecipient: AGL_TREASURY_ADDRESS // ensure strictly correct treasury address
-      };
-    } catch (e) {
-      console.error("Failed to load TreasuryFeeState from localStorage:", e);
-      return DEFAULT_STATE;
-    }
+    // Legacy localStorage counters and demo sweep records are deliberately not trusted.
+    return { ...DEFAULT_STATE, sweepHistory: [] };
   }
 
-  public static saveState(state: TreasuryFeeState): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      console.error("Failed to save TreasuryFeeState to localStorage:", e);
-    }
+  public static saveState(_state: TreasuryFeeState): void {
+    // No local fee accumulator is authoritative. Real fees must be indexed from Base receipts/events.
   }
 
   public static subscribe(listener: Listener): () => void {
     listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
+    return () => listeners.delete(listener);
   }
 
   private static notify(state: TreasuryFeeState, lastSweep?: TreasurySweepLog): void {
-    listeners.forEach((fn) => fn(state, lastSweep));
+    listeners.forEach((listener) => listener(state, lastSweep));
   }
 
-  /**
-   * Records newly accumulated protocol fees and checks if threshold is reached.
-   */
   public static addProtocolFees(
-    ethAmount: number,
-    aglAmount: number,
-    sourceProtocol: string
+    _ethAmount: number,
+    _aglAmount: number,
+    _sourceProtocol: string
   ): { state: TreasuryFeeState; swept: boolean; sweepLog?: TreasurySweepLog } {
-    const currentState = this.getState();
-    const newEth = currentState.accumulatedFeesEth + ethAmount;
-    const newAgl = currentState.accumulatedFeesAgl + aglAmount;
-    const newUsd = newEth * ETH_PRICE_USD + newAgl * AGL_PRICE_USD;
-
-    let newState: TreasuryFeeState = {
-      ...currentState,
-      accumulatedFeesEth: newEth,
-      accumulatedFeesAgl: newAgl,
-      accumulatedFeesUsd: newUsd
-    };
-
-    let swept = false;
-    let sweepLog: TreasurySweepLog | undefined = undefined;
-
-    // Check if threshold reached and autoSweep is active
-    if (
-      newState.autoSweepEnabled &&
-      (newState.accumulatedFeesEth >= newState.thresholdEth || newState.accumulatedFeesAgl >= newState.thresholdAgl)
-    ) {
-      const sweepRes = this.triggerSweepToTreasury(
-        newState.accumulatedFeesEth >= newState.thresholdEth ? "threshold_reached" : "periodic_cron",
-        sourceProtocol,
-        newState
-      );
-      newState = sweepRes.state;
-      swept = true;
-      sweepLog = sweepRes.sweepLog;
-    } else {
-      this.saveState(newState);
-      this.notify(newState);
-    }
-
-    return { state: newState, swept, sweepLog };
+    const state = this.getState();
+    // Until a verified event/indexer source exists, do not fabricate accumulated protocol fees.
+    this.notify(state);
+    return { state, swept: false };
   }
 
-  /**
-   * Triggers automated or manual transaction sweeping accumulated fees directly to the treasury wallet.
-   */
   public static triggerSweepToTreasury(
     _triggerReason: "threshold_reached" | "periodic_cron" | "manual_force" = "manual_force",
     _sourceProtocol: string = "All Accumulated Protocol Fees",
     _customState?: TreasuryFeeState
   ): { state: TreasuryFeeState; sweepLog: TreasurySweepLog } {
-    throw new Error("Treasury sweeps are disabled until a wallet-signed transfer is broadcast and its Base receipt is verified.");
+    throw new Error("Treasury sweeps are disabled until a real wallet-signed transfer and confirmed Base receipt are implemented.");
   }
 
-  /**
-   * Updates threshold configuration and auto-sweep preferences.
-   */
   public static updateSettings(
     thresholdEth: number,
     thresholdAgl: number,
     checkIntervalSeconds: number,
-    autoSweepEnabled: boolean
+    _autoSweepEnabled: boolean
   ): TreasuryFeeState {
-    const state = this.getState();
-    const newState: TreasuryFeeState = {
-      ...state,
+    const state: TreasuryFeeState = {
+      ...DEFAULT_STATE,
       thresholdEth,
       thresholdAgl,
       checkIntervalSeconds,
       autoSweepEnabled: false
     };
-
-    this.saveState(newState);
-    this.notify(newState);
-    return newState;
+    this.notify(state);
+    return state;
   }
 }
