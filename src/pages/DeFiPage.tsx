@@ -88,7 +88,7 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
   const [swapAmount, setSwapAmount] = useState("");
   const [swapEstim, setSwapEstim] = useState("0");
   const [swapping, setSwapping] = useState(false);
-  const [onChainRate, setOnChainRate] = useState<number>(20000); // 1 ETH = 20,000 AGL
+  const [onChainRate, setOnChainRate] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState<boolean>(true);
 
   // Global Staking Stats
@@ -122,25 +122,9 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
   // Fetch On-chain Swap Price & Staking Contract details
   useEffect(() => {
     const fetchOnChainPrice = async () => {
-      try {
-        const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
-        
-        // 1. Swap Rate Oracle (from AGL Credits contract config)
-        const creditsContract = new ethers.Contract(
-          "0x13866F31c60822Ff70684213b9727915Ddf2c183",
-          ["function creditsPerAGL() external view returns (uint256)"],
-          provider
-        );
-        const rate = await creditsContract.creditsPerAGL().catch(() => 100n);
-        const calculatedRate = 10000 + Number(rate) * 100;
-        setOnChainRate(calculatedRate);
-        setPriceLoading(false);
-        addTerminalLog("system", `AMM_ORACLE: Updated AGL/ETH spot price. Rate: 1 ETH = ${calculatedRate.toLocaleString()} AGL.`);
-      } catch (err) {
-        console.error("Failed to fetch on-chain price ticker:", err);
-        setOnChainRate(20000);
-        setPriceLoading(false);
-      }
+      // AGL Credits conversion is not a DEX spot price. Do not derive swap quotes from it.
+      setOnChainRate(null);
+      setPriceLoading(false);
     };
 
     const fetchGlobalStakingStats = async () => {
@@ -150,8 +134,8 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
         const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, AGL_STAKING_ABI, provider);
         
         const [totalStakedRaw, isPaused] = await Promise.all([
-          stakingContract.totalStaked().catch(() => 0n),
-          stakingContract.paused().catch(() => false)
+          stakingContract.totalStaked(),
+          stakingContract.paused()
         ]);
 
         setTotalStakedProtocol(parseFloat(ethers.formatEther(totalStakedRaw)).toLocaleString(undefined, { maximumFractionDigits: 2 }));
@@ -190,8 +174,8 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
         setLoadingGlobalStaking(false);
       } catch (err) {
         console.error("Failed to query global staking stats:", err);
-        setTotalStakedProtocol("1,450,250"); // high-fidelity fallback
-        setStakingPaused(false);
+        setTotalStakedProtocol("Unavailable");
+        setStakingPaused(true);
         setLoadingGlobalStaking(false);
       }
     };
@@ -301,112 +285,13 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
 
   const handleSwapAmountChange = (val: string) => {
     setSwapAmount(val);
-    const num = parseFloat(val) || 0;
-    if (swapFrom === "ETH") {
-      setSwapEstim((num * onChainRate).toLocaleString(undefined, { maximumFractionDigits: 4 }));
-    } else {
-      setSwapEstim((num / onChainRate).toFixed(6));
-    }
+    setSwapEstim("Unavailable");
   };
 
-  // Swap transaction router
+  // No verified AGL/ETH router is configured for this legacy swap form.
   const handleExecuteSwap = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wallet.isConnected) {
-      showToast("Connect wallet first.", "error");
-      return;
-    }
-    const amt = parseFloat(swapAmount) || 0;
-    if (amt <= 0) return;
-    setSwapping(true);
-
-    addTerminalLog("info", `Executing routing logic from ${swapFrom} to ${swapTo} (Spot Rate: 1 ETH = ${onChainRate.toLocaleString()} AGL)...`);
-
-    try {
-      let web3TxHash = "";
-      if (typeof window !== "undefined" && (window as any).ethereum) {
-        addTerminalLog("info", `Prompting MetaMask extension to execute AMM Swap transaction...`);
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        const signer = await browserProvider.getSigner();
-
-        if (swapFrom === "ETH") {
-          const valueWei = ethers.parseEther(amt.toString());
-          const tx = await signer.sendTransaction({
-            to: AGL_TOKEN_ADDRESS,
-            value: valueWei,
-            data: "0x"
-          });
-          addTerminalLog("info", `Swap Tx broadcast via MetaMask! Hash: ${tx.hash}. Awaiting confirmation...`);
-          const receipt = await tx.wait();
-          web3TxHash = receipt?.hash || tx.hash;
-          addTerminalLog("success", `MetaMask Tx Confirmed on Base! Tx Hash: ${web3TxHash}`);
-        } else {
-          const tokenContract = new ethers.Contract(AGL_TOKEN_ADDRESS, ERC20_ABI, signer);
-          const parsedAmt = ethers.parseEther(amt.toString());
-          const tx = await tokenContract.transfer("0x000000000000000000000000000000000000dEaD", parsedAmt);
-          addTerminalLog("info", `Swap Tx broadcast via MetaMask! Hash: ${tx.hash}. Awaiting confirmation...`);
-          const receipt = await tx.wait();
-          web3TxHash = receipt?.hash || tx.hash;
-          addTerminalLog("success", `MetaMask Tx Confirmed on Base! Tx Hash: ${web3TxHash}`);
-        }
-      } else {
-        addTerminalLog("info", "Web3 extension (MetaMask) not detected. Executing via Base DEX relayer.");
-      }
-
-      if (swapFrom === "ETH") {
-        if (amt > wallet.balanceEth) {
-          showToast("Insufficient ETH balance.", "error");
-          setSwapping(false);
-          return;
-        }
-
-        const outAgl = amt * onChainRate;
-        const updated = { 
-          ...wallet, 
-          balanceEth: wallet.balanceEth - amt,
-          aglTokenBalance: wallet.aglTokenBalance + outAgl
-        };
-        AgunnayaDatabase.saveWallet(updated);
-        AgunnayaDatabase.addReferralPayout(wallet.address, "swap buy", amt * 0.005);
-        onRefreshWallet();
-
-        addTerminalLog("success", `Swap successful! Swapped ${amt} ETH for +${outAgl.toLocaleString(undefined, { maximumFractionDigits: 2 })} AGL ${web3TxHash ? `[MetaMask Tx: ${web3TxHash}]` : ""}`);
-        showToast(`Swap confirmed! ${web3TxHash ? `Tx: ${web3TxHash.slice(0, 8)}...` : ""}`, "success");
-      } else {
-        if (amt > wallet.aglTokenBalance) {
-          showToast("Insufficient AGL balance.", "error");
-          setSwapping(false);
-          return;
-        }
-
-        const outEth = amt / onChainRate;
-        const updated = { 
-          ...wallet, 
-          balanceEth: wallet.balanceEth + outEth,
-          aglTokenBalance: wallet.aglTokenBalance - amt
-        };
-        AgunnayaDatabase.saveWallet(updated);
-        AgunnayaDatabase.addReferralPayout(wallet.address, "swap sell", outEth * 0.005);
-        onRefreshWallet();
-
-        addTerminalLog("success", `Swap successful! Swapped ${amt.toLocaleString()} AGL for +${outEth.toFixed(6)} ETH ${web3TxHash ? `[MetaMask Tx: ${web3TxHash}]` : ""}`);
-        showToast(`Swap confirmed! ${web3TxHash ? `Tx: ${web3TxHash.slice(0, 8)}...` : ""}`, "success");
-      }
-
-      setSwapAmount("");
-      setSwapEstim("0");
-    } catch (err: any) {
-      if (err?.code === 4001 || err?.message?.toLowerCase().includes("user rejected") || err?.message?.toLowerCase().includes("user denied")) {
-        showToast("Swap transaction rejected in MetaMask by user.", "error");
-        addTerminalLog("error", "AMM_SWAP_ERROR: User cancelled / rejected transaction in MetaMask.");
-      } else {
-        console.error("Swap error:", err);
-        showToast("Swap transaction failed: " + (err.message || "Execution error"), "error");
-        addTerminalLog("error", `AMM_SWAP_ERROR: ${err.message || String(err)}`);
-      }
-    } finally {
-      setSwapping(false);
-    }
+    showToast("Swap is unavailable: this screen has no verified DEX router or live quote source. No transaction was submitted and no wallet balance was changed.", "info");
   };
 
   // Allowance Approval
@@ -971,26 +856,26 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
               <button
                 id="defi-swap-submit"
                 type="submit"
-                disabled={swapping || !swapAmount || parseFloat(swapAmount) <= 0}
+                disabled={true}
                 className="w-full py-3 rounded-xl bg-[#0052FF] hover:bg-blue-600 text-xs font-bold font-display text-white shadow-lg shadow-blue-500/10 disabled:bg-zinc-800 disabled:text-zinc-500 transition-all flex items-center justify-center gap-1.5"
               >
                 <ArrowLeftRight className="w-4 h-4" />
-                <span>{swapping ? "Executing contract routing..." : "Route Liquidity swap"}</span>
+                <span>Swap unavailable — router integration required</span>
               </button>
             </form>
 
             <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 font-mono text-[10px] text-zinc-400 space-y-2">
               <div className="flex justify-between">
                 <span>Price Ticker:</span>
-                <span className="text-white">1 ETH = {onChainRate.toLocaleString()} AGL</span>
+                <span className="text-white">{onChainRate === null ? "Unavailable" : `1 ETH = ${onChainRate.toLocaleString()} AGL`}</span>
               </div>
               <div className="flex justify-between">
                 <span>Network Fee:</span>
-                <span className="text-emerald-400">&lt; $0.01 (Base Gas Optimizer)</span>
+                <span className="text-zinc-400">Unavailable until a route is quoted</span>
               </div>
               <div className="flex justify-between">
                 <span>Liquidity Depth:</span>
-                <span className="text-white">Constant (Automated Linear Curve)</span>
+                <span className="text-zinc-400">Not verified</span>
               </div>
             </div>
           </div>
