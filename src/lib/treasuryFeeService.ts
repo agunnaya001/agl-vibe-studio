@@ -35,9 +35,9 @@ const ETH_PRICE_USD = 3250;
 const AGL_PRICE_USD = 0.1625;
 
 const DEFAULT_STATE: TreasuryFeeState = {
-  accumulatedFeesEth: 0.0418,
-  accumulatedFeesAgl: 1850,
-  accumulatedFeesUsd: 0.0418 * ETH_PRICE_USD + 1850 * AGL_PRICE_USD, // ~$436.48
+  accumulatedFeesEth: 0,
+  accumulatedFeesAgl: 0,
+  accumulatedFeesUsd: 0
   thresholdEth: 0.05,
   thresholdAgl: 2000,
   autoSweepEnabled: false,
@@ -48,8 +48,8 @@ const DEFAULT_STATE: TreasuryFeeState = {
   sweepCount: 0,
   treasuryRecipient: AGL_TREASURY_ADDRESS,
   sweepHistory: [],
-  /* historical demo entries removed; only verified on-chain receipts may populate this history */
-  /* [
+  /* historical demo entries removed; only verified on-chain receipts may populate this history
+  [
     {
       id: "swp-101",
       timestamp: Date.now() - 3600000 * 3,
@@ -101,6 +101,14 @@ export class TreasuryFeeService {
       return {
         ...DEFAULT_STATE,
         ...parsed,
+        accumulatedFeesEth: 0,
+        accumulatedFeesAgl: 0,
+        accumulatedFeesUsd: 0,
+        totalSweptEth: 0,
+        totalSweptAgl: 0,
+        sweepCount: 0,
+        sweepHistory: [],
+        autoSweepEnabled: false,
         treasuryRecipient: AGL_TREASURY_ADDRESS // ensure strictly correct treasury address
       };
     } catch (e) {
