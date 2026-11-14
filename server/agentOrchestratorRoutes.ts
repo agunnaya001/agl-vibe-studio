@@ -129,7 +129,7 @@ Generate a precise, ordered multi-step execution plan for Base blockchain.`;
         },
         {
           operationName: "Agent Planner",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -311,7 +311,7 @@ Target Network: ${network}`;
         },
         {
           operationName: "Generate Solidity Contract",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -477,7 +477,7 @@ ${solidityCode}
         },
         {
           operationName: "Security Audit Agent",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -713,7 +713,7 @@ Result Data: ${JSON.stringify(result || {})}`;
         },
         {
           operationName: "Agent Summary Generator",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 

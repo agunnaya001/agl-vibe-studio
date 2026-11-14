@@ -31,10 +31,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { WalletState, Token } from "../types";
-import { AgunnayaDatabase } from "../lib/db";
-import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
 import ImageWithFallback from "../components/ImageWithFallback";
-import BurnLeaderboard from "../components/BurnLeaderboard";
 
 interface TokenBurnerPageProps {
   wallet: WalletState;
@@ -97,8 +94,8 @@ const DEFAULT_PORTFOLIO_TOKENS = [
     name: "Agunnaya Utility Token",
     symbol: "AGL",
     decimals: 18,
-    priceUsd: 0.1625,
-    totalSupply: 1000000000,
+    priceUsd: 0,
+    totalSupply: 0,
     logoUrl: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     isNativeAgl: true
   },
@@ -107,8 +104,8 @@ const DEFAULT_PORTFOLIO_TOKENS = [
     name: "USD Coin (Base)",
     symbol: "USDC",
     decimals: 6,
-    priceUsd: 1.00,
-    totalSupply: 5400000000,
+    priceUsd: 0,
+    totalSupply: 0,
     logoUrl: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png",
     isNativeAgl: false
   },
@@ -117,8 +114,8 @@ const DEFAULT_PORTFOLIO_TOKENS = [
     name: "Aerodrome Token",
     symbol: "AERO",
     decimals: 18,
-    priceUsd: 1.25,
-    totalSupply: 890000000,
+    priceUsd: 0,
+    totalSupply: 0,
     logoUrl: "https://assets.coingecko.com/coins/images/31745/large/aerodrome.png",
     isNativeAgl: false
   },
@@ -127,15 +124,14 @@ const DEFAULT_PORTFOLIO_TOKENS = [
     name: "Coinbase Wrapped Staked ETH",
     symbol: "cbETH",
     decimals: 18,
-    priceUsd: 3510.00,
-    totalSupply: 450000,
+    priceUsd: 0,
+    totalSupply: 0,
     logoUrl: "https://assets.coingecko.com/coins/images/27008/large/cbeth.png",
     isNativeAgl: false
   }
 ];
 
-const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
-const MULTICALL3_BASE_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
+const BASE_RPC_URL = "https://mainnet.base.org";
 
 export default function TokenBurnerPage({
   wallet,
@@ -187,59 +183,8 @@ export default function TokenBurnerPage({
   const [activeCertificate, setActiveCertificate] = useState<BurnTransaction | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
-  // Live burn history list (persisted in local storage + initial mock history)
-  const [burnHistory, setBurnHistory] = useState<BurnTransaction[]>(() => {
-    try {
-      const saved = localStorage.getItem("agl_token_burn_history");
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
-    return [
-      {
-        id: "burn-1",
-        txHash: "0x9d4a8f2e7b1c3d5e7f9a2b4c6d8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
-        tokenSymbol: "AGL",
-        tokenName: "Agunnaya Utility Token",
-        tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698",
-        tokenLogo: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-        amount: 5000,
-        amountUsd: 812.50,
-        burnerAddress: AGL_TREASURY_ADDRESS,
-        nullAddress: DEAD_ADDRESS,
-        burnType: "standard",
-        blockNumber: 18452910,
-        timestamp: Date.now() - 3600000 * 4,
-        status: "confirmed"
-      },
-      {
-        id: "burn-2",
-        txHash: "0x1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
-        tokenSymbol: "AGL",
-        tokenName: "Agunnaya Utility Token",
-        tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698",
-        tokenLogo: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-        amount: 250,
-        amountUsd: 40.62,
-        burnerAddress: "0x7890123456789012345678901234567890123456",
-        nullAddress: DEAD_ADDRESS,
-        burnType: "credits",
-        creditsMinted: 2500,
-        blockNumber: 18451800,
-        timestamp: Date.now() - 3600000 * 18,
-        status: "confirmed"
-      }
-    ];
-  });
-
-  // Save history to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem("agl_token_burn_history", JSON.stringify(burnHistory));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [burnHistory]);
+  // No legacy local records are presented as verified burns. New records require verified receipts.
+  const [burnHistory] = useState<BurnTransaction[]>([]);
 
   // Combine default portfolio tokens with dynamic studio tokens
   const allPortfolioTokens = [...DEFAULT_PORTFOLIO_TOKENS];
@@ -250,8 +195,8 @@ export default function TokenBurnerPage({
         name: t.name,
         symbol: t.symbol,
         decimals: 18,
-        priceUsd: t.currentPrice * 3250,
-        totalSupply: t.supply || t.maxSupply,
+        priceUsd: 0,
+        totalSupply: 0,
         logoUrl: t.logoUrl,
         isNativeAgl: false
       });
@@ -265,42 +210,57 @@ export default function TokenBurnerPage({
 
   // Balance calculation
   const getBalanceForToken = (symbol: string) => {
-    if (!wallet.isConnected) return 0;
     if (symbol === "AGL") return wallet.aglTokenBalance || 0;
-    if (symbol === "USDC") return 1250.00;
-    if (symbol === "AERO") return 450.00;
-    if (symbol === "cbETH") return 0.25;
-    return 100.00; // default balance for custom/studio tokens
+    if (symbol === "ETH") return wallet.balanceEth || 0;
+    // Other ERC-20 balances are not queried by this page and must not be fabricated.
+    return 0;
   };
 
   const userBalance = getBalanceForToken(activeToken.symbol);
 
-  // Fetch custom ERC-20 token details
-  const handleInspectCustomToken = () => {
-    if (!customAddressInput.startsWith("0x") || customAddressInput.length < 42) {
-      showToast("Please enter a valid 42-character Ethereum/Base contract address.", "error");
+  // Inspect standard ERC-20 metadata from Base RPC; no price or supply estimate is invented.
+  const handleInspectCustomToken = async () => {
+    if (!ethers.isAddress(customAddressInput)) {
+      showToast("Enter a valid EVM token contract address.", "error");
       return;
     }
 
     setIsFetchingCustom(true);
-    addTerminalLog("info", `Inspecting custom ERC-20 token contract at ${customAddressInput}...`);
-
-    setTimeout(() => {
-      setIsFetchingCustom(false);
-      const mockCustom = {
+    addTerminalLog("info", `Reading ERC-20 metadata from Base: ${customAddressInput}`);
+    try {
+      const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+      const contract = new ethers.Contract(customAddressInput, [
+        "function name() view returns (string)",
+        "function symbol() view returns (string)",
+        "function decimals() view returns (uint8)",
+        "function totalSupply() view returns (uint256)"
+      ], provider);
+      const [name, symbol, decimalsRaw, supplyRaw] = await Promise.all([
+        contract.name(),
+        contract.symbol(),
+        contract.decimals(),
+        contract.totalSupply()
+      ]);
+      const decimals = Number(decimalsRaw);
+      setCustomToken({
         address: customAddressInput,
-        name: `Custom Token (${customAddressInput.slice(2, 6)})`,
-        symbol: "CTKN",
-        decimals: 18,
-        priceUsd: 0.50,
-        totalSupply: 10000000,
-        logoUrl: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=120&q=80",
+        name,
+        symbol,
+        decimals,
+        priceUsd: 0,
+        totalSupply: Number(ethers.formatUnits(supplyRaw, decimals)),
+        logoUrl: "",
         isNativeAgl: false
-      };
-      setCustomToken(mockCustom);
-      showToast(`Verified ERC-20 token interface for ${mockCustom.symbol}!`, "success");
-      addTerminalLog("success", `CONTRACT_VERIFIED: Standard ERC-20 interfaces detected for ${customAddressInput}.`);
-    }, 800);
+      });
+      showToast(`Read ${symbol} token metadata from Base. USD price is unavailable.`, "success");
+      addTerminalLog("success", `ERC20_METADATA: Read ${name} (${symbol}), decimals ${decimals}.`);
+    } catch (error: any) {
+      console.error("ERC-20 metadata read failed:", error);
+      showToast(error?.shortMessage || error?.message || "Unable to read standard ERC-20 metadata from this address.", "error");
+      addTerminalLog("error", "ERC20_METADATA_ERROR: Contract metadata read failed.");
+    } finally {
+      setIsFetchingCustom(false);
+    }
   };
 
   // Quick percentage selection for single token
@@ -385,287 +345,24 @@ export default function TokenBurnerPage({
     .filter(i => i.amount > 0);
 
   const totalBatchUsdDeflated = validBatchItems.reduce((acc, curr) => acc + curr.amountUsd, 0);
-  const totalBatchCreditsMinted = batchBurnMode === "credits" ? Math.floor(validBatchItems.reduce((acc, curr) => acc + (curr.amount * 10), 0)) : 0;
-  const estimatedBatchGasSavedPercent = validBatchItems.length > 1 ? Math.min(78, 30 + (validBatchItems.length - 1) * 16) : 0;
+  const totalBatchCreditsMinted = 0;
+  const estimatedBatchGasSavedPercent = 0;
 
-  // Execute Batch Multicall Burn Flow
-  const handleExecuteBatchBurn = async () => {
-    if (!wallet.isConnected) {
-      onOpenConnectWallet();
-      return;
-    }
-
-    if (validBatchItems.length === 0) {
-      showToast("Please select at least one token with a valid burn amount > 0.", "error");
-      return;
-    }
-
-    // Check balances
-    for (const item of validBatchItems) {
-      const bal = getBalanceForToken(item.tokenSymbol);
-      if (item.amount > bal) {
-        showToast(`Insufficient balance for ${item.tokenSymbol}. You have ${bal}.`, "error");
-        return;
-      }
-    }
-
-    setIsBatchBurning(true);
-    setBatchBurnStep(1);
-    addTerminalLog("info", `MULTICALL_ENGINE: Initiating batch-burn for ${validBatchItems.length} portfolio tokens on Base L2...`);
-
-    // Step 1: Validating allowances & encoding ERC-20 transfer calldatas
-    setTimeout(() => {
-      setBatchBurnStep(2);
-      addTerminalLog("info", `MULTICALL_ENCODER: Packing ${validBatchItems.length} ERC-20 transfer(${DEAD_ADDRESS.slice(0, 10)}...) calldatas into Multicall3 (${MULTICALL3_BASE_ADDRESS.slice(0, 10)}...)...`);
-
-      // Step 2: Assembling Multicall payload
-      setTimeout(() => {
-        setBatchBurnStep(3);
-        addTerminalLog("info", `ACCOUNT_ABSTRACTION: Requesting atomic Web3 signature with Sponsored Gas Relay...`);
-
-        // Step 3: Web3 signature & AA broadcast
-        setTimeout(async () => {
-          setBatchBurnStep(4);
-          
-          let batchTxHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-          
-          // Ethers real execution if signer available
-          if (typeof window !== "undefined" && (window as any).ethereum) {
-            try {
-              const provider = new ethers.BrowserProvider((window as any).ethereum);
-              const signer = await provider.getSigner();
-              addTerminalLog("info", `ETHERS_MULTICALL: Submitting atomic payload via signer ${await signer.getAddress()}`);
-            } catch (err) {
-              console.warn("Ethers multicall fallback to simulated Base L2 transaction:", err);
-            }
-          }
-
-          addTerminalLog("system", `BASE_MULTICALL: Broadcasting Multicall3 atomic batch transaction ${batchTxHash.slice(0, 12)}...`);
-
-          // Step 4: Base L2 Block confirmation & Certificate creation
-          setTimeout(() => {
-            setBatchBurnStep(5);
-
-            const now = Date.now();
-            const blockNum = 18453100 + Math.floor(Math.random() * 600);
-
-            const newTxs: BurnTransaction[] = validBatchItems.map((item, idx) => ({
-              id: `burn-batch-${now}-${idx}`,
-              txHash: batchTxHash,
-              tokenSymbol: item.tokenSymbol,
-              tokenName: item.tokenName,
-              tokenAddress: item.tokenAddress,
-              tokenLogo: item.tokenLogo,
-              amount: item.amount,
-              amountUsd: item.amountUsd,
-              burnerAddress: wallet.address || AGL_TREASURY_ADDRESS,
-              nullAddress: DEAD_ADDRESS,
-              burnType: batchBurnMode,
-              creditsMinted: batchBurnMode === "credits" ? Math.floor(item.amount * 10) : undefined,
-              blockNumber: blockNum,
-              timestamp: now,
-              status: "confirmed"
-            }));
-
-            const batchCert: BatchBurnCertificate = {
-              id: `batch-cert-${now}`,
-              txHash: batchTxHash,
-              multicallAddress: MULTICALL3_BASE_ADDRESS,
-              tokens: validBatchItems,
-              totalAmountUsd: totalBatchUsdDeflated,
-              totalTokensCount: validBatchItems.length,
-              burnerAddress: wallet.address || AGL_TREASURY_ADDRESS,
-              nullAddress: DEAD_ADDRESS,
-              burnType: batchBurnMode,
-              creditsMinted: totalBatchCreditsMinted > 0 ? totalBatchCreditsMinted : undefined,
-              gasSavedPercent: estimatedBatchGasSavedPercent || 65,
-              blockNumber: blockNum,
-              timestamp: now,
-              status: "confirmed"
-            };
-
-            // Deduct AGL if in batch
-            const aglItem = validBatchItems.find(i => i.tokenSymbol === "AGL");
-            if (aglItem) {
-              const newAglBal = Math.max(0, wallet.aglTokenBalance - aglItem.amount);
-              const newCredits = batchBurnMode === "credits" ? (wallet.aglCredits || 0) + totalBatchCreditsMinted : wallet.aglCredits;
-              const updatedWallet = {
-                ...wallet,
-                aglTokenBalance: newAglBal,
-                aglCredits: newCredits
-              };
-              AgunnayaDatabase.saveWallet(updatedWallet);
-              onRefreshWallet();
-            } else if (batchBurnMode === "credits" && totalBatchCreditsMinted > 0) {
-              const updatedWallet = {
-                ...wallet,
-                aglCredits: (wallet.aglCredits || 0) + totalBatchCreditsMinted
-              };
-              AgunnayaDatabase.saveWallet(updatedWallet);
-              onRefreshWallet();
-            }
-
-            // Record DB activities for each token burned
-            validBatchItems.forEach(item => {
-              try {
-                AgunnayaDatabase.addActivity({
-                  type: "burn",
-                  tokenSymbol: item.tokenSymbol,
-                  tokenAddress: item.tokenAddress,
-                  user: wallet.address || AGL_TREASURY_ADDRESS,
-                  amount: item.amount,
-                  ethValue: item.amountUsd / 3250,
-                  details: `Multicall Batch Burn: ${item.amount} ${item.tokenSymbol} (${batchBurnMode}) on Base Mainnet`
-                });
-              } catch (err) {
-                console.warn("Activity DB log error:", err);
-              }
-            });
-
-            // Update burn history state & open certificate
-            setBurnHistory(prev => [...newTxs, ...prev]);
-            setIsBatchBurning(false);
-            setBatchBurnStep(0);
-            setActiveBatchCertificate(batchCert);
-
-            if (batchBurnMode === "credits") {
-              showToast(`Batch burned ${validBatchItems.length} tokens! Minted ${totalBatchCreditsMinted.toLocaleString()} Studio Compute Credits!`, "success");
-              addTerminalLog("success", `MULTICALL_COMPLETE: ${validBatchItems.length} tokens atomically burned. ${totalBatchCreditsMinted} Credits minted to studio.`);
-            } else {
-              showToast(`Atomic Multicall3 batch-burn executed for ${validBatchItems.length} tokens (~$${totalBatchUsdDeflated.toFixed(2)} deflated)!`, "success");
-              addTerminalLog("success", `MULTICALL_COMPLETE: ${validBatchItems.length} token transfers aggregated in 1 atomic transaction. Gas saved: ~${estimatedBatchGasSavedPercent || 65}%.`);
-            }
-          }, 1200);
-        }, 1000);
-      }, 900);
-    }, 800);
+  // Batch burn is disabled until token-specific burn methods and the multicall payload are verified.
+  const handleExecuteBatchBurn = () => {
+    showToast("Batch burn is unavailable: token-specific burn methods, approvals, and the Multicall3 payload have not been verified. No transaction was submitted.", "info");
+    addTerminalLog("info", "BATCH_BURN_DISABLED: No token transfer or burn transaction was submitted.");
   };
 
-  // Execute Burn Flow
-  const handleExecuteBurn = async () => {
-    if (!wallet.isConnected) {
-      onOpenConnectWallet();
-      return;
-    }
-
-    const amt = parseFloat(burnAmount);
-    if (isNaN(amt) || amt <= 0) {
-      showToast("Please enter a valid burn amount greater than 0.", "error");
-      return;
-    }
-
-    if (amt > userBalance) {
-      showToast(`Insufficient balance. You have ${userBalance} ${activeToken.symbol}.`, "error");
-      return;
-    }
-
-    setIsBurning(true);
-    setBurnStep(1);
-    addTerminalLog("info", `BURN_ENGINE: Initiating ${burnMode} burn of ${amt} ${activeToken.symbol} on Base L2...`);
-
-    // Step 1: Validating balance & null address target
-    setTimeout(() => {
-      setBurnStep(2);
-      addTerminalLog("info", `BURN_ENGINE: Requesting Web3 signature for Null Address Transfer to ${DEAD_ADDRESS}...`);
-
-      // Step 2: Signing transaction
-      setTimeout(async () => {
-        setBurnStep(3);
-        
-        let txHashHex = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-        
-        // Attempt actual Ethers transaction if provider available
-        if (typeof window !== "undefined" && (window as any).ethereum) {
-          try {
-            const provider = new ethers.BrowserProvider((window as any).ethereum);
-            const signer = await provider.getSigner();
-            addTerminalLog("info", `ETHERS: Connected signer ${await signer.getAddress()}`);
-          } catch (err) {
-            console.warn("Ethers transaction fallback to simulated L2 execution:", err);
-          }
-        }
-
-        addTerminalLog("system", `BASE_MAINNET: Submitting Burn Transaction ${txHashHex.slice(0, 10)}...`);
-
-        // Step 3: Executing on Base L2 & Step 4: Certificate Generation
-        setTimeout(() => {
-          setBurnStep(4);
-          
-          const createdTx: BurnTransaction = {
-            id: `burn-${Date.now()}`,
-            txHash: txHashHex,
-            tokenSymbol: activeToken.symbol,
-            tokenName: activeToken.name,
-            tokenAddress: activeToken.address,
-            tokenLogo: activeToken.logoUrl,
-            amount: amt,
-            amountUsd: amt * activeToken.priceUsd,
-            burnerAddress: wallet.address,
-            nullAddress: DEAD_ADDRESS,
-            burnType: burnMode,
-            creditsMinted: burnMode === "credits" ? Math.floor(amt * 10) : undefined,
-            blockNumber: 18453000 + Math.floor(Math.random() * 500),
-            timestamp: Date.now(),
-            status: "confirmed"
-          };
-
-          // Update state & wallet
-          if (activeToken.symbol === "AGL") {
-            const newAglBalance = Math.max(0, wallet.aglTokenBalance - amt);
-            const newCredits = burnMode === "credits" ? (wallet.aglCredits || 0) + Math.floor(amt * 10) : wallet.aglCredits;
-            const updatedWallet = {
-              ...wallet,
-              aglTokenBalance: newAglBalance,
-              aglCredits: newCredits
-            };
-            AgunnayaDatabase.saveWallet(updatedWallet);
-            onRefreshWallet();
-          }
-
-          // Record activity in Firestore/Database
-          try {
-            AgunnayaDatabase.addActivity({
-              type: "burn",
-              tokenSymbol: activeToken.symbol,
-              tokenAddress: activeToken.address,
-              user: wallet.address || AGL_TREASURY_ADDRESS,
-              amount: amt,
-              ethValue: (amt * activeToken.priceUsd) / 3250,
-              details: `Burned ${amt} ${activeToken.symbol} (${burnMode} mode) on Base Mainnet`
-            });
-          } catch (err) {
-            console.warn("Failed to record burn activity to database:", err);
-          }
-
-          setBurnHistory(prev => [createdTx, ...prev]);
-          setIsBurning(false);
-          setBurnStep(0);
-          setActiveCertificate(createdTx);
-
-          if (burnMode === "credits") {
-            showToast(`Burned ${amt} ${activeToken.symbol}! Minted ${Math.floor(amt * 10)} Agunnaya Studio Compute Credits!`, "success");
-            addTerminalLog("success", `BURN_COMPLETE: ${amt} ${activeToken.symbol} destroyed. ${Math.floor(amt * 10)} Credits added to studio balance.`);
-          } else {
-            showToast(`Permanently burned ${amt} ${activeToken.symbol} on Base Mainnet!`, "success");
-            addTerminalLog("success", `BURN_COMPLETE: ${amt} ${activeToken.symbol} permanently sent to ${DEAD_ADDRESS}. Total supply deflated.`);
-          }
-
-          setBurnAmount("");
-        }, 1200);
-      }, 1000);
-    }, 800);
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedAddress(text);
-    showToast(`${label} copied to clipboard!`, "info");
-    setTimeout(() => setCopiedAddress(null), 2000);
+  // Single-token burn is disabled until the token-specific burn ABI and receipt flow are verified.
+  const handleExecuteBurn = () => {
+    showToast("Burn is unavailable: the token's burn method and deployed ABI have not been verified. No tokens were moved and no transaction was submitted.", "info");
+    addTerminalLog("info", "TOKEN_BURN_DISABLED: No burn transaction was submitted.");
   };
 
   // Global burn statistics
   const totalBurnedCount = burnHistory.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalBurnedUsd = burnHistory.reduce((acc, curr) => acc + curr.amountUsd, 0);
+  const totalBurnedUsd = burnHistory.length > 0 ? burnHistory.reduce((acc, curr) => acc + curr.amountUsd, 0) : null;
 
   return (
     <div id="token-burner-page" className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-16">
@@ -736,21 +433,19 @@ export default function TokenBurnerPage({
           <div className="bg-black/40 p-3 rounded-xl border border-white/5">
             <span className="text-zinc-500 block text-[10px] uppercase">USD Deflated Value</span>
             <span className="text-emerald-400 font-bold text-base mt-0.5">
-              ${totalBurnedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalBurnedUsd === null ? "Unavailable" : totalBurnedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
 
           <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-            <span className="text-zinc-500 block text-[10px] uppercase">Standard Dead Target</span>
-            <span className="text-zinc-300 font-bold text-xs truncate mt-1 block">
-              0x000...dEaD
-            </span>
+            <span className="text-zinc-500 block text-[10px] uppercase">Burn destination</span>
+            <span className="text-amber-300 font-bold text-xs truncate mt-1 block">Not configured</span>
           </div>
 
           <div className="bg-black/40 p-3 rounded-xl border border-white/5">
             <span className="text-zinc-500 block text-[10px] uppercase">Paymaster Status</span>
             <span className="text-amber-300 font-bold text-xs flex items-center gap-1 mt-1">
-              <Fuel className="w-3.5 h-3.5 text-amber-300" /> 100% Sponsored AA
+              <Fuel className="w-3.5 h-3.5 text-amber-300" /> Not verified
             </span>
           </div>
         </div>
@@ -801,7 +496,7 @@ export default function TokenBurnerPage({
               {activeBurnTab === "batch" && (
                 <div className="text-right text-[11px] font-mono text-emerald-400 flex items-center gap-1.5 self-end sm:self-center">
                   <Zap className="w-3.5 h-3.5 fill-emerald-400 text-emerald-400" />
-                  <span>Atomic Multicall3 Enabled</span>
+                  <span>Burn execution disabled pending ABI verification</span>
                 </div>
               )}
             </div>
@@ -913,7 +608,7 @@ export default function TokenBurnerPage({
                               {bal.toLocaleString()} {tok.symbol}
                             </span>
                             <span className="text-[10px] text-zinc-500 block">
-                              ≈ ${(bal * tok.priceUsd).toFixed(2)}
+                              USD valuation unavailable
                             </span>
                           </div>
                         </div>
@@ -996,33 +691,18 @@ export default function TokenBurnerPage({
                     <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
                       <span className="text-[10px] text-zinc-500 block">Gas Savings</span>
                       <span className="text-sm font-bold text-amber-300 flex items-center gap-1">
-                        <Fuel className="w-3.5 h-3.5" /> ~{estimatedBatchGasSavedPercent || 65}%
+                        <Fuel className="w-3.5 h-3.5" /> Unavailable
                       </span>
                     </div>
 
                     <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
-                      <span className="text-[10px] text-zinc-500 block">Null Target</span>
-                      <span className="text-xs font-bold text-red-400 truncate block mt-0.5">
-                        0x000...dEaD
-                      </span>
+                      <span className="text-[10px] text-zinc-500 block">Burn destination</span>
+                      <span className="text-xs font-bold text-amber-300 truncate block mt-0.5">Not configured</span>
                     </div>
                   </div>
 
-                  {/* Multicall3 Contract reference */}
-                  <div className="p-3 rounded-xl bg-black/60 border border-white/5 text-[11px] flex items-center justify-between text-zinc-400">
-                    <span className="flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      Multicall3 Base Address:
-                    </span>
-                    <span className="text-zinc-300 font-bold flex items-center gap-1">
-                      {MULTICALL3_BASE_ADDRESS.slice(0, 8)}...{MULTICALL3_BASE_ADDRESS.slice(-6)}
-                      <button 
-                        onClick={() => copyToClipboard(MULTICALL3_BASE_ADDRESS, "Multicall3 contract")}
-                        className="text-zinc-500 hover:text-white"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </span>
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-amber-200">
+                    Multicall batch execution is disabled pending verified token-specific burn methods and a tested transaction payload.
                   </div>
                 </div>
 
@@ -1047,10 +727,10 @@ export default function TokenBurnerPage({
                         </span>
                         {batchBurnMode === "standard" && <CheckCircle2 className="w-4 h-4 text-red-500" />}
                       </div>
-                      <p className="text-[10px] text-zinc-400">Atomically send all {validBatchItems.length} tokens to Dead Address ({DEAD_ADDRESS.slice(0, 10)}...).</p>
+                      <p className="text-[10px] text-zinc-400">Disabled. Token-specific burn functions and transaction receipts have not been verified.</p>
                     </button>
 
-                    {/* Mode 2: Burn for Studio Credits */}
+                    {/* Mode 2: Buy Studio Credits */}
                     <button
                       type="button"
                       onClick={() => setBatchBurnMode("credits")}
@@ -1108,7 +788,7 @@ export default function TokenBurnerPage({
                 <button
                   id="execute-batch-burn-btn"
                   onClick={handleExecuteBatchBurn}
-                  disabled={isBatchBurning || validBatchItems.length === 0}
+                  disabled={true}
                   className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-bold text-base shadow-2xl font-display flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {isBatchBurning ? (
@@ -1120,7 +800,7 @@ export default function TokenBurnerPage({
                     <>
                       <Layers className="w-5 h-5 text-amber-300 animate-pulse" />
                       <span>
-                        Execute Batch Multicall Burn ({validBatchItems.length} Tokens • ≈ ${totalBatchUsdDeflated.toFixed(2)} USD)
+                        Batch burn unavailable — ABI verification required
                       </span>
                     </>
                   )}
@@ -1290,7 +970,7 @@ export default function TokenBurnerPage({
                         </span>
                         {burnMode === "standard" && <CheckCircle2 className="w-4 h-4 text-red-500" />}
                       </div>
-                      <p className="text-[10px] text-zinc-400">Send to Dead Address ({DEAD_ADDRESS.slice(0, 10)}...). Permanently reduces total supply.</p>
+                      <p className="text-[10px] text-zinc-400">Disabled. A dead-address transfer is not assumed to invoke a token burn function.</p>
                     </button>
 
                     {/* Mode 2: Burn for Studio Credits */}
@@ -1334,7 +1014,7 @@ export default function TokenBurnerPage({
 
                   {/* Percentage Quick Selection Chips */}
                   <div className="flex items-center justify-between pt-2 border-t border-white/5 font-mono text-xs">
-                    <span className="text-[11px] text-zinc-500">≈ ${((parseFloat(burnAmount) || 0) * activeToken.priceUsd).toFixed(2)} USD</span>
+                    <span className="text-[11px] text-zinc-500">USD valuation unavailable</span>
                     <div className="flex items-center gap-1.5">
                       {[10, 25, 50, 75, 100].map(pct => (
                         <button
@@ -1387,7 +1067,7 @@ export default function TokenBurnerPage({
                 <button
                   id="execute-burn-btn"
                   onClick={handleExecuteBurn}
-                  disabled={isBurning}
+                  disabled={true}
                   className="w-full h-14 rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-purple-600 hover:opacity-95 text-white font-bold text-base shadow-2xl font-display flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {isBurning ? (
@@ -1399,7 +1079,7 @@ export default function TokenBurnerPage({
                     <>
                       <Flame className="w-5 h-5 text-amber-300 fill-amber-300 animate-bounce" />
                       <span>
-                        Execute Burn: {burnAmount || "0"} {activeToken.symbol}
+                        Burn unavailable — ABI verification required
                       </span>
                     </>
                   )}
@@ -1426,12 +1106,7 @@ export default function TokenBurnerPage({
             <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3 font-mono text-xs">
               <div className="flex justify-between items-center text-zinc-400">
                 <span>Null Destination:</span>
-                <span className="text-red-400 font-bold flex items-center gap-1">
-                  0x0000...dEaD
-                  <button onClick={() => copyToClipboard(DEAD_ADDRESS, "Dead address")} className="text-zinc-500 hover:text-white">
-                    <Copy className="w-3 h-3" />
-                  </button>
-                </span>
+                <span className="text-amber-300 font-bold">Not configured — burn execution disabled</span>
               </div>
               <div className="flex justify-between items-center text-zinc-400">
                 <span>Base L2 Chain ID:</span>
@@ -1475,7 +1150,7 @@ export default function TokenBurnerPage({
                         </span>
                       </div>
                       <span className="text-emerald-400 font-bold text-[11px]">
-                        ≈ ${b.amountUsd.toFixed(2)} USD
+                        USD valuation unavailable
                       </span>
                     </div>
 
@@ -1506,12 +1181,9 @@ export default function TokenBurnerPage({
         </div>
       </div>
 
-      {/* Firestore-backed Burn Leaderboard Component */}
-      <BurnLeaderboard
-        wallet={wallet}
-        showToast={showToast}
-        onOpenConnectWallet={onOpenConnectWallet}
-      />
+      <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-xs text-zinc-400">
+        Historical burn entries are hidden until their Base transaction receipts and token burn events can be independently verified. No new burn records can be created from this page.
+      </div>
 
       {/* Single Burn Step Execution Loader Modal */}
       {isBurning && (
@@ -1649,7 +1321,7 @@ export default function TokenBurnerPage({
                   {activeCertificate.amount.toLocaleString()} {activeCertificate.tokenSymbol}
                 </span>
                 <span className="text-xs text-emerald-400 block font-bold">
-                  ≈ ${activeCertificate.amountUsd.toFixed(2)} USD Value Deflated
+                  USD valuation unavailable
                 </span>
               </div>
 
@@ -1764,7 +1436,7 @@ export default function TokenBurnerPage({
                           </span>
                         </div>
                         <span className="text-emerald-400 font-bold">
-                          ≈ ${item.amountUsd.toFixed(2)} USD
+                          USD valuation unavailable
                         </span>
                       </div>
                     ))}

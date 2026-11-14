@@ -25,7 +25,7 @@ export default function AIAssistantSidebar({
   isLocked = false,
   onToggleLock
 }: AIAssistantSidebarProps) {
-  const [selectedModel, setSelectedModel] = useState<"gemini-4-carbon" | "gemini-4-argon" | "gemini-3.8-flash" | "gemini-3.1-flash-lite">("gemini-3.8-flash");
+  const [selectedModel, setSelectedModel] = useState<"gemini-3.8-flash" | "gemini-3.7-flash" | "gemini-3.5-flash-lite">("gemini-3.8-flash");
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
     { role: "assistant", content: "Greetings! I am the Agunnaya Labs AI Assistant powered by Gemini. Ask me anything about building dApps, deploying on Base, staking, or modeling bonding curve mathematics." }
   ]);
@@ -253,12 +253,11 @@ export default function AIAssistantSidebar({
             <span>MODEL ENGINE</span>
             <span className="text-brand-purple font-semibold">Multi-Turn Active</span>
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-3 gap-1">
             {[
-              { id: "gemini-4-carbon" as const, label: "Carbon", desc: "Reasoning" },
-              { id: "gemini-4-argon" as const, label: "Argon", desc: "Complex" },
               { id: "gemini-3.8-flash" as const, label: "Flash", desc: "General" },
-              { id: "gemini-3.1-flash-lite" as const, label: "Lite", desc: "Fast" }
+              { id: "gemini-3.7-flash" as const, label: "Reason", desc: "Complex" },
+              { id: "gemini-3.5-flash-lite" as const, label: "Lite", desc: "Fast" }
             ].map(m => (
               <button
                 key={m.id}

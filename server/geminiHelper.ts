@@ -5,7 +5,10 @@ let aiClientInstance: GoogleGenAI | null = null;
 
 export function getAIClient(): GoogleGenAI {
   if (!aiClientInstance) {
-    const apiKey = process.env.GEMINI_API_KEY || "AIzaSy_placeholder_key";
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "AIzaSy_placeholder_key") {
+      throw new Error("GEMINI_API_KEY is not configured. Add a valid server-side Gemini API key to the deployment environment.");
+    }
     aiClientInstance = new GoogleGenAI({
       apiKey,
       httpOptions: {
@@ -99,7 +102,7 @@ export async function executeGeminiWithFallback<T>(
 ): Promise<T> {
   const models = options.preferredModels && options.preferredModels.length > 0
     ? options.preferredModels
-    : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro", "gemini-3.7-flash"];
+    : ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"];
   const maxRetries = options.maxRetriesPerModel ?? 2;
   const initialBackoff = options.initialBackoffMs ?? 400;
   const opName = options.operationName || "Gemini Operation";

@@ -33,7 +33,6 @@ import GoogleFormsPage from "./pages/GoogleFormsPage";
 import TokenFactoryPage from "./pages/TokenFactoryPage";
 import TokenBurnerPage from "./pages/TokenBurnerPage";
 import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
-import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
 import AISuitePage from "./pages/AISuitePage";
@@ -319,24 +318,8 @@ export default function App() {
       const state = TreasuryFeeService.getState();
       if (!state.autoSweepEnabled) return;
 
-      // Simulate incoming micro-fees from protocol activity (e.g. DEX swaps, bonding curve trades, AI agent executions)
-      if (Math.random() < 0.40) {
-        const ethFee = parseFloat((Math.random() * 0.0035 + 0.0012).toFixed(5));
-        const aglFee = Math.floor(Math.random() * 120 + 30);
-        
-        const { swept, sweepLog } = TreasuryFeeService.addProtocolFees(ethFee, aglFee, "Base Mainnet Protocol Activity");
-        
-        if (swept && sweepLog) {
-          addTerminalLog(
-            "success",
-            `TREASURY_AUTO_SWEEP: Target threshold reached (${sweepLog.amountEth} ETH)! Automatically dispatched Web3 transaction (${sweepLog.txHash.slice(0, 10)}...) to Treasury Wallet (${AGL_TREASURY_ADDRESS.slice(0, 6)}...${AGL_TREASURY_ADDRESS.slice(-4)}).`
-          );
-          showToast(
-            `⚡ Automated Treasury Sweep Executed! Transferred ${sweepLog.amountEth} ETH ($${sweepLog.amountUsd.toFixed(2)}) to Treasury Wallet`,
-            "success"
-          );
-        }
-      }
+      // No synthetic protocol fees or background treasury transactions are generated.
+      // A sweep can only be reported after a real wallet-signed transaction and receipt verification.
     };
 
     const currentState = TreasuryFeeService.getState();
@@ -819,7 +802,7 @@ export default function App() {
       case "defi":
         return {
           title: "AMM Token Swap & Staking | Agunnaya Labs Studio",
-          description: "Perform instant low-slippage swaps between ETH and native AGL utility tokens or lock up liquidity in compounding high-yield staking vaults.",
+          description: "Access verified Base DeFi integrations. AGL staking reads the deployed staking contract; swaps remain unavailable until a verified router and live quote source are configured.",
           image: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=defi`
         };
@@ -861,7 +844,7 @@ export default function App() {
       case "staking-vault":
         return {
           title: "Automated AGL Staking Vaults (Base Mainnet) | Agunnaya Labs Studio",
-          description: "Lock AGL tokens in automated smart contract vaults on Base Mainnet to earn high annual yield up to 72.5% APY with real-time compounding.",
+          description: "Access the canonical AGL staking workspace on Base Mainnet. Staking tiers and rewards are shown only when returned by the deployed contract.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=staking-vault`
         };
@@ -1224,9 +1207,9 @@ export default function App() {
         );
       case "staking-vault":
         return (
-          <StakingVaultPage
+          <DeFiPage
             wallet={wallet}
-            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            initialHubTab="swaps-staking"
             onRefreshWallet={refreshAllData}
             addTerminalLog={addTerminalLog}
             showToast={showToast}
@@ -1405,7 +1388,7 @@ export default function App() {
       >
         {/* Side Navigation bar */}
         <Sidebar 
-          currentTab={selectedToken ? "explore" : currentTab} 
+          currentTab={selectedToken ? "explore" : currentTab === "staking-vault" ? "defi" : currentTab} 
           onSelectTab={handleTabChange} 
           isAdmin={wallet.isConnected}
           onGoHome={() => setIsLaunched(false)}

@@ -44,62 +44,11 @@ export default function AutonomousAgentDetailModal({
   };
 
   const handleToggleStatus = async () => {
-    const newStatus = agent.status === "active" ? "paused" : "active";
-    const updated: AutonomousAgent = { ...agent, status: newStatus };
-    await AutonomousAgentService.saveAgent(updated);
-    onUpdateAgent(updated);
-    showToast(`Agent ${agent.name} is now ${newStatus.toUpperCase()}`, "info");
+    showToast("Autonomous agent execution is paused in this recovery build. Resume is unavailable until wallet deployment and transaction controls are verified.", "info");
   };
 
   const handleExecuteCycleNow = async () => {
-    if (isExecuting) return;
-    setIsExecuting(true);
-    setExecutionLogs([
-      `[INIT] Triggering manual autonomous execution cycle for ${agent.name}...`,
-      `[TREASURY] Checking dedicated treasury wallet: ${agent.treasury.treasuryAddress}...`,
-      `[BALANCE] Available capital: ${agent.treasury.ethBalance.toFixed(4)} ETH / ${agent.treasury.aglBalance.toLocaleString()} AGL`,
-      `[AI] Engaging Gemini 3.8 Flash model for on-chain reasoning...`,
-    ]);
-
-    try {
-      // Simulate real-time progress steps
-      setTimeout(() => {
-        setExecutionLogs((prev) => [
-          ...prev,
-          `[EVAL] Analyzing ${agent.role.toUpperCase()} parameters against Base L2 real-time state...`,
-        ]);
-      }, 700);
-
-      setTimeout(() => {
-        setExecutionLogs((prev) => [
-          ...prev,
-          `[RISK] Circuit breaker check passed (draw-down < ${agent.treasury.circuitBreakerThresholdPct}%).`,
-        ]);
-      }, 1400);
-
-      const record = await AutonomousAgentService.runCycle(agent);
-
-      setTimeout(() => {
-        setExecutionLogs((prev) => [
-          ...prev,
-          `[ACTION] ${record.action}`,
-          `[TX] Transaction broadcasted: ${record.txHash.slice(0, 14)}... (Gas: ${record.gasUsedEth} ETH)`,
-          `[SUCCESS] Cycle finished with profit/yield: +${record.profitOrLossEth} ETH.`,
-        ]);
-        setIsExecuting(false);
-        showToast(`Cycle executed successfully! +${record.profitOrLossEth} ETH net profit`, "success");
-
-        // Reload agent
-        AutonomousAgentService.getAgents().then((agents) => {
-          const found = agents.find((a) => a.id === agent.id);
-          if (found) onUpdateAgent(found);
-        });
-      }, 2100);
-    } catch (err: any) {
-      setExecutionLogs((prev) => [...prev, `[ERROR] Execution failed: ${err?.message}`]);
-      setIsExecuting(false);
-      showToast("Autonomous cycle failed", "error");
-    }
+    showToast("Autonomous execution is disabled. No transaction, vote, trade, or treasury action was submitted.", "info");
   };
 
   return (
@@ -153,6 +102,7 @@ export default function AutonomousAgentDetailModal({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleToggleStatus}
+                disabled
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border ${
                   agent.status === "active"
                     ? "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
@@ -160,16 +110,16 @@ export default function AutonomousAgentDetailModal({
                 }`}
               >
                 {agent.status === "active" ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                {agent.status === "active" ? "Pause Agent" : "Resume Agent"}
+                Execution paused
               </button>
 
               <button
                 onClick={handleExecuteCycleNow}
-                disabled={isExecuting || agent.status !== "active"}
+                disabled
                 className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-1.5 transition-colors shadow-lg shadow-blue-600/20"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isExecuting ? "animate-spin" : ""}`} />
-                {isExecuting ? "Executing Cycle..." : "Execute Cycle Now"}
+                Execution unavailable
               </button>
 
               <button
@@ -226,40 +176,41 @@ export default function AutonomousAgentDetailModal({
                     <div>
                       <div className="flex items-center gap-2 text-xs text-zinc-400 mb-1">
                         <Wallet className="w-4 h-4 text-blue-400" />
-                        <span>Dedicated On-Chain Treasury Wallet</span>
+                        <span>Treasury configuration (not deployed)</span>
                         <span className="px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">
                           {agent.treasury.walletType.replace("_", " ").toUpperCase()}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="font-mono text-sm sm:text-base font-semibold text-white">
-                          {agent.treasury.treasuryAddress}
+                          {agent.treasury.treasuryAddress || "Not deployed"}
                         </span>
-                        <button
+                        {agent.treasury.treasuryAddress && <button
                           onClick={() => handleCopy(agent.treasury.treasuryAddress)}
                           className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
                           title="Copy Address"
                         >
                           {copiedAddress ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                        <a
-                          href={`https://sepolia.basescan.org/address/${agent.treasury.treasuryAddress}`}
+                        </button>}
+                        {agent.treasury.treasuryAddress && <a
+                          href={`https://basescan.org/address/${agent.treasury.treasuryAddress}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
                           title="View on BaseScan"
                         >
                           <ExternalLink className="w-4 h-4" />
-                        </a>
+                        </a>}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <button
+                        disabled
                         onClick={() => onOpenTreasuryModal(agent)}
                         className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/20"
                       >
-                        <Coins className="w-4 h-4" /> Deposit / Withdraw Funds
+                        <Coins className="w-4 h-4" /> Treasury not deployed
                       </button>
                     </div>
                   </div>
@@ -269,25 +220,25 @@ export default function AutonomousAgentDetailModal({
                     <div>
                       <span className="text-[11px] text-zinc-400 uppercase tracking-wider">Treasury Valuation</span>
                       <p className="text-xl font-bold text-white mt-0.5">
-                        ${agent.treasury.totalValuationUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        Unavailable
                       </p>
                     </div>
                     <div>
                       <span className="text-[11px] text-zinc-400 uppercase tracking-wider">ETH Capital</span>
                       <p className="text-xl font-bold text-blue-400 mt-0.5">
-                        {agent.treasury.ethBalance.toFixed(4)} ETH
+                        {agent.treasury.walletType === "not_deployed" ? "Unavailable" : `${agent.treasury.ethBalance.toFixed(4)} ETH`}
                       </p>
                     </div>
                     <div>
                       <span className="text-[11px] text-zinc-400 uppercase tracking-wider">AGL Token Holding</span>
                       <p className="text-xl font-bold text-purple-400 mt-0.5">
-                        {agent.treasury.aglBalance.toLocaleString()} AGL
+                        {agent.treasury.walletType === "not_deployed" ? "Unavailable" : `${agent.treasury.aglBalance.toLocaleString()} AGL`}
                       </p>
                     </div>
                     <div>
                       <span className="text-[11px] text-zinc-400 uppercase tracking-wider">Total Net Profit</span>
                       <p className="text-xl font-bold text-emerald-400 mt-0.5">
-                        +{agent.totalProfitEth.toFixed(4)} ETH
+                        Unavailable
                       </p>
                     </div>
                   </div>
@@ -300,9 +251,7 @@ export default function AutonomousAgentDetailModal({
                     <div className="flex items-baseline justify-between mt-1">
                       <p className="text-2xl font-bold text-white">{agent.totalExecutions}</p>
                       <span className="text-xs text-emerald-400 font-semibold">
-                        {agent.totalExecutions > 0
-                          ? `${((agent.successfulExecutions / agent.totalExecutions) * 100).toFixed(0)}% success`
-                          : "100% success"}
+                        {agent.totalExecutions > 0 ? "Unverified" : "No verified cycles"}
                       </span>
                     </div>
                     <div className="w-full h-1.5 bg-zinc-800 rounded-full mt-3 overflow-hidden">
@@ -316,21 +265,19 @@ export default function AutonomousAgentDetailModal({
                   </div>
 
                   <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800">
-                    <span className="text-xs text-zinc-400">Daily Spending Budget</span>
+                    <span className="text-xs text-zinc-400">Configured daily spend limit</span>
                     <div className="flex items-baseline justify-between mt-1">
                       <p className="text-2xl font-bold text-white">
-                        {agent.treasury.spentTodayEth.toFixed(3)} / {agent.treasury.maxDailySpendEth} ETH
+                        {agent.treasury.walletType === "not_deployed" ? "Unavailable" : `${agent.treasury.maxDailySpendEth} ETH`}
                       </p>
                       <span className="text-xs text-zinc-400">
-                        {((agent.treasury.spentTodayEth / agent.treasury.maxDailySpendEth) * 100).toFixed(0)}% used
+                        {agent.treasury.walletType === "not_deployed" ? "Not tracked" : "Usage not verified"}
                       </span>
                     </div>
                     <div className="w-full h-1.5 bg-zinc-800 rounded-full mt-3 overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full"
-                        style={{
-                          width: `${Math.min(100, (agent.treasury.spentTodayEth / agent.treasury.maxDailySpendEth) * 100)}%`,
-                        }}
+                        style={{ width: "0%" }}
                       />
                     </div>
                   </div>
@@ -429,12 +376,12 @@ export default function AutonomousAgentDetailModal({
                         <p className="font-semibold text-white mt-0.5 capitalize">{agent.governanceConfig.votingStrategy.replace("_", " ")}</p>
                       </div>
                       <div className="p-3 bg-zinc-900 rounded-lg">
-                        <span className="text-zinc-500">Voting Power</span>
+                        <span className="text-zinc-500">Configured vote weight (not verified)</span>
                         <p className="font-semibold text-white mt-0.5">{agent.governanceConfig.voteWeightTokens.toLocaleString()} tokens</p>
                       </div>
                       <div className="p-3 bg-zinc-900 rounded-lg">
                         <span className="text-zinc-500">Public Deliberation</span>
-                        <p className="font-semibold text-white mt-0.5">{agent.governanceConfig.autoPublishDeliberation ? "Enabled (On-chain)" : "Disabled"}</p>
+                        <p className="font-semibold text-white mt-0.5">{agent.governanceConfig.autoPublishDeliberation ? "Enabled (off-chain setting)" : "Disabled"}</p>
                       </div>
                     </div>
                   </div>
@@ -444,60 +391,8 @@ export default function AutonomousAgentDetailModal({
 
             {/* HISTORY TAB */}
             {activeTab === "history" && (
-              <div className="space-y-4">
-                {/* Real-time Interactive Execution Terminal */}
-                {executionLogs.length > 0 && (
-                  <div className="p-4 rounded-xl bg-black border border-zinc-800 font-mono text-xs text-zinc-300 space-y-1.5 max-h-52 overflow-y-auto">
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800 text-zinc-500">
-                      <span>LIVE AGENT TERMINAL</span>
-                      <span className="flex items-center gap-1.5 text-blue-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
-                        STREAMING
-                      </span>
-                    </div>
-                    {executionLogs.map((log, i) => (
-                      <div key={i} className="flex gap-2">
-                        <span className="text-zinc-600">[{new Date().toLocaleTimeString()}]</span>
-                        <span className={log.includes("[ERROR]") ? "text-red-400" : log.includes("[SUCCESS]") ? "text-emerald-400" : log.includes("[ACTION]") ? "text-blue-400" : "text-zinc-300"}>
-                          {log}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
-                      Autonomous Execution Records
-                    </h4>
-                    <span className="text-[11px] text-zinc-500">Auto-synced via Base & Firestore</span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <div className="p-3 rounded-lg bg-zinc-900/90 border border-zinc-800 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                        <div>
-                          <p className="font-semibold text-white">Autonomous cycle executed successfully</p>
-                          <p className="text-zinc-400 text-[11px] mt-0.5">
-                            {agent.role === "market_making"
-                              ? `Provided bilateral spread on ${agent.marketMakingConfig?.targetTokenSymbol || "AGL"}`
-                              : agent.role === "arbitrage"
-                              ? `Atomic cross-DEX swap on Base`
-                              : `Cast deliberate vote on active proposal`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-mono text-emerald-400 font-semibold">
-                          +{agent.role === "arbitrage" ? "0.0075" : "0.0002"} ETH
-                        </span>
-                        <p className="text-[10px] text-zinc-500">Gas: 0.00012 ETH</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="rounded-xl border border-white/10 bg-zinc-950 p-5 text-xs text-zinc-400">
+                No verified autonomous execution records are available. Legacy simulated trade, vote, profit, gas, and transaction entries are hidden until each operation can be tied to a confirmed Base transaction receipt and verified contract event.
               </div>
             )}
           </div>

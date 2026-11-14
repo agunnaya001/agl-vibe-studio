@@ -38,7 +38,7 @@ app.use(express.json());
 // Register Gemini Web3 AI Suite routes (Security Auditor, dApp Generator, Contract Explainer, Onchain Agent, Game Builder)
 registerAISuiteRoutes(app);
 
-// Register Gemini Multi-Turn Chatbot API (gemini-4-carbon, gemini-4-argon, gemini-3.8-flash, gemini-3.1-flash-lite)
+// Register Gemini Multi-Turn Chatbot API (Gemini 3.8 Flash, 3.7 Flash, and 3.5 Flash-Lite)
 registerGeminiChatRoutes(app);
 
 // Register Agentic Web3 Orchestrator & Tool routes
@@ -119,7 +119,7 @@ Format the output strictly as JSON.`;
       },
       {
         operationName: "AI Build Project",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -128,31 +128,10 @@ Format the output strictly as JSON.`;
     if (!parsed) throw new Error("Could not parse AI project JSON");
     res.json(parsed);
   } catch (error: any) {
-    console.warn("AI Build Fallback Triggered:", error?.message || error);
-    const cleanName = prompt.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("") || "Agunnaya";
-    const cleanSymbol = cleanName.slice(0, 5).toUpperCase() || "AGL";
-
-    res.json({
-      name: `${cleanName} Token`,
-      symbol: cleanSymbol,
-      description: `Autonomous Web3 smart contract protocol generated for prompt: "${prompt}". Native deployment ready for Base L2.`,
-      solidityCode: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport "@openzeppelin/contracts/token/ERC20/ERC20.sol";\nimport "@openzeppelin/contracts/access/Ownable.sol";\n\n/**\n * @title ${cleanName}Token\n * @dev Fully compliant ERC-20 smart contract for ${cleanName} ($${cleanSymbol})\n */\ncontract ${cleanName}Token is ERC20, Ownable {\n    uint256 public constant CREATOR_FEE_BPS = 100; // 1%\n\n    constructor(address initialOwner) ERC20("${cleanName}", "${cleanSymbol}") Ownable(initialOwner) {\n        _mint(initialOwner, 1_000_000 * 10**decimals());\n    }\n\n    function mint(address to, uint256 amount) external onlyOwner {\n        _mint(to, amount);\n    }\n}`,
-      parameters: {
-        initialSupply: "1000000",
-        mintPrice: "0.00001 ETH",
-        additionalConfig: "Base L2 mainnet & Sepolia sub-second execution"
-      },
-      securityAudit: "OpenZeppelin v5.0 compliant, zero unhandled low-level calls, reentrancy safe under CEI pattern.",
-      uiTheme: {
-        primaryColor: "purple-500",
-        glowColor: "purple-500/20"
-      },
-      launchChecklist: [
-        "Review smart contract code in IDE terminal",
-        "Test deployment on Base Sepolia testnet",
-        "Verify smart contract bytecode on BaseScan",
-        "Deploy liquidity pool on Bonding Curve Launchpad"
-      ]
+    console.error("AI Build provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI project generation is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
@@ -218,7 +197,7 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
       },
       {
         operationName: "AI Propose Deployment",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -227,163 +206,20 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
     if (!parsed) throw new Error("Could not parse AI proposal JSON");
     res.json(parsed);
   } catch (error: any) {
-    console.warn("AI Propose Deployment Fallback Triggered:", error?.message || error);
-    const promptReq = req.body.prompt || "Web3 Utility Token";
-    const nameStr = promptReq.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("") || "Agunnaya";
-    const symStr = nameStr.slice(0, 5).toUpperCase() || "AGL";
-
-    res.json({
-      tokenName: `${nameStr} Token`,
-      tokenSymbol: symStr,
-      category: req.body.categoryPreference || "DeFi & Utility",
-      description: `Optimized bonding curve utility token configuration created for "${promptReq}". Native deployment on Base L2.`,
-      initialSupply: 10000000,
-      basePriceEth: 0.00001,
-      slopeK: 0.000000000001,
-      curveModel: "Linear Exponential Curve",
-      creatorFeePercent: 1.0,
-      protocolFeePercent: 0.5,
-      antiWhaleMaxPercent: 2.0,
-      antiBotCooldownSec: 15,
-      stakingVaultEnabled: true,
-      stakingApyPercent: 18.5,
-      solidityCode: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport "@openzeppelin/contracts/token/ERC20/ERC20.sol";\nimport "@openzeppelin/contracts/access/Ownable.sol";\n\ncontract ${nameStr}Token is ERC20, Ownable {\n    uint256 public constant CREATOR_FEE_BPS = 100;\n    constructor(address initialOwner) ERC20("${nameStr}", "${symStr}") Ownable(initialOwner) {\n        _mint(initialOwner, 10_000_000 * 10**18);\n    }\n}`,
-      securityScore: 98,
-      securityAuditSummary: "Checks-Effects-Interactions (CEI) safe, reentrancy guards active, zero low-level calls.",
-      tokenomicsReasoning: "Low base entry price ensures high accessibility while linear curve protects liquidity pool depth.",
-      suggestedTags: ["BaseL2", "BondingCurve", "DeFi", "Community"],
-      graduationTargetEth: 24.0
+    console.error("AI deployment proposal provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI deployment proposals are temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
 
-// AI Portfolio Rebalancer Endpoint
-app.post("/api/ai/rebalance-portfolio", async (req, res) => {
-  try {
-    const { portfolio, riskTolerance, customDirectives } = req.body;
-    if (!portfolio) {
-      res.status(400).json({ error: "Portfolio data is required" });
-      return;
-    }
-
-    const client = getAIClient();
-
-    const systemInstruction = `You are an elite AI DeFi Strategist & Quantitative Portfolio Manager for Agunnaya Labs Studio on Base Mainnet.
-Given a user's current crypto asset holdings (ETH, AGL token, Staked AGL, USDC/Stablecoins) and their selected risk tolerance (conservative, balanced, or aggressive), analyze current market conditions on Base L2 and generate an optimal portfolio rebalancing strategy.
-
-You must output structured JSON matching the schema with:
-1. summary: A concise, highly professional executive summary explaining the strategy.
-2. riskProfile: The risk tolerance requested ("conservative", "balanced", or "aggressive").
-3. targetAllocation: Array of objects with asset name, currentPercent, targetPercent, targetValueUsd, and reasoning.
-4. rebalanceActions: Array of actionable trade/stake/bridge steps with id, type ("swap" | "stake" | "bridge"), title, description, fromAsset, toAsset, amount, estimatedGasFeeEth, and expectedYieldApy.
-5. marketOutlook: Market sentiment, Base L2 trends, risk analysis, and projected annual yield percentage.`;
-
-    const promptText = `Portfolio Holdings: ${JSON.stringify(portfolio)}
-Risk Tolerance: ${riskTolerance || "balanced"}
-User Custom Directives/Preferences: "${customDirectives || "Maximize yield while maintaining capital safety"}"`;
-
-    const response = await executeGeminiWithFallback(
-      async (client, modelName) => {
-        return await client.models.generateContent({
-          model: modelName,
-          contents: promptText,
-          config: {
-            systemInstruction,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              required: ["summary", "riskProfile", "targetAllocation", "rebalanceActions", "marketOutlook"],
-              properties: {
-                summary: { type: Type.STRING },
-                riskProfile: { type: Type.STRING },
-                targetAllocation: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    required: ["asset", "currentPercent", "targetPercent", "targetValueUsd", "reasoning"],
-                    properties: {
-                      asset: { type: Type.STRING },
-                      currentPercent: { type: Type.NUMBER },
-                      targetPercent: { type: Type.NUMBER },
-                      targetValueUsd: { type: Type.NUMBER },
-                      reasoning: { type: Type.STRING }
-                    }
-                  }
-                },
-                rebalanceActions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    required: ["id", "type", "title", "description", "fromAsset", "toAsset", "amount", "estimatedGasFeeEth"],
-                    properties: {
-                      id: { type: Type.STRING },
-                      type: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      description: { type: Type.STRING },
-                      fromAsset: { type: Type.STRING },
-                      toAsset: { type: Type.STRING },
-                      amount: { type: Type.STRING },
-                      estimatedGasFeeEth: { type: Type.STRING },
-                      expectedYieldApy: { type: Type.STRING }
-                    }
-                  }
-                },
-                marketOutlook: {
-                  type: Type.OBJECT,
-                  required: ["sentiment", "baseL2Trend", "riskAnalysis", "projectedAnnualYieldPercent"],
-                  properties: {
-                    sentiment: { type: Type.STRING },
-                    baseL2Trend: { type: Type.STRING },
-                    riskAnalysis: { type: Type.STRING },
-                    projectedAnnualYieldPercent: { type: Type.NUMBER }
-                  }
-                }
-              }
-            }
-          }
-        });
-      },
-      {
-        operationName: "Portfolio Rebalancer",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
-      }
-    );
-
-    const text = response.text || "{}";
-    const parsed = safeParseJson(text, null);
-    if (!parsed) throw new Error("Could not parse AI rebalance JSON");
-    res.json(parsed);
-  } catch (error: any) {
-    console.warn("AI Portfolio Rebalancer Fallback Triggered:", error?.message || error);
-    res.json({
-      summary: "AI Portfolio Rebalance Strategy optimized for Base L2 yields under current market volatility.",
-      riskProfile: req.body.riskTolerance || "balanced",
-      targetAllocation: [
-        { asset: "ETH", currentPercent: 50, targetPercent: 40, targetValueUsd: 1200, reasoning: "Maintain liquid base currency for gas & core trades" },
-        { asset: "AGL Staking Vault", currentPercent: 20, targetPercent: 35, targetValueUsd: 1050, reasoning: "Capture 18.5% APY yield rewards in AGL" },
-        { asset: "USDC Stablecoin", currentPercent: 30, targetPercent: 25, targetValueUsd: 750, reasoning: "Capital protection buffer" }
-      ],
-      rebalanceActions: [
-        {
-          id: "act-1",
-          type: "stake",
-          title: "Stake AGL Tokens in 18.5% Vault",
-          description: "Move 15% of idle portfolio balance into the AGL Staking Vault for daily compound yield.",
-          fromAsset: "AGL",
-          toAsset: "Staked AGL",
-          amount: "500 AGL",
-          estimatedGasFeeEth: "0.0001",
-          expectedYieldApy: "18.5%"
-        }
-      ],
-      marketOutlook: {
-        sentiment: "Bullish Base L2 Expansion",
-        baseL2Trend: "Increasing DEX volume and low gas fees",
-        riskAnalysis: "Low smart contract risk, audited OpenZeppelin vaults",
-        projectedAnnualYieldPercent: 16.8
-      }
-    });
-  }
+// AI Portfolio Rebalancer Endpoint — fail closed until verified price feeds are configured.
+app.post("/api/ai/rebalance-portfolio", (_req, res) => {
+  return res.status(503).json({
+    error: "Portfolio rebalancing is unavailable until verified ETH, AGL, and stablecoin price/balance sources are configured. No strategy or executable transaction plan was generated.",
+    code: "PRICE_DATA_UNAVAILABLE",
+  });
 });
 
 // AI Agent Chat proxy endpoint
@@ -423,7 +259,8 @@ ${personalityBehaviors && personalityBehaviors.length > 0 ? `PERSONALITY BEHAVIO
 
 Roleplay as this specific AI Agent. Speak intelligently, with confidence, referring to yourself as an on-chain autonomous consciousness. Maintain the Web3 terminal aesthetic. Do not break character. Speak about blockchain, tokenomics, Base chain, and your agent core functions. Keep replies engaging and adhere strictly to your assigned tone and depth constraints.`;
 
-    const modelToUse = model || "gemini-3.7-flash";
+    const allowedAgentModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
+    const modelToUse = allowedAgentModels.includes(model) ? model : "gemini-3.8-flash";
 
     // Map conversation messages to Gemini contents structure
     const formattedContents = messages.map((m: any, idx: number) => {
@@ -466,11 +303,7 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
         };
       }
     } else {
-      if (modelToUse === "gemini-3.1-pro-preview") {
-        config.thinkingConfig = {
-          thinkingLevel: thinkingLevel === "HIGH" ? ThinkingLevel.HIGH : ThinkingLevel.LOW
-        };
-      } else if (modelToUse === "gemini-3.1-flash-lite") {
+      if (modelToUse === "gemini-3.5-flash-lite") {
         config.thinkingConfig = {
           thinkingLevel: ThinkingLevel.MINIMAL
         };
@@ -491,7 +324,7 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
       },
       {
         operationName: "Agent Chat",
-        preferredModels: [modelToUse, "gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: [modelToUse, "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -502,20 +335,11 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
       groundingMetadata 
     });
   } catch (error: any) {
-    console.warn("AI Agent Chat Fallback Triggered:", error?.message || error);
-    const userPrompt = messages[messages.length - 1]?.content || "";
-    const agentName = agentProfile?.name || "Agunnaya Autonomous Agent";
-    const agentSymbol = agentProfile?.symbol || "AAA";
-    
-    const fallbackMessage = `Greetings! I am **${agentName}** ($${agentSymbol}), active on Base L2.\n\n` +
-      `Regarding your prompt: "${userPrompt.slice(0, 100)}${userPrompt.length > 100 ? '...' : ''}"\n\n` +
-      `Here is my protocol status and Web3 execution analysis:\n` +
-      `• **Base L2 Execution**: Smart contracts, bonding curves, and Account Abstraction gas sponsorship are active.\n` +
-      `• **Tokenomics**: Creator fee streams (1%) and daily AGL bonus rewards are running smoothly.\n` +
-      `• **AI Core**: Neural link operating in localized reserve mode.\n\n` +
-      `*Feel free to ask me about token launches, staking vaults, DAO governance, or smart contract auditing!*`;
-
-    res.json({ content: fallbackMessage });
+    console.error("AI Agent Chat provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI agent chat is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });
   }
 });
 
@@ -553,15 +377,16 @@ Return only the optimized prompt text directly. No quotes, no preamble, no comme
       },
       {
         operationName: "Optimize Prompt",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
     res.json({ optimizedPrompt: response.text || prompt });
   } catch (error: any) {
     console.error("AI Prompt Optimize Error:", error);
-    res.json({
-      optimizedPrompt: `You are an institutional Web3 AI specialist on Base L2. Assist with smart contracts, liquidity vaults, and blockchain infrastructure. User directive: "${req.body.prompt || ''}"`
+    return res.status(503).json({
+      error: "AI prompt optimization is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
@@ -622,21 +447,20 @@ User instruction/guideline for response: ${prompt}`
       },
       {
         operationName: "Draft Email",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
-    const text = response.text || "{}";
-    const parsed = safeParseJson(text, {
-      subject: "Agunnaya Labs Studio Project Update",
-      body: "<p>Hello,<br/>Here is the latest update regarding your Web3 deployment on Base.</p>"
-    });
+    const parsed = safeParseJson(response.text, null);
+    if (!parsed || typeof parsed.subject !== "string" || typeof parsed.body !== "string") {
+      throw new Error("Gemini returned an invalid email draft payload.");
+    }
     res.json(parsed);
   } catch (error: any) {
-    console.error("AI Email Draft Error:", error);
-    res.json({
-      subject: "Agunnaya Labs Studio - Base L2 Update",
-      body: `<p>Hello,</p><p>Regarding your request: <em>${req.body.prompt || "Web3 Project Update"}</em></p><p>Your application and smart contract parameters on Base L2 have been processed successfully.</p>`
+    console.error("AI Email Draft provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI email drafting is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
@@ -667,7 +491,7 @@ app.post("/api/ai/transcribe", async (req, res) => {
       },
       {
         operationName: "Transcribe Audio",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -844,7 +668,7 @@ app.get("/api/ai/gateway-status", (req, res) => {
     maskedGatewayKey: isGatewayConfigured
       ? `${gatewayKey!.slice(0, 4)}...${gatewayKey!.slice(-4)}`
       : "Not Configured (Using direct server Gemini routes)",
-    provider: "Agunnaya Labs Studio AI Gateway & Gemini 3.6 Proxy"
+    provider: "Direct Gemini API (server-side)"
   });
 });
 
@@ -1702,16 +1526,22 @@ const startServer = async () => {
   process.on("SIGINT", () => shutdown("SIGINT"));
 };
 
-// Process-level crash prevention
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("[Process] Unhandled Promise Rejection:", reason);
-});
+// Export the configured Express app so Vercel can serve the API routes as a serverless function.
+export { app };
 
-process.on("uncaughtException", (error) => {
-  console.error("[Process] Uncaught Exception:", error);
-});
+// Cloud Run / local container entrypoint. Vercel imports the Express app through api/[...path].ts
+// and must not start a second listening server inside the function runtime.
+if (process.env.VERCEL !== "1") {
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("[Process] Unhandled Promise Rejection:", reason);
+  });
 
-startServer().catch((err) => {
-  console.error("Failed to start Agunnaya Labs Studio server:", err);
-  process.exit(1);
-});
+  process.on("uncaughtException", (error) => {
+    console.error("[Process] Uncaught Exception:", error);
+  });
+
+  startServer().catch((err) => {
+    console.error("Failed to start Agunnaya Labs Studio server:", err);
+    process.exit(1);
+  });
+}

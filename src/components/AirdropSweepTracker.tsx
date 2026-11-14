@@ -48,7 +48,7 @@ export interface TrackedWallet {
   fundingSource?: string;
   protocolsActivity: string;
   tokenSymbol: string;
-  claimStatus: "Eligible" | "Claimed" | "Excluded" | "Consolidated Destination" | "Active Treasury" | "Active Safe";
+  claimStatus: "Unverified" | "Eligible" | "Claimed" | "Excluded" | "Consolidated Destination" | "Active Treasury" | "Active Safe";
   claimDate?: string;
   notes: string;
   isDeployerOnly?: boolean;
@@ -71,13 +71,9 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     fundingSource: "Coinbase Prime Deposit",
     protocolsActivity: "AGL / CHONK9K / Spin Engine deploys",
     tokenSymbol: "ETH",
-    claimStatus: "Excluded",
-    notes: "Never used for airdrop farming",
+    claimStatus: "Unverified",
+    notes: "Tracking only. Airdrop eligibility and claim allocations are not verified.",
     isDeployerOnly: true,
-    ethBalance: 0.185,
-    aglBalance: 0,
-    unclaimedAglAirdrop: 0,
-    isSwept: true
   },
   {
     id: "deployer-2",
@@ -89,13 +85,9 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     fundingSource: "Binance Hot Wallet",
     protocolsActivity: "AGL / CHONK9K / Spin Engine deploys",
     tokenSymbol: "ETH",
-    claimStatus: "Excluded",
-    notes: "Never used for airdrop farming",
+    claimStatus: "Unverified",
+    notes: "Tracking only. Airdrop eligibility and claim allocations are not verified.",
     isDeployerOnly: true,
-    ethBalance: 0.240,
-    aglBalance: 0,
-    unclaimedAglAirdrop: 0,
-    isSwept: true
   },
   {
     id: "airdrop-1",
@@ -107,13 +99,8 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     fundingSource: "Base Bridge / Uniswap v3",
     protocolsActivity: "BaseSwap, Aerodrome, Agunnaya dApp, Morpho",
     tokenSymbol: "AGL / ETH / AERO",
-    claimStatus: "Eligible",
-    claimDate: "2026-08-03",
-    notes: "Active farming node - Ready for Treasury Multisig Sweep",
-    ethBalance: 0.082,
-    aglBalance: 32500,
-    unclaimedAglAirdrop: 15000,
-    isSwept: false
+    claimStatus: "Unverified",
+    notes: "Tracking only. Airdrop eligibility and claim allocations are not verified.",
   },
   {
     id: "airdrop-2",
@@ -125,13 +112,8 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     fundingSource: "Coinbase Prime / Stargate",
     protocolsActivity: "Agunnaya Vaults, Moonwell, Extra Finance",
     tokenSymbol: "AGL / ETH",
-    claimStatus: "Claimed",
-    claimDate: "2026-08-03",
-    notes: "Claimed 25,000 AGL airdrop bonus - Partial sweep completed",
-    ethBalance: 0.125,
-    aglBalance: 8500,
-    unclaimedAglAirdrop: 0,
-    isSwept: false
+    claimStatus: "Unverified",
+    notes: "Tracking only. Airdrop eligibility and claim allocations are not verified.",
   },
   {
     id: "airdrop-3",
@@ -143,13 +125,8 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     fundingSource: "Bungee Exchange / Hop",
     protocolsActivity: "Agunnaya Staking, Agent Studio, CHONK9K",
     tokenSymbol: "AGL / ETH",
-    claimStatus: "Eligible",
-    claimDate: "2026-08-03",
-    notes: "Eligible for 40,000 AGL yield allocation - Ready for Sweep",
-    ethBalance: 0.095,
-    aglBalance: 40000,
-    unclaimedAglAirdrop: 20000,
-    isSwept: false
+    claimStatus: "Unverified",
+    notes: "Tracking only. Airdrop eligibility and claim allocations are not verified.",
   },
   {
     id: "treasury-wallet",
@@ -161,14 +138,9 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     fundingSource: "Protocol Fees & Token Sweeps",
     protocolsActivity: "Receives protocol yield, fees, and token sweeps",
     tokenSymbol: "AGL / ETH / USDC",
-    claimStatus: "Active Treasury",
-    claimDate: "2026-08-01",
-    notes: "Official Agunnaya Treasury EOA Wallet",
+    claimStatus: "Unverified",
+    notes: "Tracking only. Airdrop eligibility and claim allocations are not verified.",
     isTreasuryMultisig: false,
-    ethBalance: 12.45,
-    aglBalance: 5000000,
-    unclaimedAglAirdrop: 0,
-    isSwept: true
   },
   {
     id: "treasury-safe",
@@ -180,14 +152,9 @@ const INITIAL_WALLETS: TrackedWallet[] = [
     fundingSource: "Gnosis Safe 3/5 Multisig",
     protocolsActivity: "Safe 3/5 Multisig Threshold, Gnosis Safe v1.3.0",
     tokenSymbol: "AGL / ETH / USDC",
-    claimStatus: "Active Safe",
-    claimDate: "2026-08-03",
-    notes: "Official Gnosis Safe Multi-Sign Wallet",
+    claimStatus: "Unverified",
+    notes: "Tracking only. Airdrop eligibility and claim allocations are not verified.",
     isTreasuryMultisig: true,
-    ethBalance: 4.85,
-    aglBalance: 1250000,
-    unclaimedAglAirdrop: 0,
-    isSwept: true
   }
 ];
 
@@ -208,7 +175,17 @@ export default function AirdropSweepTracker({
     const saved = localStorage.getItem("agunnaya_tracked_airdrop_wallets");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved) as TrackedWallet[];
+        return parsed.map((tracked) => ({
+          ...tracked,
+          claimStatus: "Unverified" as const,
+          claimDate: undefined,
+          ethBalance: undefined,
+          aglBalance: undefined,
+          unclaimedAglAirdrop: undefined,
+          isSwept: undefined,
+          notes: "Tracking only. Airdrop eligibility and claim allocations are not verified."
+        }));
       } catch (e) {
         return INITIAL_WALLETS;
       }
@@ -224,7 +201,7 @@ export default function AirdropSweepTracker({
 
   // Sweep Engine State
   const [isSweepModalOpen, setIsSweepModalOpen] = useState<boolean>(false);
-  const [selectedForSweep, setSelectedForSweep] = useState<string[]>(["airdrop-1", "airdrop-2", "airdrop-3"]);
+  const [selectedForSweep, setSelectedForSweep] = useState<string[]>([]);
   const [sweepAssetType, setSweepAssetType] = useState<"all" | "agl" | "eth">("all");
   const [targetDestination, setTargetDestination] = useState<string>(AGL_TREASURY_ADDRESS);
   const [isSweeping, setIsSweeping] = useState<boolean>(false);
@@ -243,42 +220,49 @@ export default function AirdropSweepTracker({
     localStorage.setItem("agunnaya_tracked_airdrop_wallets", JSON.stringify(wallets));
   }, [wallets]);
 
-  // Query live RPC balances for all tracked wallets
+  // Read actual Base balances only. A balance is never inferred from cached/demo data.
   const fetchLiveBalances = async () => {
     setLoadingBalances(true);
-    addTerminalLog("system", "RPC_ORACLE: Refreshing Base Mainnet balances for tracked airdrop & treasury addresses...");
+    addTerminalLog("system", "RPC: Reading ETH and AGL balances for tracked Base addresses...");
     try {
       const provider = getBaseProvider(BASE_RPC_URL);
       const tokenContract = new ethers.Contract(AGL_TOKEN_ADDRESS, ERC20_MIN_ABI, provider);
+      let failures = 0;
 
-      const updated = await Promise.all(
-        wallets.map(async (w) => {
-          try {
-            const ethBalRaw = await provider.getBalance(w.address).catch(() => 0n);
-            const aglBalRaw = await tokenContract.balanceOf(w.address).catch(() => 0n);
-
-            const ethBal = parseFloat(ethers.formatEther(ethBalRaw));
-            const aglBal = parseFloat(ethers.formatEther(aglBalRaw));
-
-            return {
-              ...w,
-              ethBalance: ethBal > 0 ? ethBal : w.ethBalance || 0,
-              aglBalance: aglBal > 0 ? aglBal : w.aglBalance || 0
-            };
-          } catch (e) {
-            return w;
-          }
-        })
-      );
+      const updated = await Promise.all(wallets.map(async (tracked) => {
+        if (!ethers.isAddress(tracked.address)) {
+          failures += 1;
+          return { ...tracked, ethBalance: undefined, aglBalance: undefined };
+        }
+        try {
+          const [ethRaw, aglRaw] = await Promise.all([
+            provider.getBalance(tracked.address),
+            tokenContract.balanceOf(tracked.address)
+          ]);
+          return {
+            ...tracked,
+            ethBalance: Number(ethers.formatEther(ethRaw)),
+            aglBalance: Number(ethers.formatUnits(aglRaw, 18))
+          };
+        } catch (error) {
+          failures += 1;
+          console.warn("Failed to read tracked wallet balance:", tracked.address, error);
+          return { ...tracked, ethBalance: undefined, aglBalance: undefined };
+        }
+      }));
 
       setWallets(updated);
+      if (failures === 0) {
+        showToast("Tracked ETH and AGL balances refreshed from Base RPC.", "success");
+        addTerminalLog("success", "RPC: All tracked wallet balance reads completed.");
+      } else {
+        showToast(`Balances refreshed with ${failures} unavailable wallet reads. Check RPC and addresses.`, "info");
+      }
+    } catch (error) {
+      console.error("Base balance refresh failed:", error);
+      showToast("Base RPC balance reads failed. Cached values are not presented as current.", "error");
+    } finally {
       setLoadingBalances(false);
-      showToast("Updated on-chain wallet balances from Base Mainnet RPC!", "success");
-      addTerminalLog("success", "RPC_ORACLE: On-chain balances synced successfully.");
-    } catch (err) {
-      console.error("Balance fetch error:", err);
-      setLoadingBalances(false);
-      showToast("Synced with cached local state.", "info");
     }
   };
 
@@ -318,95 +302,30 @@ export default function AirdropSweepTracker({
     });
   }, [wallets, categoryFilter, claimFilter, searchQuery]);
 
-  // Aggregate Stats
+  // Aggregate only balances successfully read from Base RPC. Airdrop allocations remain unverified.
   const stats = useMemo(() => {
-    const treasuryWallet = wallets.find((w) => w.isTreasuryMultisig);
-    const treasuryAgl = treasuryWallet?.aglBalance || 1250000;
-    const treasuryEth = treasuryWallet?.ethBalance || 4.85;
-
-    const totalClaimedAgl = wallets.reduce((acc, w) => acc + (w.aglBalance || 0), 0);
-    const totalUnclaimedAgl = wallets.reduce((acc, w) => acc + (w.unclaimedAglAirdrop || 0), 0);
-    const eligibleCount = wallets.filter((w) => w.claimStatus === "Eligible").length;
+    const treasuryWallet = wallets.find((tracked) => tracked.isTreasuryMultisig);
+    const totalTrackedAgl = wallets.reduce((acc, tracked) => acc + (tracked.aglBalance || 0), 0);
+    const totalUnclaimedAgl = null;
+    const eligibleCount = wallets.filter((tracked) => tracked.claimStatus === "Eligible").length;
+    const deployerCount = wallets.filter((tracked) => tracked.isDeployerOnly).length;
 
     return {
-      treasuryAgl,
-      treasuryEth,
-      totalClaimedAgl,
+      treasuryAgl: treasuryWallet?.aglBalance,
+      treasuryEth: treasuryWallet?.ethBalance,
+      totalClaimedAgl: totalTrackedAgl,
       totalUnclaimedAgl,
       eligibleCount,
+      deployerCount,
       totalWalletsCount: wallets.length
     };
   }, [wallets]);
 
-  // Execute Batch Sweep
+  // No airdrop claim contract or treasury sweep executor is configured.
   const handleExecuteSweepBatch = async () => {
-    if (selectedForSweep.length === 0) {
-      showToast("Please select at least one wallet to sweep.", "error");
-      return;
-    }
-
-    setIsSweeping(true);
-    setSweepStep(1);
-    setSweepProgress(15);
-    addTerminalLog("system", `SWEEP_ENGINE: Initiating automated batch consolidation to Treasury Safe Multisig [${targetDestination.substring(0, 10)}...]`);
-
-    // Step 1: Query unclaimed allocations
-    setTimeout(() => {
-      setSweepStep(2);
-      setSweepProgress(45);
-      addTerminalLog("info", `SWEEP_ENGINE: Claiming pending airdrop yield across ${selectedForSweep.length} active wallets...`);
-
-      // Step 2: Consolidate transfers
-      setTimeout(() => {
-        setSweepStep(3);
-        setSweepProgress(80);
-        addTerminalLog("info", "SWEEP_ENGINE: Executing EIP-1559 batch transfer transactions on Base Mainnet...");
-
-        // Step 3: Complete consolidation
-        setTimeout(() => {
-          setSweepStep(4);
-          setSweepProgress(100);
-
-          // Update local state to sweep selected wallets
-          setWallets((prev) =>
-            prev.map((w) => {
-              if (selectedForSweep.includes(w.id)) {
-                const sweptAgl = (w.aglBalance || 0) + (w.unclaimedAglAirdrop || 0);
-                
-                // Add to Treasury Safe
-                return {
-                  ...w,
-                  aglBalance: 0,
-                  unclaimedAglAirdrop: 0,
-                  claimStatus: "Claimed",
-                  isSwept: true,
-                  notes: `${w.notes} - Swept to Treasury Safe on ${new Date().toISOString().split("T")[0]}`
-                };
-              }
-              if (w.isTreasuryMultisig) {
-                // Add swept funds to Treasury
-                const sweptTotal = prev
-                  .filter((item) => selectedForSweep.includes(item.id))
-                  .reduce((acc, item) => acc + (item.aglBalance || 0) + (item.unclaimedAglAirdrop || 0), 0);
-
-                return {
-                  ...w,
-                  aglBalance: (w.aglBalance || 0) + sweptTotal
-                };
-              }
-              return w;
-            })
-          );
-
-          setIsSweeping(false);
-          setIsSweepModalOpen(false);
-          showToast("Batch sweep to Treasury Safe Multisig completed successfully!", "success");
-          addTerminalLog("success", `SWEEP_ENGINE: Batch sweep complete! All selected yield consolidated into Gnosis Safe Multisig (${targetDestination}).`);
-
-          if (onRefreshWallet) onRefreshWallet();
-        }, 1500);
-      }, 1500);
-    }, 1200);
+    setIsSweeping(false);
+    showToast("Airdrop claims and sweeps are disabled: no verified claim contract or batch-transfer executor is configured. No transaction was submitted.", "info");
+    addTerminalLog("info", "AIRDROP_SWEEP_DISABLED: No on-chain claim or sweep transaction was submitted.");
   };
 
   // Add custom wallet
@@ -426,13 +345,9 @@ export default function AirdropSweepTracker({
       dateCreated: new Date().toISOString().split("T")[0],
       protocolsActivity: "Custom Tracked Address",
       tokenSymbol: "AGL / ETH",
-      claimStatus: "Eligible",
+      claimStatus: "Unverified",
       notes: newNotes || "Manually added tracking address",
-      ethBalance: 0,
-      aglBalance: 0,
-      unclaimedAglAirdrop: 0,
-      isSwept: false
-    };
+            };
 
     setWallets((prev) => [newEntry, ...prev]);
     setIsAddWalletOpen(false);
@@ -489,11 +404,12 @@ export default function AirdropSweepTracker({
 
           <button
             type="button"
-            onClick={() => setIsSweepModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-brand-purple to-blue-600 hover:opacity-90 text-white font-mono font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-purple-500/20"
+            onClick={() => showToast("Sweep disabled: no verified airdrop claim or treasury transfer contract is configured.", "info")}
+            disabled
+            className="px-4 py-2 rounded-xl bg-zinc-800 text-zinc-500 font-mono font-bold text-xs flex items-center gap-2 cursor-not-allowed opacity-60"
           >
             <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-            <span>Sweep All to Treasury Safe</span>
+            <span>Airdrop sweep unavailable</span>
           </button>
         </div>
       </div>
@@ -504,45 +420,45 @@ export default function AirdropSweepTracker({
         <div className="p-5 rounded-2xl bg-zinc-950/80 border border-purple-500/30 space-y-2 relative overflow-hidden group">
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all" />
           <div className="flex items-center justify-between text-zinc-400 font-mono">
-            <span className="text-[10px] uppercase font-bold tracking-wider">Treasury Safe Multisig</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider">Configured Treasury Destination</span>
             <ShieldCheck className="w-4 h-4 text-purple-400" />
           </div>
           <div className="text-xl font-extrabold font-mono text-white">
-            {stats.treasuryAgl.toLocaleString()} <span className="text-xs text-purple-300">AGL</span>
+            {stats.treasuryAgl === undefined ? "Unavailable" : stats.treasuryAgl.toLocaleString()} <span className="text-xs text-purple-300">AGL</span>
           </div>
           <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1 border-t border-white/5">
             <span>Safe ETH Reserves:</span>
-            <span className="text-emerald-400 font-bold">{stats.treasuryEth.toFixed(2)} ETH</span>
+            <span className="text-emerald-400 font-bold">{stats.treasuryEth === undefined ? "Unavailable" : stats.treasuryEth.toFixed(6)} ETH</span>
           </div>
         </div>
 
-        {/* Card 2: Total Claimed & Tracked Yield */}
+        {/* Card 2: Total AGL in Tracked Wallets */}
         <div className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-2">
           <div className="flex items-center justify-between text-zinc-400 font-mono">
-            <span className="text-[10px] uppercase font-bold tracking-wider">Total Tracked AGL Volume</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider">Total AGL in Tracked Wallets</span>
             <Coins className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-xl font-extrabold font-mono text-white">
-            {stats.totalClaimedAgl.toLocaleString()} <span className="text-xs text-amber-400">AGL</span>
+            {wallets.some((tracked) => tracked.aglBalance !== undefined) ? stats.totalClaimedAgl.toLocaleString() : "Unavailable"} <span className="text-xs text-amber-400">AGL</span>
           </div>
           <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1 border-t border-white/5">
-            <span>Pending Sweep Yield:</span>
-            <span className="text-amber-400 font-bold">{stats.totalUnclaimedAgl.toLocaleString()} AGL</span>
+            <span>Unclaimed Airdrop Allocation:</span>
+            <span className="text-amber-400 font-bold">Unverified</span>
           </div>
         </div>
 
         {/* Card 3: Eligible Wallets */}
         <div className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-2">
           <div className="flex items-center justify-between text-zinc-400 font-mono">
-            <span className="text-[10px] uppercase font-bold tracking-wider">Airdrop Eligible Nodes</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider">Verified Eligible Wallets</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-xl font-extrabold font-mono text-emerald-400">
             {stats.eligibleCount} <span className="text-xs text-zinc-400">/ {stats.totalWalletsCount} Wallets</span>
           </div>
           <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1 border-t border-white/5">
-            <span>Deployer Wallets:</span>
-            <span className="text-blue-400 font-bold">2 (Excluded)</span>
+            <span>Deployer addresses:</span>
+            <span className="text-blue-400 font-bold">{stats.deployerCount}</span>
           </div>
         </div>
 
@@ -700,10 +616,10 @@ export default function AirdropSweepTracker({
                       <td className="py-4 px-4">
                         <div className="space-y-0.5">
                           <div className="text-white font-bold">
-                            {(w.aglBalance || 0).toLocaleString()} <span className="text-[10px] text-purple-400">AGL</span>
+                            {w.aglBalance === undefined ? "Unavailable" : w.aglBalance.toLocaleString()} <span className="text-[10px] text-purple-400">AGL</span>
                           </div>
                           <div className="text-[10px] text-zinc-400">
-                            {(w.ethBalance || 0).toFixed(4)} <span className="text-emerald-400 font-bold">ETH</span>
+                            {w.ethBalance === undefined ? "Unavailable" : w.ethBalance.toFixed(6)} <span className="text-emerald-400 font-bold">ETH</span>
                           </div>
                           {w.unclaimedAglAirdrop ? (
                             <div className="text-[9px] text-amber-400 font-bold">
@@ -715,6 +631,11 @@ export default function AirdropSweepTracker({
 
                       {/* Claim Status */}
                       <td className="py-4 px-4">
+                        {w.claimStatus === "Unverified" && (
+                          <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-bold inline-flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Unverified
+                          </span>
+                        )}
                         {w.claimStatus === "Eligible" && (
                           <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> Eligible
@@ -874,7 +795,7 @@ export default function AirdropSweepTracker({
               <button
                 type="button"
                 onClick={handleExecuteSweepBatch}
-                disabled={isSweeping || selectedForSweep.length === 0}
+                disabled={true}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 text-white font-mono font-bold text-xs transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-purple-500/20 disabled:opacity-50"
               >
                 {isSweeping ? (
