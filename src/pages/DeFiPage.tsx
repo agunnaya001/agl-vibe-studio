@@ -34,6 +34,7 @@ import {
 
 interface DeFiPageProps {
   wallet: WalletState;
+  initialHubTab?: "dex-aggregator" | "agl-liquidity" | "agl-polls" | "portfolio-rebalancer" | "airdrop-sweep" | "swaps-staking" | "lifi-bridge";
   onRefreshWallet: () => void;
   addTerminalLog: (type: "info" | "success" | "error" | "buy" | "sell" | "system", message: string) => void;
   showToast: (message: string, type: "success" | "error" | "info") => void;
@@ -75,7 +76,7 @@ const ERC20_ABI = [
   "function symbol() external view returns (string)"
 ];
 
-export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, showToast }: DeFiPageProps) {
+export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onRefreshWallet, addTerminalLog, showToast }: DeFiPageProps) {
   // Dynamically loaded staking tiers from contract
   const [stakingTiers, setStakingTiers] = useState<any[]>([
     { id: 0, name: "30-Day Locked Staking", durationDays: 30, durationSec: 2592000, apr: 8.00, aprBps: 800 }
@@ -103,7 +104,7 @@ export default function DeFiPage({ wallet, onRefreshWallet, addTerminalLog, show
   const [stakingLoading, setStakingLoading] = useState(false);
   const [selectedTierId, setSelectedTierId] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"stake" | "positions">("stake");
-  const [defiHubTab, setDefiHubTab] = useState<"dex-aggregator" | "agl-liquidity" | "agl-polls" | "portfolio-rebalancer" | "airdrop-sweep" | "swaps-staking" | "lifi-bridge">("dex-aggregator");
+  const [defiHubTab, setDefiHubTab] = useState<"dex-aggregator" | "agl-liquidity" | "agl-polls" | "portfolio-rebalancer" | "airdrop-sweep" | "swaps-staking" | "lifi-bridge">(initialHubTab);
   const [currentTimeSec, setCurrentTimeSec] = useState<number>(Math.floor(Date.now() / 1000));
 
   // Web3 Status
