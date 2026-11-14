@@ -426,6 +426,9 @@ export default function BatchTokenTransferPage({
 
   // Execute Batch Transfer
   const handleExecuteBatchTransfer = async () => {
+    showToast("Batch transfers are temporarily disabled until each ERC-20 transfer is wallet-signed and receipt-verified. No transfers were submitted.", "error");
+    return;
+
     if (!wallet.isConnected) {
       onOpenConnectWallet();
       return;
