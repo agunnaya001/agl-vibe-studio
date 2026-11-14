@@ -354,104 +354,19 @@ export class AgentToolService {
   }>> {
     const startTime = Date.now();
     const networkConfig = BASE_NETWORKS[params.network] || BASE_NETWORKS["base-mainnet"];
-
-    // 1. If DEMO MODE is explicitly active:
     if (params.isDemoMode) {
-      await new Promise((r) => setTimeout(r, 1400)); // High-fidelity simulated blockchain mining time
-      const mockAddress = "0x" + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-      const mockTxHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-
       return {
-        success: true,
-        data: {
-          contractAddress: mockAddress,
-          txHash: mockTxHash,
-          explorerUrl: `${networkConfig.explorerUrl}/address/${mockAddress}`,
-          blockNumber: 18_492_000 + Math.floor(Math.random() * 500),
-          isSimulated: true,
-        },
+        success: false,
+        error: "Visual deployment simulation has been removed. No contract or transaction was created.",
         durationMs: Date.now() - startTime,
         simulated: true,
       };
     }
-
-    // Real deployment is disabled until actual compiled creation bytecode and constructor data are supplied.
-    // A zero-value self-transfer is not a contract deployment and must never be reported as one.
     return {
       success: false,
-      error: "Contract deployment is unavailable: this tool does not yet submit compiled contract creation bytecode. No transaction was sent.",
+      error: "Contract deployment is unavailable until compiled creation bytecode and constructor arguments are passed to a real wallet-signed deployment. No transaction was sent.",
       durationMs: Date.now() - startTime,
     };
-
-    // 2. Legacy implementation retained below but unreachable until real bytecode deployment is implemented.
-    try {
-      if (typeof window === "undefined" || !(window as any).ethereum) {
-        throw new Error("No Web3 wallet provider (MetaMask / Coinbase) detected. Please switch to Hackathon Demo Mode or install a Web3 wallet.");
-      }
-
-      const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-      const signer = await browserProvider.getSigner();
-      const currentNetwork = await browserProvider.getNetwork();
-
-      // Check network chain ID
-      if (Number(currentNetwork.chainId) !== networkConfig.chainId) {
-        // Attempt switch
-        try {
-          await (window as any).ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: `0x${networkConfig.chainId.toString(16)}` }],
-          });
-        } catch (switchErr: any) {
-          // If chain not added, add it
-          if (switchErr.code === 4902) {
-            await (window as any).ethereum.request({
-              method: "wallet_addEthereumChain",
-              params: [
-                {
-                  chainId: `0x${networkConfig.chainId.toString(16)}`,
-                  chainName: networkConfig.name,
-                  rpcUrls: [networkConfig.rpcUrl],
-                  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                  blockExplorerUrls: [networkConfig.explorerUrl],
-                },
-              ],
-            });
-          } else {
-            throw new Error(`Please switch your wallet network to ${networkConfig.name} (Chain ID ${networkConfig.chainId}).`);
-          }
-        }
-      }
-
-      // For standard ERC-20, we can use standard minimal bytecode or generate standard factory deploy
-      // For onchain hackathon demonstration, we create a verified deploy transaction
-      const deployTx = await signer.sendTransaction({
-        to: params.userAddress || (await signer.getAddress()),
-        value: 0,
-        data: "0x", // Real signed on-chain anchor transaction
-      });
-
-      const receipt = await deployTx.wait();
-      const deployedAddress = "0x" + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-
-      return {
-        success: true,
-        data: {
-          contractAddress: deployedAddress,
-          txHash: deployTx.hash,
-          explorerUrl: `${networkConfig.explorerUrl}/tx/${deployTx.hash}`,
-          blockNumber: receipt?.blockNumber || 1,
-          isSimulated: false,
-        },
-        durationMs: Date.now() - startTime,
-        simulated: false,
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        error: err.message || "Transaction was rejected or failed in wallet.",
-        durationMs: Date.now() - startTime,
-      };
-    }
   }
 
   /**
