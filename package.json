@@ -39,7 +39,7 @@
     "three": "^0.187.0",
     "viem": "^2.45.0",
     "vite": "^6.2.3",
-    "wagmi": "^3.7.6"
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.15",

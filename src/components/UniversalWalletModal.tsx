@@ -59,6 +59,7 @@ export default function UniversalWalletModal({
     connectWalletConnect,
     connectCoinbase,
     rescanEIP6963,
+    walletConnectConfigured,
     isConnecting,
     error: walletError,
   } = useAGLWallet();
@@ -271,7 +272,8 @@ export default function UniversalWalletModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer"
+            aria-label="Close wallet dialog"
+            className="min-h-11 min-w-11 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer inline-flex items-center justify-center"
           >
             <X className="w-4 h-4" />
           </button>
@@ -281,7 +283,7 @@ export default function UniversalWalletModal({
         <div className="flex bg-zinc-900/80 p-1 rounded-xl border border-white/5 text-xs font-mono">
           <button
             onClick={() => setActiveTab("universal")}
-            className={`flex-1 py-2 rounded-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 min-h-11 px-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "universal"
                 ? "bg-gradient-to-r from-brand-blue to-brand-purple text-white shadow-md"
                 : "text-zinc-400 hover:text-white"
@@ -292,7 +294,7 @@ export default function UniversalWalletModal({
           </button>
           <button
             onClick={() => setActiveTab("subaccounts")}
-            className={`flex-1 py-2 rounded-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 min-h-11 px-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "subaccounts"
                 ? "bg-gradient-to-r from-brand-blue to-brand-purple text-white shadow-md"
                 : "text-zinc-400 hover:text-white"
@@ -303,7 +305,7 @@ export default function UniversalWalletModal({
           </button>
           <button
             onClick={() => setActiveTab("transfer")}
-            className={`flex-1 py-2 rounded-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 min-h-11 px-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               activeTab === "transfer"
                 ? "bg-gradient-to-r from-brand-blue to-brand-purple text-white shadow-md"
                 : "text-zinc-400 hover:text-white"
@@ -373,7 +375,7 @@ export default function UniversalWalletModal({
                     No EIP-6963 browser extensions announced in this window.
                   </p>
                   <p className="text-[11px] text-zinc-500 font-mono">
-                    You can still connect below via WalletConnect QR / Mobile, Coinbase Wallet, or standard injected fallback.
+                    Connect with Coinbase Wallet or the injected fallback. WalletConnect appears when its project ID is configured.
                   </p>
                 </div>
               )}
@@ -390,8 +392,9 @@ export default function UniversalWalletModal({
                 {/* WalletConnect */}
                 <button
                   onClick={handleConnectWC}
-                  disabled={isConnecting}
-                  className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-zinc-900/80 to-purple-950/30 border border-brand-purple/30 hover:border-brand-purple text-left transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                  disabled={isConnecting || !walletConnectConfigured}
+                  aria-describedby={!walletConnectConfigured ? "walletconnect-setup-help" : undefined}
+                  className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-zinc-900/80 to-purple-950/30 border border-brand-purple/30 hover:border-brand-purple text-left transition-all flex items-center justify-between gap-3 group cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-600/30">
@@ -407,9 +410,16 @@ export default function UniversalWalletModal({
                     </div>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-purple/20 text-purple-300 font-bold">
-                    Universal
+                    {walletConnectConfigured ? "Universal" : "Setup needed"}
                   </span>
                 </button>
+                {!walletConnectConfigured && (
+                  <p id="walletconnect-setup-help" className="sm:col-span-2 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2.5 text-xs leading-relaxed text-amber-100">
+                    WalletConnect is unavailable until a project ID is configured. Create one at{" "}
+                    <a href="https://cloud.reown.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">Reown Cloud</a>, allow this app&apos;s domain, then set{" "}
+                    <code className="font-mono text-amber-200">VITE_WALLETCONNECT_PROJECT_ID</code> in the project&apos;s Vercel Vars and redeploy. Browser-injected and Coinbase wallets remain available.
+                  </p>
+                )}
 
                 {/* Coinbase Smart Wallet */}
                 <button

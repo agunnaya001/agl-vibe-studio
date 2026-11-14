@@ -14,11 +14,9 @@ export const DATA_SUFFIX = Attribution.toDataSuffix({
   codes: [BUILDER_CODE],
 });
 
-// WalletConnect Project ID from environment variable (NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID / VITE_WALLETCONNECT_PROJECT_ID)
-export const WALLETCONNECT_PROJECT_ID = 
-  (typeof import.meta !== "undefined" && ((import.meta as any).env?.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || (import.meta as any).env?.VITE_WALLETCONNECT_PROJECT_ID)) ||
-  (typeof process !== "undefined" && (process.env?.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || process.env?.VITE_WALLETCONNECT_PROJECT_ID)) ||
-  "3fcc6bba6f1de962d911bb5b5c3dba68";
+// Vite only exposes client-side variables prefixed with VITE_. Never ship a fallback ID.
+export const WALLETCONNECT_PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim() ?? "";
+export const isWalletConnectConfigured = WALLETCONNECT_PROJECT_ID.length > 0;
 
 /**
  * Centralized Wagmi Configuration with Base-First Priority
@@ -36,16 +34,20 @@ export const wagmiConfig = createConfig({
       appLogoUrl: "https://aglstudio.xyz/favicon.ico",
       preference: "all",
     }),
-    walletConnect({
-      projectId: WALLETCONNECT_PROJECT_ID,
-      showQrModal: true,
-      metadata: {
-        name: "Agunnaya Labs Studio",
-        description: "Operating Layer & Ecosystem Hub for Agunnaya Labs on Base Mainnet",
-        url: "https://aglstudio.xyz",
-        icons: ["https://aglstudio.xyz/favicon.ico"],
-      },
-    }),
+    ...(isWalletConnectConfigured
+      ? [
+          walletConnect({
+            projectId: WALLETCONNECT_PROJECT_ID,
+            showQrModal: true,
+            metadata: {
+              name: "Agunnaya Labs Studio",
+              description: "Operating Layer & Ecosystem Hub for Agunnaya Labs on Base Mainnet",
+              url: "https://aglstudio.xyz",
+              icons: ["https://aglstudio.xyz/favicon.ico"],
+            },
+          }),
+        ]
+      : []),
   ],
   transports: {
     [base.id]: fallback([
