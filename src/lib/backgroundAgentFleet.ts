@@ -33,15 +33,26 @@ class BackgroundFleetEngine {
       const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
 
       if (savedAgents) {
-        this.agents = JSON.parse(savedAgents);
+        const parsed = JSON.parse(savedAgents) as BackgroundFleetAgent[];
+        this.agents = parsed.map((agent) => ({
+          ...agent,
+          status: "IDLE",
+          lastRunAt: 0,
+          nextRunAt: 0,
+          totalRuns: 0,
+          successfulActions: 0,
+          failedActions: 0,
+          totalGasSpentEth: "0",
+          estimatedValueGeneratedUsd: "0",
+          logs: []
+        }));
       } else {
         // Seed with 3 default agents from labs so user gets immediate background action
         this.seedDefaultFleet();
       }
 
-      if (savedLogs) {
-        this.logs = JSON.parse(savedLogs);
-      }
+      // Historical local logs may contain simulated transaction records; hide until receipt-verified.
+      this.logs = [];
     } catch (e) {
       console.warn("Failed to load background fleet state:", e);
       this.seedDefaultFleet();
