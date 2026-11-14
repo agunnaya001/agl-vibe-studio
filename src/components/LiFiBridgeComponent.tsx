@@ -66,6 +66,7 @@ const SUPPORTED_CHAINS: LifiChain[] = [
 
 export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTerminalLog, showToast, targetToken, compact }: LiFiBridgeProps) {
   const { connector, address: connectedAddress, isConnected } = useAccount();
+  const effectiveSlippage = 0.5;
 
   // Compute available tokens including targetToken
   const availableTokens = React.useMemo(() => {
