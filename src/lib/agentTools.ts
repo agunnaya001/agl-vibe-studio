@@ -353,7 +353,6 @@ export class AgentToolService {
     isSimulated: boolean;
   }>> {
     const startTime = Date.now();
-    const networkConfig = BASE_NETWORKS[params.network] || BASE_NETWORKS["base-mainnet"];
     if (params.isDemoMode) {
       return {
         success: false,
