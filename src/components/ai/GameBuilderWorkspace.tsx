@@ -466,7 +466,7 @@ export default function GameBuilderWorkspace({
                           className="px-6 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-brand-purple hover:from-rose-500 hover:to-brand-purple/90 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all disabled:opacity-50 cursor-pointer"
                         >
                           {isPlayingDemo ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                          Flip Coin
+                          Run Demo Flip
                         </button>
                       </div>
                     </div>
