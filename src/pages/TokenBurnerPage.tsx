@@ -1110,12 +1110,7 @@ export default function TokenBurnerPage({
             <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3 font-mono text-xs">
               <div className="flex justify-between items-center text-zinc-400">
                 <span>Null Destination:</span>
-                <span className="text-red-400 font-bold flex items-center gap-1">
-                  0x0000...dEaD
-                  <button onClick={() => copyToClipboard(DEAD_ADDRESS, "Dead address")} className="text-zinc-500 hover:text-white">
-                    <Copy className="w-3 h-3" />
-                  </button>
-                </span>
+                <span className="text-amber-300 font-bold">Not configured — burn execution disabled</span>
               </div>
               <div className="flex justify-between items-center text-zinc-400">
                 <span>Base L2 Chain ID:</span>
