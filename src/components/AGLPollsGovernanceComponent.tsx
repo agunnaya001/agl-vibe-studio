@@ -146,11 +146,11 @@ export default function AGLPollsGovernanceComponent({
             <h2 className="text-2xl lg:text-3xl font-display font-bold text-white flex items-center gap-3">
               AGL Liquidity & Protocol Polls
               <span className="text-xs font-mono font-bold bg-brand-purple/20 text-purple-300 border border-brand-purple/30 px-2.5 py-1 rounded-full">
-                WEIGHT: {votingWeight.toLocaleString()} $AGL
+                OFF-CHAIN WEIGHT: {votingWeight.toLocaleString()} AGL
               </span>
             </h2>
             <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">
-              Vote on live AGL liquidity pair additions, protocol fee splits, and AI agent grants using your $AGL token and staked LP balances.
+              Share off-chain feedback on protocol ideas. Poll weight uses the displayed AGL wallet balance only; it is not Governor voting power and does not include staked LP balances.
             </p>
           </div>
 
@@ -182,7 +182,7 @@ export default function AGLPollsGovernanceComponent({
             <span className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-brand-purple" /> Active AGL Polls ({polls.length})
             </span>
-            <span>Your Vote Power: {votingWeight.toLocaleString()} $AGL</span>
+            <span>Displayed AGL weight: {votingWeight.toLocaleString()} AGL</span>
           </div>
 
           <div className="space-y-3">
@@ -259,7 +259,7 @@ export default function AGLPollsGovernanceComponent({
               {/* Options List with Live Tally Percentage Bars */}
               <div className="space-y-3">
                 <label className="text-xs font-mono font-bold uppercase text-zinc-400 block">
-                  Select Poll Option & Vote:
+                  Select an option (off-chain poll vote):
                 </label>
 
                 {selectedPoll.options.map((opt) => {
