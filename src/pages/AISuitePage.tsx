@@ -135,7 +135,7 @@ export default function AISuitePage({
           <div className="flex flex-wrap gap-2 shrink-0">
             <div className="p-3 rounded-2xl bg-zinc-900/80 border border-white/10 text-center min-w-[90px]">
               <div className="text-lg font-mono font-bold text-brand-purple">5</div>
-              <div className="text-[10px] text-zinc-400 uppercase font-semibold">AI Modules</div>
+              <div className="text-[10px] text-zinc-400 uppercase font-semibold">Core Modules</div>
             </div>
             <div className="p-3 rounded-2xl bg-zinc-900/80 border border-white/10 text-center min-w-[90px]">
               <div className="text-lg font-mono font-bold text-emerald-400">20+</div>
