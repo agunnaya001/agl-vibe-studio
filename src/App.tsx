@@ -818,7 +818,7 @@ export default function App() {
       case "defi":
         return {
           title: "AMM Token Swap & Staking | Agunnaya Labs Studio",
-          description: "Perform instant low-slippage swaps between ETH and native AGL utility tokens or lock up liquidity in compounding high-yield staking vaults.",
+          description: "Access verified Base DeFi integrations. AGL staking reads the deployed staking contract; swaps remain unavailable until a verified router and live quote source are configured.",
           image: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=defi`
         };
@@ -860,7 +860,7 @@ export default function App() {
       case "staking-vault":
         return {
           title: "Automated AGL Staking Vaults (Base Mainnet) | Agunnaya Labs Studio",
-          description: "Lock AGL tokens in automated smart contract vaults on Base Mainnet to earn high annual yield up to 72.5% APY with real-time compounding.",
+          description: "Access the canonical AGL staking workspace on Base Mainnet. Staking tiers and rewards are shown only when returned by the deployed contract.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=staking-vault`
         };
