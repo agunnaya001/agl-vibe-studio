@@ -21,6 +21,33 @@ let rpcProvider: JsonRpcProvider | null = null;
 type PaymentConfig = { chainId: number; treasuryAddress: string; usdcAddress: string; aglAddress: string; confirmations: number };
 type TokenDetails = { address: string; symbol: string; decimals: number };
 
+function escapeHtml(value: unknown) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
+}
+
+async function sendRevenueEmail(to: string | string[], subject: string, content: string, idempotencyKey: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const domain = process.env.RESEND_EMAIL_DOMAIN;
+  if (!apiKey || !domain || !/^[a-z0-9.-]+$/i.test(domain)) return;
+  const recipients = (Array.isArray(to) ? to : [to]).filter((email) => /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email));
+  if (!recipients.length) return;
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify({ from: `Agunnaya Labs <notifications@${domain}>`, to: recipients, subject, html: `<main style="font-family:Arial,sans-serif;color:#18181b;line-height:1.6"><h2>${escapeHtml(subject)}</h2>${content}<p>— Agunnaya Labs</p></main>` }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) console.error(`[revenue-email] Delivery failed with status ${response.status}`);
+  } catch {
+    console.error("[revenue-email] Delivery request failed");
+  }
+}
+
+function getAdminEmails() {
+  return (process.env.AGL_ADMIN_EMAILS || "").split(/[;,\\s]+/).map((email) => email.trim()).filter(Boolean);
+}
+
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
     super(message);
@@ -81,6 +108,14 @@ async function getTokenDetails(address: string, expectedSymbol: "USDC" | "AGL"):
   } catch {
     throw new HttpError(503, `Configured ${expectedSymbol} token could not be verified on Base. Payment instructions remain disabled.`);
   }
+}
+
+function formatBaseUnits(amount: string, decimals: number) {
+  const units = BigInt(amount);
+  const scale = 10n ** BigInt(decimals);
+  const whole = units / scale;
+  const fraction = (units % scale).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return `${whole}${fraction ? `.${fraction}` : ""}`;
 }
 
 function getTokenForMethod(config: PaymentConfig, method: unknown) {
@@ -266,6 +301,9 @@ router.post("/api/revenue/inquiries", async (req, res) => {
       });
     });
 
+    const details = `<p>A new services inquiry was submitted.</p><ul><li>Reference: ${escapeHtml(reference)}</li><li>Project: ${escapeHtml(projectName)}</li><li>Service: ${escapeHtml(service)}</li><li>Contact: ${escapeHtml(user.email)}</li></ul>`;
+    await sendRevenueEmail(getAdminEmails(), `New inquiry ${reference}`, details, `inquiry-${reference}`);
+    await sendRevenueEmail(user.email!, `We received your inquiry ${reference}`, `<p>Thanks, ${escapeHtml(name)}. Your inquiry for <strong>${escapeHtml(projectName)}</strong> is in review.</p><p>Reference: ${escapeHtml(reference)}</p>`, `inquiry-receipt-${reference}`);
     res.status(201).json({ reference, status: "new" });
   } catch (error) {
     respondWithError(res, error);
@@ -363,6 +401,8 @@ router.post("/api/revenue/admin/quotes", async (req, res) => {
       expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
     await inquiryRef.update({ quote, status: "quoted", updatedAt: FieldValue.serverTimestamp() });
+    const quoteHtml = `<p>Your quote for <strong>${escapeHtml(inquiryData.projectName)}</strong> is ready.</p><ul><li>Amount: $${(amountUsdCents / 100).toFixed(2)}</li><li>Scope: ${escapeHtml(scope)}</li><li>Delivery window: ${escapeHtml(deliveryWindow || "To be agreed")}</li><li>Valid until: ${escapeHtml(quote.expiresAt)}</li></ul>`;
+    await sendRevenueEmail(String(inquiryData.email || ""), `Your Agunnaya Labs quote ${inquiryData.reference}`, quoteHtml, `quote-${inquiryId}-${quote.createdAt}`);
     res.status(201).json({ inquiryId, quote, status: "quoted" });
   } catch (error) {
     respondWithError(res, error);
@@ -527,6 +567,10 @@ router.post("/api/revenue/orders/:id/verify-payment", async (req, res) => {
       transactionInDb.update(invoiceRef, { paymentStatus: "paid", status: "paid", transactionHash, confirmationCount, paidAt, updatedAt: FieldValue.serverTimestamp() });
       return "paid";
     });
+    if (paymentStatus === "paid") {
+      await sendRevenueEmail(user.email!, `Payment confirmed for ${order.invoiceReference}`, `<p>We verified your payment for <strong>${escapeHtml(order.projectName)}</strong>.</p><ul><li>Invoice: ${escapeHtml(order.invoiceReference)}</li><li>Amount: ${escapeHtml(formatBaseUnits(order.amountTokenUnits, order.tokenDecimals))} ${escapeHtml(order.tokenSymbol)}</li><li>Transaction: ${escapeHtml(transactionHash)}</li><li>Base confirmations: ${confirmationCount}</li></ul>`, `payment-${orderId}-${transactionHash}`);
+      await sendRevenueEmail(getAdminEmails(), `Payment received: ${order.invoiceReference}`, `<p>Verified payment received for <strong>${escapeHtml(order.projectName)}</strong>.</p><ul><li>Invoice: ${escapeHtml(order.invoiceReference)}</li><li>Amount: ${escapeHtml(formatBaseUnits(order.amountTokenUnits, order.tokenDecimals))} ${escapeHtml(order.tokenSymbol)}</li><li>Transaction: ${escapeHtml(transactionHash)}</li></ul>`, `payment-admin-${orderId}-${transactionHash}`);
+    }
     res.json({ status: paymentStatus, transactionHash, confirmationCount });
   } catch (error) {
     respondWithError(res, error);
