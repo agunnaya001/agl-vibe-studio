@@ -188,59 +188,8 @@ export default function TokenBurnerPage({
   const [activeCertificate, setActiveCertificate] = useState<BurnTransaction | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
-  // Live burn history list (persisted in local storage + initial mock history)
-  const [burnHistory, setBurnHistory] = useState<BurnTransaction[]>(() => {
-    try {
-      const saved = localStorage.getItem("agl_token_burn_history");
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
-    return [
-      {
-        id: "burn-1",
-        txHash: "0x9d4a8f2e7b1c3d5e7f9a2b4c6d8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
-        tokenSymbol: "AGL",
-        tokenName: "Agunnaya Utility Token",
-        tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698",
-        tokenLogo: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-        amount: 5000,
-        amountUsd: 812.50,
-        burnerAddress: AGL_TREASURY_ADDRESS,
-        nullAddress: DEAD_ADDRESS,
-        burnType: "standard",
-        blockNumber: 18452910,
-        timestamp: Date.now() - 3600000 * 4,
-        status: "confirmed"
-      },
-      {
-        id: "burn-2",
-        txHash: "0x1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
-        tokenSymbol: "AGL",
-        tokenName: "Agunnaya Utility Token",
-        tokenAddress: "0xEA1221B4d80A89BD8C75248Fae7c176BD1854698",
-        tokenLogo: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-        amount: 250,
-        amountUsd: 40.62,
-        burnerAddress: "0x7890123456789012345678901234567890123456",
-        nullAddress: DEAD_ADDRESS,
-        burnType: "credits",
-        creditsMinted: 2500,
-        blockNumber: 18451800,
-        timestamp: Date.now() - 3600000 * 18,
-        status: "confirmed"
-      }
-    ];
-  });
-
-  // Save history to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem("agl_token_burn_history", JSON.stringify(burnHistory));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [burnHistory]);
+  // No legacy local records are presented as verified burns. New records require verified receipts.
+  const [burnHistory] = useState<BurnTransaction[]>([]);
 
   // Combine default portfolio tokens with dynamic studio tokens
   const allPortfolioTokens = [...DEFAULT_PORTFOLIO_TOKENS];
@@ -251,8 +200,8 @@ export default function TokenBurnerPage({
         name: t.name,
         symbol: t.symbol,
         decimals: 18,
-        priceUsd: t.currentPrice * 3250,
-        totalSupply: t.supply || t.maxSupply,
+        priceUsd: 0,
+        totalSupply: 0,
         logoUrl: t.logoUrl,
         isNativeAgl: false
       });
@@ -418,7 +367,7 @@ export default function TokenBurnerPage({
 
   // Global burn statistics
   const totalBurnedCount = burnHistory.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalBurnedUsd = burnHistory.reduce((acc, curr) => acc + curr.amountUsd, 0);
+  const totalBurnedUsd = burnHistory.length > 0 ? burnHistory.reduce((acc, curr) => acc + curr.amountUsd, 0) : null;
 
   return (
     <div id="token-burner-page" className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-16">
@@ -666,7 +615,7 @@ export default function TokenBurnerPage({
                               {bal.toLocaleString()} {tok.symbol}
                             </span>
                             <span className="text-[10px] text-zinc-500 block">
-                              ≈ ${(bal * tok.priceUsd).toFixed(2)}
+                              USD valuation unavailable
                             </span>
                           </div>
                         </div>
@@ -1087,7 +1036,7 @@ export default function TokenBurnerPage({
 
                   {/* Percentage Quick Selection Chips */}
                   <div className="flex items-center justify-between pt-2 border-t border-white/5 font-mono text-xs">
-                    <span className="text-[11px] text-zinc-500">≈ ${((parseFloat(burnAmount) || 0) * activeToken.priceUsd).toFixed(2)} USD</span>
+                    <span className="text-[11px] text-zinc-500">USD valuation unavailable</span>
                     <div className="flex items-center gap-1.5">
                       {[10, 25, 50, 75, 100].map(pct => (
                         <button
@@ -1228,7 +1177,7 @@ export default function TokenBurnerPage({
                         </span>
                       </div>
                       <span className="text-emerald-400 font-bold text-[11px]">
-                        ≈ ${b.amountUsd.toFixed(2)} USD
+                        USD valuation unavailable
                       </span>
                     </div>
 
@@ -1402,7 +1351,7 @@ export default function TokenBurnerPage({
                   {activeCertificate.amount.toLocaleString()} {activeCertificate.tokenSymbol}
                 </span>
                 <span className="text-xs text-emerald-400 block font-bold">
-                  ≈ ${activeCertificate.amountUsd.toFixed(2)} USD Value Deflated
+                  USD valuation unavailable
                 </span>
               </div>
 
@@ -1517,7 +1466,7 @@ export default function TokenBurnerPage({
                           </span>
                         </div>
                         <span className="text-emerald-400 font-bold">
-                          ≈ ${item.amountUsd.toFixed(2)} USD
+                          USD valuation unavailable
                         </span>
                       </div>
                     ))}
