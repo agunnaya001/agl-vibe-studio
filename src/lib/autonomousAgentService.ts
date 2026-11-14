@@ -160,7 +160,7 @@ export class AutonomousAgentService {
   static async getAgents(): Promise<AutonomousAgent[]> {
     const sanitize = (agent: AutonomousAgent): AutonomousAgent => ({
       ...agent,
-      status: "PAUSED" as AutonomousAgent["status"],
+      status: "paused",
       lastExecutedAt: 0,
       nextExecutionAt: 0,
       totalExecutions: 0,
@@ -170,10 +170,16 @@ export class AutonomousAgentService {
       gasSpentEth: 0,
       treasury: {
         ...agent.treasury,
+        treasuryAddress: "",
+        walletType: "not_deployed",
         ethBalance: 0,
         aglBalance: 0,
-        totalValuationUsd: 0
-      }
+        tokenBalances: {},
+        totalValuationUsd: 0,
+        spentTodayEth: 0,
+        lastFundedAt: undefined
+      },
+      netYieldApr: 0
     });
 
     try {
@@ -211,14 +217,34 @@ export class AutonomousAgentService {
   static async saveAgent(agent: AutonomousAgent): Promise<void> {
     try {
       const agents = await this.getAgents();
-      const idx = agents.findIndex((a) => a.id === agent.id);
-      if (idx >= 0) {
-        agents[idx] = agent;
-      } else {
-        agents.unshift(agent);
-      }
+      const safeAgent: AutonomousAgent = {
+        ...agent,
+        status: "paused",
+        lastExecutedAt: 0,
+        nextExecutionAt: 0,
+        totalExecutions: 0,
+        successfulExecutions: 0,
+        failedExecutions: 0,
+        totalProfitEth: 0,
+        gasSpentEth: 0,
+        netYieldApr: 0,
+        treasury: {
+          ...agent.treasury,
+          treasuryAddress: "",
+          walletType: "not_deployed",
+          ethBalance: 0,
+          aglBalance: 0,
+          tokenBalances: {},
+          totalValuationUsd: 0,
+          spentTodayEth: 0,
+          lastFundedAt: undefined
+        }
+      };
+      const idx = agents.findIndex((a) => a.id === safeAgent.id);
+      if (idx >= 0) agents[idx] = safeAgent;
+      else agents.unshift(safeAgent);
       localStorage.setItem(LOCAL_STORAGE_AGENTS_KEY, JSON.stringify(agents));
-      await setDoc(doc(db, "autonomous_agents", agent.id), agent);
+      await setDoc(doc(db, "autonomous_agents", safeAgent.id), safeAgent);
     } catch (e) {
       console.warn("[AutonomousAgentService] Save fallback error:", e);
     }
