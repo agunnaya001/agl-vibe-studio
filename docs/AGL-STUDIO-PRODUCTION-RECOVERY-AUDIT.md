@@ -41,6 +41,16 @@ No production branch or live deployment was changed during this audit.
 - The credits page now reads the declared methods and uses the Wagmi connector for approval/burn/purchase transactions, with confirmed receipt checks and no sandbox path.
 - The contract has no spend/debit method. AI feature usage therefore remains an off-chain Firestore ledger; the wallet model now tracks on-chain granted credits separately so refreshing the contract balance does not restore consumed application credits.
 
+### P0 — Additional DeFi modules contained simulated financial activity
+
+- The old DEX aggregator generated local quotes, changed local balances, and simulated swaps. It has been removed. The primary swap tab now uses LI.FI live quotes on Base only, requires the connected wallet address, refreshes transaction data before signing, and requires a successful receipt. Cross-chain routing is disabled until chain-specific token lists are implemented.
+- The old LI.FI component generated fallback quotes and synthetic transaction hashes, and could fall back to a direct transfer when transaction data was missing. These fallbacks have been removed; execution now requires a valid LI.FI transaction request and a successful Base receipt.
+- The old liquidity-pool page created local demo pools and synthetic LP balances. It is now a read-only unavailable state until real pool/factory contracts and LP-token ABIs are configured.
+- The old airdrop monitor contained static balances/eligibility and a simulated treasury sweep. It now reads ETH/AGL balances from Base RPC, marks eligibility unverified, and disables sweep actions.
+- The old portfolio rebalancer used hardcoded prices, synthetic USDC/staking balances, and local-only execution. It is now read-only until trusted price feeds and contract-backed positions exist.
+- The governance poll component is explicitly labelled off-chain; it does not submit AgunnayaDAO Governor proposals or represent on-chain voting power.
+- The token burner used synthetic burn receipts and local history. Burn actions are disabled, hardcoded valuations are removed, and unverified legacy records are hidden.
+
 ### P0 — Staking ABI does not match the previous UI
 
 - The checked-in `AGL_STAKING_ABI` declares `getUserStakes`, `calculateReward`, `claimRewards`, `stake(amount, lockPeriodDays)`, and `unstake(stakeIndex)`.
