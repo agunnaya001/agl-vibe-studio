@@ -66,90 +66,10 @@ export default function DeployAutonomousAgentModal({
   };
 
   const handleDeploy = async () => {
-    const finalName = name.trim() || `${role.replace("_", " ").toUpperCase()} Agent`;
-    const finalSymbol = symbol.trim() || "AGNT";
-    const ethDeposit = parseFloat(initialEth) || 0.1;
-    const aglDeposit = parseFloat(initialAgl) || 1000;
-
-    setIsLoading(true);
-    try {
-      // 1. Generate dedicated on-chain treasury wallet
-      const treasuryInfo = await AutonomousAgentService.generateTreasuryWallet("base-sepolia", finalName);
-      const treasuryAddress = treasuryInfo?.treasuryAddress || `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
-
-      // 2. Form Autonomous Agent entity
-      const newAgent: AutonomousAgent = {
-        id: `agent-${Date.now()}`,
-        name: finalName,
-        symbol: finalSymbol.toUpperCase(),
-        role,
-        status: "active",
-        network: "base-sepolia",
-        treasury: {
-          treasuryAddress,
-          walletType: "smart_contract",
-          ethBalance: ethDeposit,
-          aglBalance: aglDeposit,
-          tokenBalances: {
-            AGL: { symbol: "AGL", balance: aglDeposit, usdValue: aglDeposit * 0.42 },
-            ETH: { symbol: "ETH", balance: ethDeposit, usdValue: ethDeposit * 2850 },
-          },
-          totalValuationUsd: Number((ethDeposit * 2850 + aglDeposit * 0.42).toFixed(2)),
-          maxDailySpendEth: 0.2,
-          spentTodayEth: 0.0,
-          circuitBreakerThresholdPct: 5.0,
-          lastFundedAt: Date.now(),
-        },
-        marketMakingConfig: role === "market_making" || role === "hybrid" ? {
-          targetTokenAddress: "0x4ed4E862860be51a91bD9bf9f8AC5ACF26871c42",
-          targetTokenSymbol: "AGL",
-          poolType: "bonding_curve",
-          bidSpreadPct: parseFloat(bidSpread) || 1.2,
-          askSpreadPct: parseFloat(askSpread) || 1.2,
-          orderSizeEth: parseFloat(orderSizeEth) || 0.05,
-          rebalanceThresholdPct: 10,
-          inventoryRatioEthPct: 50,
-        } : undefined,
-        arbitrageConfig: role === "arbitrage" || role === "hybrid" ? {
-          sourcePool: "Agunnaya Bonding Curve",
-          targetPool: "Aerodrome Base",
-          tokenPair: "AGL/ETH",
-          minProfitMarginPct: parseFloat(minProfitMargin) || 0.8,
-          maxSlippagePct: 0.5,
-          maxTradeSizeEth: parseFloat(maxTradeSizeEth) || 0.2,
-          atomicFlashLoanEnabled: true,
-        } : undefined,
-        governanceConfig: role === "governance" || role === "hybrid" ? {
-          monitoredDaoAddresses: ["0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"],
-          votingStrategy,
-          minQuorumParticipation: 50,
-          voteWeightTokens: parseInt(voteWeight) || 25000,
-          autoPublishDeliberation: true,
-        } : undefined,
-        executionIntervalMinutes: executionInterval,
-        lastExecutedAt: Date.now(),
-        nextExecutionAt: Date.now() + executionInterval * 60 * 1000,
-        totalExecutions: 0,
-        successfulExecutions: 0,
-        failedExecutions: 0,
-        totalProfitEth: 0.0,
-        gasSpentEth: 0.0,
-        netYieldApr: role === "arbitrage" ? 48.5 : role === "market_making" ? 32.0 : 18.5,
-        geminiModel: "gemini-3.8-flash",
-        systemDirective: `Autonomous ${role.replace("_", " ")} agent with dedicated treasury wallet deployed on Base. Powered by Gemini 3.8 Flash.`,
-        creatorAddress: wallet.address || "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-        createdAt: Date.now(),
-      };
-
-      await AutonomousAgentService.saveAgent(newAgent);
-      onSuccess(newAgent);
-      showToast(`Agent ${newAgent.name} deployed with dedicated treasury wallet!`, "success");
-      onClose();
-    } catch (err: any) {
-      showToast(err.message || "Failed to deploy agent", "error");
-    } finally {
-      setIsLoading(false);
-    }
+    showToast(
+      "Agent deployment is disabled until a secure, verified Base treasury deployment and signer service is configured.",
+      "error"
+    );
   };
 
   return (
