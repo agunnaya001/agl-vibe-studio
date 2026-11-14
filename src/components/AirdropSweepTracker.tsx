@@ -175,7 +175,17 @@ export default function AirdropSweepTracker({
     const saved = localStorage.getItem("agunnaya_tracked_airdrop_wallets");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved) as TrackedWallet[];
+        return parsed.map((tracked) => ({
+          ...tracked,
+          claimStatus: "Unverified" as const,
+          claimDate: undefined,
+          ethBalance: undefined,
+          aglBalance: undefined,
+          unclaimedAglAirdrop: undefined,
+          isSwept: undefined,
+          notes: "Tracking only. Airdrop eligibility and claim allocations are not verified."
+        }));
       } catch (e) {
         return INITIAL_WALLETS;
       }
@@ -394,11 +404,12 @@ export default function AirdropSweepTracker({
 
           <button
             type="button"
-            onClick={() => setIsSweepModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-brand-purple to-blue-600 hover:opacity-90 text-white font-mono font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-purple-500/20"
+            onClick={() => showToast("Sweep disabled: no verified airdrop claim or treasury transfer contract is configured.", "info")}
+            disabled
+            className="px-4 py-2 rounded-xl bg-zinc-800 text-zinc-500 font-mono font-bold text-xs flex items-center gap-2 cursor-not-allowed opacity-60"
           >
             <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-            <span>Sweep All to Treasury Safe</span>
+            <span>Airdrop sweep unavailable</span>
           </button>
         </div>
       </div>
@@ -424,11 +435,11 @@ export default function AirdropSweepTracker({
         {/* Card 2: Total AGL in Tracked Wallets */}
         <div className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-2">
           <div className="flex items-center justify-between text-zinc-400 font-mono">
-            <span className="text-[10px] uppercase font-bold tracking-wider">Total Tracked AGL Volume</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider">Total AGL in Tracked Wallets</span>
             <Coins className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-xl font-extrabold font-mono text-white">
-            {stats.totalClaimedAgl.toLocaleString()} <span className="text-xs text-amber-400">AGL</span>
+            {wallets.some((tracked) => tracked.aglBalance !== undefined) ? stats.totalClaimedAgl.toLocaleString() : "Unavailable"} <span className="text-xs text-amber-400">AGL</span>
           </div>
           <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1 border-t border-white/5">
             <span>Unclaimed Airdrop Allocation:</span>
@@ -446,8 +457,8 @@ export default function AirdropSweepTracker({
             {stats.eligibleCount} <span className="text-xs text-zinc-400">/ {stats.totalWalletsCount} Wallets</span>
           </div>
           <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1 border-t border-white/5">
-            <span>Deployer Wallets:</span>
-            <span className="text-blue-400 font-bold">{stats.deployerCount} (tracked)</span>
+            <span>Deployer addresses:</span>
+            <span className="text-blue-400 font-bold">{stats.deployerCount}</span>
           </div>
         </div>
 
@@ -605,10 +616,10 @@ export default function AirdropSweepTracker({
                       <td className="py-4 px-4">
                         <div className="space-y-0.5">
                           <div className="text-white font-bold">
-                            {(w.aglBalance || 0).toLocaleString()} <span className="text-[10px] text-purple-400">AGL</span>
+                            {w.aglBalance === undefined ? "Unavailable" : w.aglBalance.toLocaleString()} <span className="text-[10px] text-purple-400">AGL</span>
                           </div>
                           <div className="text-[10px] text-zinc-400">
-                            {(w.ethBalance || 0).toFixed(4)} <span className="text-emerald-400 font-bold">ETH</span>
+                            {w.ethBalance === undefined ? "Unavailable" : w.ethBalance.toFixed(6)} <span className="text-emerald-400 font-bold">ETH</span>
                           </div>
                           {w.unclaimedAglAirdrop ? (
                             <div className="text-[9px] text-amber-400 font-bold">
@@ -620,6 +631,11 @@ export default function AirdropSweepTracker({
 
                       {/* Claim Status */}
                       <td className="py-4 px-4">
+                        {w.claimStatus === "Unverified" && (
+                          <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-bold inline-flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Unverified
+                          </span>
+                        )}
                         {w.claimStatus === "Eligible" && (
                           <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> Eligible
