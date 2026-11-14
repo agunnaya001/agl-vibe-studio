@@ -304,11 +304,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
     }
   };
 
-  const swapChains = () => {
-    const temp = fromChainId;
-    setFromChainId(toChainId);
-    setToChainId(temp);
-  };
+
 
   const getChainName = (id: number) => SUPPORTED_CHAINS.find(c => c.id === id)?.name || `Chain #${id}`;
 
@@ -335,7 +331,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
                 </span>
               </div>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Route multi-chain liquidity across Ethereum, Polygon, Arbitrum, Optimism & Base with smart LI.FI solver execution.
+                Live Base Mainnet token swaps using fresh LI.FI quotes. Base swap routes are not enabled in this workspace.
               </p>
             </div>
           </div>
@@ -363,37 +359,9 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
           </div>
         </div>
 
-        {/* PRESET STRATEGIES */}
-        <div className="pt-2 border-t border-white/5">
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider font-mono flex items-center gap-1 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-brand-purple" /> 1-Click AI Suggested Cross-Chain Bridge Routes
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { label: "🌐 Ethereum -> Base Mainnet (ETH -> AGL)", fromC: 1, toC: 8453, fromT: "ETH", toT: "AGL", amt: "0.1" },
-              { label: "⚡ Polygon -> Base (USDC -> AGL)", fromC: 137, toC: 8453, fromT: "USDC", toT: "AGL", amt: "100" },
-              { label: "🚀 Arbitrum -> Base Liquidity (ETH -> ETH)", fromC: 42161, toC: 8453, fromT: "ETH", toT: "ETH", amt: "0.25" },
-              { label: "🛡️ Optimism -> Base Treasury (USDT -> USDC)", fromC: 10, toC: 8453, fromT: "USDT", toT: "USDC", amt: "250" }
-            ].map((sug, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  setFromChainId(sug.fromC);
-                  setToChainId(sug.toC);
-                  setFromTokenSymbol(sug.fromT);
-                  setToTokenSymbol(sug.toT);
-                  setFromAmount(sug.amt);
-                  showToast(`Applied preset: ${sug.label}`, "info");
-                }}
-                className="text-[10px] px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-white/10 hover:border-brand-purple/40 hover:bg-brand-purple/10 text-zinc-300 hover:text-white transition-all font-mono flex items-center gap-1 cursor-pointer"
-              >
-                <Zap className="w-3 h-3 text-brand-purple" />
-                <span>{sug.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <p className="border-t border-white/5 pt-3 text-[11px] text-zinc-500">
+          Base Mainnet only. Connect your wallet to request a live LI.FI quote; unsupported networks and simulated quotes are not executable.
+        </p>
       </div>
 
       {/* MAIN BRIDGE CARD */}
@@ -402,7 +370,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
         <div className="lg:col-span-7 glass-panel p-6 rounded-2xl border border-white/10 bg-zinc-950/60 space-y-5">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-bold text-white font-display flex items-center gap-2">
-              <ArrowLeftRight className="w-4 h-4 text-brand-purple" /> Cross-Chain Swap Parameters
+              <ArrowLeftRight className="w-4 h-4 text-brand-purple" /> Base Swap Parameters
             </h4>
             <button
               onClick={fetchQuote}
@@ -417,7 +385,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
           {/* FROM CHAIN & TOKEN */}
           <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5 space-y-3">
             <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-              <span>Source Network & Asset</span>
+              <span>Pay From</span>
               <span>Balance: {wallet.isConnected ? `${wallet.balanceEth.toFixed(3)} ETH` : "--"}</span>
             </div>
 
@@ -479,22 +447,10 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
             </div>
           </div>
 
-          {/* CHAIN SWAP BUTTON */}
-          <div className="flex justify-center -my-2">
-            <button
-              type="button"
-              onClick={swapChains}
-              className="p-2.5 rounded-full bg-zinc-900 border border-white/15 hover:border-brand-purple hover:bg-brand-purple/20 text-zinc-300 hover:text-white transition-all shadow-lg cursor-pointer"
-              title="Swap Source and Destination Chains"
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-            </button>
-          </div>
-
           {/* TO CHAIN & TOKEN */}
           <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5 space-y-3">
             <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-              <span>Destination Network & Asset</span>
+              <span>Receive Asset</span>
               <span>Estimated Receive</span>
             </div>
 
@@ -649,7 +605,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
                   <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-950 border border-white/5">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center text-[10px] font-bold">1</span>
-                      <span className="text-zinc-200">Deposit on {getChainName(fromChainId)}</span>
+                      <span className="text-zinc-200">Swap from {getChainName(fromChainId)}</span>
                     </div>
                     <span className="text-zinc-400 text-[11px]">{fromAmount} {fromTokenSymbol}</span>
                   </div>
@@ -658,7 +614,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
                   <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-950 border border-white/5">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center text-[10px] font-bold">2</span>
-                      <span className="text-purple-300">LI.FI Solver ({quoteData.toolDetails?.name || "Across / Stargate"})</span>
+                      <span className="text-purple-300">LI.FI Swap Route ({quoteData.toolDetails?.name || "LI.FI"})</span>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
                   </div>
@@ -678,10 +634,10 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
               <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/20 text-xs font-mono text-purple-200/80 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-purple-300">
                   <ShieldCheck className="w-4 h-4 text-purple-400" />
-                  <span>Slippage Protection Active (0.5%)</span>
+                  <span>Slippage tolerance: {effectiveSlippage.toFixed(2)}%</span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-zinc-400">
-                  Transactions routed via LI.FI server proxy automatically verify target contract security, prevent MEV frontrunning, and enforce sub-second settlement limits.
+                  Review the route, token addresses, approval spender, minimum received amount, and network in your wallet before signing. LI.FI quote data does not guarantee execution or eliminate MEV.
                 </p>
               </div>
             </div>
