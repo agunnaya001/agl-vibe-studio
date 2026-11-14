@@ -155,9 +155,6 @@ export default function BatchTokenTransferPage({
   const [currentExecutingIndex, setCurrentExecutingIndex] = useState<number>(-1);
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
 
-  // History
-  const [history, setHistory] = useState<BatchTransferRecord[]>([]);
-
   // Legacy local batch history may contain simulated transaction hashes; keep it hidden until receipt verification.
   const [history] = useState<BatchTransferRecord[]>([]);
 
