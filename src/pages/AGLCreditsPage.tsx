@@ -94,7 +94,7 @@ export default function AGLCreditsPage({ wallet, onRefreshWallet, addTerminalLog
     } finally {
       setLoading(false);
     }
-  }, [wallet.address, addTerminalLog, setWalletState]);
+  }, [wallet.address, wallet.aglCredits, wallet.aglCreditsOnChain, addTerminalLog, setWalletState]);
 
   useEffect(() => {
     void loadOnChainData();
