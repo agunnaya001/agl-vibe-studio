@@ -209,28 +209,26 @@ export async function delegateVotingPower(delegateeAddress: string, signer: ethe
 // Helper: Fetch User Governance Power & Balances
 export async function fetchUserGovPower(userAddress: string, provider: ethers.Provider, wrapperAddress = AGL_VOTES_WRAPPER_ADDRESS): Promise<UserGovPower> {
   if (!userAddress || !ethers.isAddress(userAddress)) {
-    return {
-      aglBalance: "0",
-      aglBalanceFormatted: 0,
-      wAglBalance: "0",
-      wAglBalanceFormatted: 0,
-      currentVotes: "0",
-      currentVotesFormatted: 0,
-      delegatedTo: ethers.ZeroAddress,
-      isSelfDelegated: false,
-      canPropose: false,
-    };
+    throw new Error("A valid wallet address is required to read governance power.");
   }
 
   try {
+    const [tokenCode, wrapperCode] = await Promise.all([
+      provider.getCode(AGL_TOKEN_ADDRESS),
+      provider.getCode(wrapperAddress),
+    ]);
+    if (tokenCode === "0x" || wrapperCode === "0x") {
+      throw new Error("AGL governance contracts are not deployed on the connected network.");
+    }
+
     const aglContract = new ethers.Contract(AGL_TOKEN_ADDRESS, AGL_TOKEN_ABI, provider);
     const wrapperContract = new ethers.Contract(wrapperAddress, AGL_VOTES_WRAPPER_ABI, provider);
 
     const [aglBal, wAglBal, votes, delegatee] = await Promise.all([
-      aglContract.balanceOf(userAddress).catch(() => 0n),
-      wrapperContract.balanceOf(userAddress).catch(() => 0n),
-      wrapperContract.getVotes(userAddress).catch(() => 0n),
-      wrapperContract.delegates(userAddress).catch(() => ethers.ZeroAddress),
+      aglContract.balanceOf(userAddress),
+      wrapperContract.balanceOf(userAddress),
+      wrapperContract.getVotes(userAddress),
+      wrapperContract.delegates(userAddress),
     ]);
 
     const aglFormatted = Number(ethers.formatUnits(aglBal, 18));
@@ -250,16 +248,6 @@ export async function fetchUserGovPower(userAddress: string, provider: ethers.Pr
     };
   } catch (err) {
     console.error("Error fetching user gov power:", err);
-    return {
-      aglBalance: "0",
-      aglBalanceFormatted: 0,
-      wAglBalance: "0",
-      wAglBalanceFormatted: 0,
-      currentVotes: "0",
-      currentVotesFormatted: 0,
-      delegatedTo: ethers.ZeroAddress,
-      isSelfDelegated: false,
-      canPropose: false,
-    };
+    throw err;
   }
 }

@@ -1,11 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { Type, ThinkingLevel } from "@google/genai";
 import { ethers } from "ethers";
-import {
-  executeGeminiWithFallback,
-  generateStaticSecurityAuditFallback,
-  safeParseJson,
-} from "./geminiHelper.ts";
+import { executeGeminiWithFallback, safeParseJson } from "./geminiHelper.ts";
 
 // Network RPC configuration
 const BASE_RPCS: Record<string, { rpc: string; chainId: number; explorer: string; name: string }> = {
@@ -486,27 +482,10 @@ ${solidityCode}
 
       res.json(parsed);
     } catch (error: any) {
-      console.warn("Security Audit Fallback Triggered:", error?.message || error);
-      const fallbackReport = generateStaticSecurityAuditFallback(req.body.solidityCode || "", req.body.contractName || "Contract");
-      res.json({
-        overallScore: fallbackReport.score || 94,
-        summary: fallbackReport.executiveSummary || "Static automated security inspection passed with standard OpenZeppelin safety patterns.",
-        isSafeForDeployment: true,
-        findings: (fallbackReport.findings || []).map((f: any, idx: number) => ({
-          id: `AGL-SEC-0${idx + 1}`,
-          title: f.title || "Access Control Review",
-          severity: (f.severity || "LOW").toUpperCase(),
-          category: f.category || "Best Practices",
-          location: f.location || "constructor / mint",
-          explanation: f.explanation || "Verified access control modifier on privileged functions.",
-          recommendation: f.recommendation || "Maintain multi-sig or timelock ownership for mainnet deployments.",
-          cwe: f.cwe || "CWE-284"
-        })),
-        gasOptimizations: [
-          "Use custom errors instead of require string messages to save ~200 gas per revert.",
-          "Cache storage reads in memory inside loops for gas efficiency."
-        ],
-        disclaimer: "This is an advisory AI security layer and is not a substitute for a formal professional security audit."
+      console.error("Security audit unavailable:", error?.message || error);
+      res.status(503).json({
+        error: "Security audit unavailable. No audit findings or deployment-safety verdict were generated.",
+        code: "SECURITY_AUDIT_UNAVAILABLE",
       });
     }
   });

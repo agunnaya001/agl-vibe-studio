@@ -41,6 +41,7 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
   const [proposals, setProposals] = useState<ProposalRecord[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<ProposalRecord | null>(null);
   const [loadingProposals, setLoadingProposals] = useState<boolean>(true);
+  const [proposalLoadError, setProposalLoadError] = useState<string | null>(null);
   const [userGovPower, setUserGovPower] = useState<UserGovPower>({
     aglBalance: "0",
     aglBalanceFormatted: 0,
@@ -53,13 +54,13 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
     canPropose: false
   });
   const [loadingUserPower, setLoadingUserPower] = useState<boolean>(false);
+  const [userPowerAvailable, setUserPowerAvailable] = useState<boolean>(false);
 
   // Modals & Action States
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [showVoteModal, setShowVoteModal] = useState<boolean>(false);
   const [selectedVoteType, setSelectedVoteType] = useState<number | null>(null); // 1 = For, 0 = Against, 2 = Abstain
   const [voteReason, setVoteReason] = useState<string>("");
-  const [isSubmittingVote, setIsSubmittingVote] = useState<boolean>(false);
 
   // Wrap / Unwrap State
   const [wrapMode, setWrapMode] = useState<"wrap" | "unwrap">("wrap");
@@ -91,14 +92,18 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
   // Load proposals from backend/on-chain
   const loadProposals = async () => {
     setLoadingProposals(true);
+    setProposalLoadError(null);
     try {
       const res = await fetch("/api/governance/proposals");
-      const data = await res.json();
-      if (data && data.proposals) {
-        setProposals(data.proposals);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !Array.isArray(data?.proposals)) {
+        throw new Error(data?.error || "Governance proposal data is unavailable.");
       }
+      setProposals(data.proposals);
     } catch (err) {
       console.error("Failed to load proposals:", err);
+      setProposals([]);
+      setProposalLoadError(err instanceof Error ? err.message : "Governance proposal data is unavailable.");
     } finally {
       setLoadingProposals(false);
     }
@@ -106,16 +111,24 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
 
   // Load User Governance Stats
   const loadUserPower = async () => {
-    if (!wallet.isConnected || !wallet.address) return;
+    if (!wallet.isConnected || !wallet.address) {
+      setUserPowerAvailable(false);
+      return;
+    }
     setLoadingUserPower(true);
+    setUserPowerAvailable(false);
     try {
-      if ((window as any).ethereum) {
-        const provider = new ethers.BrowserProvider((window as any).ethereum);
-        const power = await fetchUserGovPower(wallet.address, provider);
-        setUserGovPower(power);
-      }
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) throw new Error("A compatible wallet is required to read governance power.");
+      const provider = new ethers.BrowserProvider(ethereum);
+      const network = await provider.getNetwork();
+      if (network.chainId !== 8453n) throw new Error("Switch your wallet to Base Mainnet to read governance power.");
+      const power = await fetchUserGovPower(wallet.address, provider);
+      setUserGovPower(power);
+      setUserPowerAvailable(true);
     } catch (err) {
       console.error("Failed to fetch user gov power:", err);
+      setUserPowerAvailable(false);
     } finally {
       setLoadingUserPower(false);
     }
@@ -146,6 +159,10 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
   const handleWrapAction = async () => {
     if (!wallet.isConnected || !wallet.address) {
       showToast("Please connect your wallet first", "error");
+      return;
+    }
+    if (!userPowerAvailable) {
+      showToast("Governance contract reads are unavailable. No transaction was sent.", "error");
       return;
     }
     if (!wrapAmount || isNaN(Number(wrapAmount)) || Number(wrapAmount) <= 0) {
@@ -196,6 +213,10 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
       showToast("Please connect your wallet first", "error");
       return;
     }
+    if (!userPowerAvailable) {
+      showToast("Governance contract reads are unavailable. No transaction was sent.", "error");
+      return;
+    }
     const dest = targetAddress || delegateeInput;
     if (!dest || !ethers.isAddress(dest)) {
       showToast("Please enter a valid Ethereum address", "error");
@@ -220,40 +241,23 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
     }
   };
 
-  // Handle Cast Vote
-  const handleCastVote = async () => {
-    if (!selectedProposal || selectedVoteType === null) return;
-    if (!wallet.isConnected || !wallet.address) {
-      showToast("Please connect wallet", "error");
-      return;
-    }
-
-    if (userGovPower.currentVotesFormatted === 0) {
-      showToast("You have 0 voting power. Make sure you wrap AGL to wAGL and self-delegate!", "error");
-      return;
-    }
-
-    setIsSubmittingVote(true);
-    try {
-      // Simulate/Cast on-chain vote
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const voteLabels = ["Against", "For", "Abstain"];
-      showToast(`Vote "${voteLabels[selectedVoteType]}" cast successfully with ${userGovPower.currentVotesFormatted.toLocaleString()} votes!`, "success");
-      addTerminalLog?.(`[Governance] Voted ${voteLabels[selectedVoteType]} on ${selectedProposal.id}`);
-      setShowVoteModal(false);
-      setSelectedVoteType(null);
-      setVoteReason("");
-      loadProposals();
-    } catch (err: any) {
-      showToast(err?.message || "Failed to submit vote", "error");
-    } finally {
-      setIsSubmittingVote(false);
-    }
+  // Keep the modal's action fail-closed until a verified on-chain Governor write is available.
+  const handleCastVote = () => {
+    showToast("On-chain voting is unavailable. No vote was submitted.", "error");
+    setShowVoteModal(false);
   };
 
   // Handle Create Proposal
   const handleCreateProposal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (proposalLoadError) {
+      showToast("Proposal creation is unavailable until governance data can be verified.", "error");
+      return;
+    }
+    if (!userPowerAvailable) {
+      showToast("Governance voting power could not be verified. No proposal was submitted.", "error");
+      return;
+    }
     if (!newPropTitle.trim() || !newPropDesc.trim()) {
       showToast("Please fill in proposal title and description", "error");
       return;
@@ -280,8 +284,8 @@ export default function GovernancePage({ wallet, showToast, addTerminalLog }: Go
         })
       });
 
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         showToast("Proposal submitted to Base DAO governance successfully!", "success");
         addTerminalLog?.(`[Governance] Created proposal: ${newPropTitle}`);
         setShowCreateModal(false);

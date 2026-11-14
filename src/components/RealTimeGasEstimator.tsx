@@ -64,7 +64,7 @@ export interface RealTimeGasEstimatorProps {
 export default function RealTimeGasEstimator({
   tradeAmount = 0,
   tradeMode = "buy",
-  tokenPriceEth = 0.00001,
+  tokenPriceEth = 0,
   tokenSymbol = "TOKEN",
   compact = false,
   onGasTierChange,
@@ -88,45 +88,15 @@ export default function RealTimeGasEstimator({
         throw new Error(`HTTP error ${res.status}`);
       }
       const data: GasOracleResponse = await res.json();
-      if (data && data.success) {
-        setGasData(data);
-        setLastUpdated(new Date());
+      if (!data || !data.success) {
+        throw new Error("Gas oracle returned no verified estimate");
       }
+      setGasData(data);
+      setLastUpdated(new Date());
     } catch (err: any) {
       console.warn("Gas Oracle Fetch Warning:", err.message);
-      // Construct realistic fallback if network request fails
-      const isBase = selectedChainId === 8453;
-      setGasData({
-        success: true,
-        chainId: selectedChainId,
-        network: isBase ? "Base Mainnet" : "Ethereum Mainnet",
-        lastBlock: "26482100",
-        safeGasPrice: isBase ? 0.003 : 12,
-        proposeGasPrice: isBase ? 0.006 : 18,
-        fastGasPrice: isBase ? 0.012 : 28,
-        baseFee: isBase ? 0.004 : 14,
-        gasUsedRatio: "0.45,0.52,0.48",
-        congestion: {
-          level: "low",
-          label: "Optimal (Smooth & Fast)",
-          score: 22,
-          blockUtilization: "48.5%"
-        },
-        ethPriceUsd: 3150,
-        typicalSwapGasUnits: 145000,
-        l1DataFeeUsd: isBase ? 0.0025 : 0,
-        estimatedTradeGas: {
-          safeEth: isBase ? 0.000001 : 0.00174,
-          proposeEth: isBase ? 0.000002 : 0.00261,
-          fastEth: isBase ? 0.000004 : 0.00406,
-          safeUsd: isBase ? 0.005 : 5.48,
-          proposeUsd: isBase ? 0.009 : 8.22,
-          fastUsd: isBase ? 0.016 : 12.78
-        },
-        timestamp: Date.now(),
-        source: "Base L2 RPC & Fee Fallback"
-      });
-      setLastUpdated(new Date());
+      setGasData(null);
+      setLastUpdated(null);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -150,24 +120,24 @@ export default function RealTimeGasEstimator({
   // Calculate Trade Value in ETH
   const tradeEthValue = useMemo(() => {
     const num = typeof tradeAmount === "string" ? parseFloat(tradeAmount) : tradeAmount;
-    if (isNaN(num) || num <= 0) return 0;
+    if (!Number.isFinite(num) || num <= 0) return 0;
     if (tradeMode === "buy") {
-      return num; // In Buy mode, input is already in ETH
-    } else {
-      return num * (tokenPriceEth || 0.00001); // In Sell mode, input is tokens, convert to ETH
+      return num;
     }
+    if (!Number.isFinite(tokenPriceEth) || tokenPriceEth <= 0) return 0;
+    return num * tokenPriceEth;
   }, [tradeAmount, tradeMode, tokenPriceEth]);
 
   // Selected Gas Fee in ETH & USD
   const currentGasEth = useMemo(() => {
-    if (!gasData) return 0.000002;
+    if (!gasData) return null;
     if (gasTier === "safe") return gasData.estimatedTradeGas.safeEth;
     if (gasTier === "fast") return gasData.estimatedTradeGas.fastEth;
     return gasData.estimatedTradeGas.proposeEth;
   }, [gasData, gasTier]);
 
   const currentGasUsd = useMemo(() => {
-    if (!gasData) return 0.006;
+    if (!gasData) return null;
     if (gasTier === "safe") return gasData.estimatedTradeGas.safeUsd;
     if (gasTier === "fast") return gasData.estimatedTradeGas.fastUsd;
     return gasData.estimatedTradeGas.proposeUsd;
@@ -175,25 +145,24 @@ export default function RealTimeGasEstimator({
 
   // Calculate Gas as % of Trade Amount
   const gasPercentOfTrade = useMemo(() => {
-    if (tradeEthValue <= 0) return 0;
+    if (currentGasEth === null || tradeEthValue <= 0) return null;
     return (currentGasEth / tradeEthValue) * 100;
   }, [currentGasEth, tradeEthValue]);
 
-  // Warning trigger threshold (> 25% of trade amount)
   const isHighGasWarning = useMemo(() => {
-    return tradeEthValue > 0 && gasPercentOfTrade > 25.0;
-  }, [tradeEthValue, gasPercentOfTrade]);
+    return gasPercentOfTrade !== null && gasPercentOfTrade > 25;
+  }, [gasPercentOfTrade]);
 
   // Propagate gas tier selection to parent
   useEffect(() => {
-    if (onGasTierChange && gasData) {
+    if (onGasTierChange && currentGasEth !== null && currentGasUsd !== null) {
       onGasTierChange(gasTier, currentGasEth, currentGasUsd);
     }
   }, [gasTier, currentGasEth, currentGasUsd, onGasTierChange, gasData]);
 
   // Congestion Color & Badge Helpers
   const congestionStyle = useMemo(() => {
-    const level = gasData?.congestion?.level || "low";
+    const level = gasData?.congestion?.level || "unavailable";
     switch (level) {
       case "extreme":
         return {
@@ -224,12 +193,18 @@ export default function RealTimeGasEstimator({
           bg: "bg-blue-950/30 border-blue-500/30"
         };
       case "low":
-      default:
         return {
           badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
           bar: "bg-emerald-500",
           text: "text-emerald-400",
           bg: "bg-emerald-950/30 border-emerald-500/30"
+        };
+      default:
+        return {
+          badge: "bg-zinc-800 text-zinc-400 border-zinc-700",
+          bar: "bg-zinc-700",
+          text: "text-zinc-400",
+          bg: "bg-zinc-900 border-zinc-800"
         };
     }
   }, [gasData?.congestion?.level]);
@@ -247,8 +222,8 @@ export default function RealTimeGasEstimator({
           </div>
           <div>
             <div className="flex items-center gap-1.5 font-display font-bold text-white text-xs">
-              <span>Etherscan V2 Gas Oracle</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{gasData ? "Etherscan V2 Gas Oracle" : "Gas oracle unavailable"}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${gasData ? "bg-emerald-400" : "bg-amber-400"}`} />
             </div>
             <div className="text-[10px] font-mono text-zinc-400 flex items-center gap-1">
               <span>Network:</span>
@@ -312,9 +287,9 @@ export default function RealTimeGasEstimator({
             <div className="space-y-1 flex-1">
               <div className="flex items-center justify-between font-bold text-xs text-rose-300 font-display">
                 <span>⚠️ HIGH GAS FEE ALERT (&gt; 25% OF TRADE)</span>
-                <span className="font-mono bg-rose-500/30 px-2 py-0.5 rounded text-rose-200 border border-rose-500/50">
-                  {gasPercentOfTrade.toFixed(1)}% of trade
-                </span>
+              <span className="font-mono bg-rose-500/30 px-2 py-0.5 rounded text-rose-200 border border-rose-500/50">
+                {gasPercentOfTrade?.toFixed(1)}% of trade
+              </span>
               </div>
               <p className="text-[11px] leading-relaxed text-rose-200/90">
                 Estimated network gas fee of <strong className="text-white font-mono">{currentGasEth.toFixed(6)} ETH</strong> (~${currentGasUsd.toFixed(2)}) represents <strong className="text-amber-300 underline font-mono">{gasPercentOfTrade.toFixed(1)}%</strong> of your trade amount ({tradeEthValue.toFixed(4)} ETH).
@@ -341,13 +316,13 @@ export default function RealTimeGasEstimator({
                 Network Congestion Load
               </span>
               <span className="font-bold text-zinc-200">
-                {gasData?.congestion.score || 20}% capacity
+                {gasData ? `${gasData.congestion.score}% capacity` : "Unavailable"}
               </span>
             </div>
             <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-white/5">
               <div 
                 className={`h-full transition-all duration-500 ${congestionStyle.bar}`}
-                style={{ width: `${Math.min(100, Math.max(5, gasData?.congestion.score || 20))}%` }}
+                style={{ width: `${gasData ? Math.min(100, Math.max(0, gasData.congestion.score)) : 0}%` }}
               />
             </div>
           </div>
@@ -357,7 +332,7 @@ export default function RealTimeGasEstimator({
             <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400">
               <span>Select Priority Tier (Etherscan V2):</span>
               <span className="text-[9px] text-zinc-500">
-                Base Fee: {gasData?.baseFee ? `${gasData.baseFee} Gwei` : "0.004 Gwei"}
+                Base Fee: {gasData ? `${gasData.baseFee} Gwei` : "Unavailable"}
               </span>
             </div>
 
@@ -374,13 +349,13 @@ export default function RealTimeGasEstimator({
               >
                 <div className="flex items-center justify-between text-[10px] mb-1">
                   <span className="font-semibold text-emerald-400">Safe</span>
-                  <span className="text-[9px] opacity-70">~30s</span>
+                  <span className="text-[9px] opacity-70">Estimate</span>
                 </div>
                 <div className="font-mono text-xs font-bold text-white">
-                  {gasData ? `${gasData.safeGasPrice} Gwei` : "0.003 Gwei"}
+                  {gasData ? `${gasData.safeGasPrice} Gwei` : "Unavailable"}
                 </div>
                 <div className="font-mono text-[9px] text-zinc-400 mt-0.5">
-                  ~${gasData?.estimatedTradeGas.safeUsd.toFixed(3) || "0.005"}
+                  {gasData ? `~$${gasData.estimatedTradeGas.safeUsd.toFixed(3)}` : "USD unavailable"}
                 </div>
               </button>
 
@@ -396,13 +371,13 @@ export default function RealTimeGasEstimator({
               >
                 <div className="flex items-center justify-between text-[10px] mb-1">
                   <span className="font-semibold text-blue-400">Standard</span>
-                  <span className="text-[9px] opacity-70">~3s</span>
+                  <span className="text-[9px] opacity-70">Estimate</span>
                 </div>
                 <div className="font-mono text-xs font-bold text-white">
-                  {gasData ? `${gasData.proposeGasPrice} Gwei` : "0.006 Gwei"}
+                  {gasData ? `${gasData.proposeGasPrice} Gwei` : "Unavailable"}
                 </div>
                 <div className="font-mono text-[9px] text-zinc-400 mt-0.5">
-                  ~${gasData?.estimatedTradeGas.proposeUsd.toFixed(3) || "0.009"}
+                  {gasData ? `~$${gasData.estimatedTradeGas.proposeUsd.toFixed(3)}` : "USD unavailable"}
                 </div>
               </button>
 
@@ -418,13 +393,13 @@ export default function RealTimeGasEstimator({
               >
                 <div className="flex items-center justify-between text-[10px] mb-1">
                   <span className="font-semibold text-purple-400">Fast</span>
-                  <span className="text-[9px] opacity-70">~1s</span>
+                  <span className="text-[9px] opacity-70">Estimate</span>
                 </div>
                 <div className="font-mono text-xs font-bold text-white">
-                  {gasData ? `${gasData.fastGasPrice} Gwei` : "0.012 Gwei"}
+                  {gasData ? `${gasData.fastGasPrice} Gwei` : "Unavailable"}
                 </div>
                 <div className="font-mono text-[9px] text-zinc-400 mt-0.5">
-                  ~${gasData?.estimatedTradeGas.fastUsd.toFixed(3) || "0.016"}
+                  {gasData ? `~$${gasData.estimatedTradeGas.fastUsd.toFixed(3)}` : "USD unavailable"}
                 </div>
               </button>
             </div>
@@ -438,7 +413,7 @@ export default function RealTimeGasEstimator({
                 Est. Trade Gas Fee ({gasTier.toUpperCase()}):
               </span>
               <span className="font-bold text-white">
-                {currentGasEth.toFixed(6)} ETH (~${currentGasUsd.toFixed(3)})
+                {currentGasEth !== null && currentGasUsd !== null ? `${currentGasEth.toFixed(6)} ETH (~$${currentGasUsd.toFixed(3)})` : "Unavailable"}
               </span>
             </div>
 
@@ -446,22 +421,24 @@ export default function RealTimeGasEstimator({
               <div className="flex justify-between items-center pt-1 border-t border-white/5">
                 <span className="text-zinc-400">Gas % of Trade Amount:</span>
                 <span className={`font-bold font-mono ${
-                  gasPercentOfTrade > 25 
-                    ? "text-rose-400 animate-pulse font-extrabold" 
-                    : gasPercentOfTrade > 5 
-                    ? "text-amber-400" 
-                    : "text-emerald-400"
+                  gasPercentOfTrade === null
+                  ? "text-zinc-400"
+                  : gasPercentOfTrade > 25
+                  ? "text-rose-400 animate-pulse font-extrabold"
+                  : gasPercentOfTrade > 5
+                  ? "text-amber-400"
+                  : "text-emerald-400"
                 }`}>
-                  {gasPercentOfTrade < 0.01 ? "< 0.01%" : `${gasPercentOfTrade.toFixed(2)}%`}
-                  {gasPercentOfTrade > 25 && " (⚠️ > 25%)"}
+                  {gasPercentOfTrade === null ? "Unavailable" : gasPercentOfTrade < 0.01 ? "< 0.01%" : `${gasPercentOfTrade.toFixed(2)}%`}
+                  {gasPercentOfTrade !== null && gasPercentOfTrade > 25 && " (⚠️ > 25%)"}
                 </span>
               </div>
             )}
 
             {selectedChainId === 8453 && (
               <div className="flex justify-between items-center text-[10px] text-zinc-500 pt-1">
-                <span>L1 Data Rollup Overhead:</span>
-                <span className="text-zinc-400 font-mono">~$0.0025 (Blobs active)</span>
+                <span>L1 data fee:</span>
+                <span className="text-zinc-400 font-mono">Included in oracle estimate</span>
               </div>
             )}
           </div>
@@ -470,7 +447,7 @@ export default function RealTimeGasEstimator({
           <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500 pt-1 border-t border-white/5">
             <span className="flex items-center gap-1">
               <Activity className="w-3 h-3 text-blue-400" />
-              Source: {gasData?.source || "Etherscan V2 Gas Oracle"}
+              Source:               {gasData?.source || "No verified data"}
             </span>
             {lastUpdated && (
               <span>
