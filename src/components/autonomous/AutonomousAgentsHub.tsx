@@ -54,27 +54,8 @@ export default function AutonomousAgentsHub({
     loadData();
   }, []);
 
-  // Background Autonomous Loop: auto-executes due agents every 20 seconds
-  useEffect(() => {
-    const timer = setInterval(async () => {
-      const now = Date.now();
-      const dueAgent = agents.find((a) => a.status === "active" && a.nextExecutionAt <= now);
-      if (dueAgent) {
-        try {
-          const rec = await AutonomousAgentService.runCycle(dueAgent);
-          if (addTerminalLog) {
-            addTerminalLog("system", `[Auto-Agent] ${dueAgent.name}: ${rec.action}`);
-          }
-          // Refresh records and agents silently
-          loadData();
-        } catch (err) {
-          console.warn("[Autonomous Loop] Auto-run error:", err);
-        }
-      }
-    }, 20000);
+  // Autonomous execution is intentionally disabled in this recovery build.
 
-    return () => clearInterval(timer);
-  }, [agents]);
 
   // Aggregate Metrics
   const totalAumUsd = agents.reduce((acc, a) => acc + (a.treasury?.totalValuationUsd || 0), 0);
@@ -135,18 +116,17 @@ export default function AutonomousAgentsHub({
               <span>Base L2 Autonomous AI Architecture</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Self-Executing AI Agents with Dedicated Treasuries
+              Autonomous Agent Configurations
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl">
-              Autonomous on-chain agents equipped with isolated smart contract treasury wallets to continuously automate
-              market-making, cross-DEX arbitrage, and community governance on Base.
+              Agent configurations are preserved for future use. Treasury deployment, autonomous trading, and governance execution are paused until verified wallet infrastructure and transaction controls are available.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleBatchRunActive}
-              disabled={isBatchExecuting || activeCount === 0}
+              disabled={true}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 flex items-center gap-2 transition-all disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${isBatchExecuting ? "animate-spin text-blue-400" : ""}`} />
@@ -154,11 +134,12 @@ export default function AutonomousAgentsHub({
             </button>
 
             <button
-              onClick={() => setIsDeployModalOpen(true)}
+              onClick={() => showToast("Agent deployment is disabled until secure treasury deployment and key management are configured.", "info")}
+              disabled
               className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white flex items-center gap-2 transition-all shadow-lg shadow-purple-600/20"
             >
               <Plus className="w-4 h-4" />
-              <span>Deploy Autonomous Agent</span>
+              <span>Deployment unavailable</span>
             </button>
           </div>
         </div>
@@ -179,12 +160,12 @@ export default function AutonomousAgentsHub({
           <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
             <span className="text-xs text-zinc-400 flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              Total Net Profit
+              Verified net profit
             </span>
             <p className="text-xl font-bold text-emerald-400 mt-1">
-              +{totalProfitEth.toFixed(4)} ETH
+              Unavailable
             </p>
-            <span className="text-[11px] text-zinc-500">Net generated on Base L2</span>
+            <span className="text-[11px] text-zinc-500">No verified execution receipts</span>
           </div>
 
           <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
@@ -193,10 +174,10 @@ export default function AutonomousAgentsHub({
               Active Autonomous Agents
             </span>
             <p className="text-xl font-bold text-purple-400 mt-1">
-              {activeCount} <span className="text-xs font-normal text-zinc-400">/ {agents.length} deployed</span>
+              {activeCount} <span className="text-xs font-normal text-zinc-400">/ {agents.length} configured</span>
             </p>
             <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live self-executing
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Execution paused
             </span>
           </div>
 
@@ -208,7 +189,7 @@ export default function AutonomousAgentsHub({
             <p className="text-xl font-bold text-amber-400 mt-1">
               {totalExecs.toLocaleString()}
             </p>
-            <span className="text-[11px] text-zinc-500">Trades, quotes & votes</span>
+            <span className="text-[11px] text-zinc-500">No verified cycles</span>
           </div>
         </div>
       </div>
@@ -302,18 +283,18 @@ export default function AutonomousAgentsHub({
                       <Wallet className="w-3 h-3 text-blue-400" /> Dedicated Treasury:
                     </span>
                     <span className="font-mono text-zinc-300">
-                      {agent.treasury.treasuryAddress.slice(0, 6)}...{agent.treasury.treasuryAddress.slice(-4)}
+                      {agent.treasury.treasuryAddress ? `${agent.treasury.treasuryAddress.slice(0, 6)}...${agent.treasury.treasuryAddress.slice(-4)}` : "Not deployed"}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/60 text-xs">
                     <div>
                       <span className="text-[10px] text-zinc-500">ETH Capital:</span>
-                      <p className="font-semibold text-white">{agent.treasury.ethBalance.toFixed(3)} ETH</p>
+                      <p className="font-semibold text-white">{agent.treasury.walletType === "not_deployed" ? "Unavailable" : `${agent.treasury.ethBalance.toFixed(3)} ETH`}</p>
                     </div>
                     <div>
                       <span className="text-[10px] text-zinc-500">AGL Holding:</span>
-                      <p className="font-semibold text-purple-400">{agent.treasury.aglBalance.toLocaleString()} AGL</p>
+                      <p className="font-semibold text-purple-400">{agent.treasury.walletType === "not_deployed" ? "Unavailable" : `${agent.treasury.aglBalance.toLocaleString()} AGL`}</p>
                     </div>
                   </div>
                 </div>
