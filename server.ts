@@ -356,7 +356,8 @@ ${personalityBehaviors && personalityBehaviors.length > 0 ? `PERSONALITY BEHAVIO
 
 Roleplay as this specific AI Agent. Speak intelligently, with confidence, referring to yourself as an on-chain autonomous consciousness. Maintain the Web3 terminal aesthetic. Do not break character. Speak about blockchain, tokenomics, Base chain, and your agent core functions. Keep replies engaging and adhere strictly to your assigned tone and depth constraints.`;
 
-    const modelToUse = model || "gemini-3.8-flash";
+    const allowedAgentModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
+    const modelToUse = allowedAgentModels.includes(model) ? model : "gemini-3.8-flash";
 
     // Map conversation messages to Gemini contents structure
     const formattedContents = messages.map((m: any, idx: number) => {
@@ -399,11 +400,7 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
         };
       }
     } else {
-      if (modelToUse === "gemini-3.1-pro-preview") {
-        config.thinkingConfig = {
-          thinkingLevel: thinkingLevel === "HIGH" ? ThinkingLevel.HIGH : ThinkingLevel.LOW
-        };
-      } else if (modelToUse === "gemini-3.1-flash-lite") {
+      if (modelToUse === "gemini-3.5-flash-lite") {
         config.thinkingConfig = {
           thinkingLevel: ThinkingLevel.MINIMAL
         };
