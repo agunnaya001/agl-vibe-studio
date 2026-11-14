@@ -57,6 +57,9 @@ No production branch or live deployment was changed during this audit.
 - The old portfolio rebalancer used hardcoded prices, synthetic USDC/staking balances, and local-only execution. It is now read-only until trusted price feeds and contract-backed positions exist.
 - The governance poll component is explicitly labelled off-chain; it does not submit AgunnayaDAO Governor proposals or represent on-chain voting power.
 - The token burner used synthetic burn receipts and local history. Burn actions are disabled, hardcoded valuations are removed, and unverified legacy records are hidden.
+- The autonomous agent service generated random treasury addresses, simulated trades/votes, fake transaction hashes, and hardcoded treasury balances. Agent configurations are now paused, treasury addresses/balances are cleared from the UI, execution endpoints return 501, and legacy execution records are hidden.
+- The background fleet now starts idle and runs read-only checks only; old local metrics and execution logs are sanitized.
+- The batch token transfer page no longer fabricates token balances, gas estimates, or transaction hashes. It provides local input validation only; batch execution remains disabled.
 
 ### P0 — Staking ABI does not match the previous UI
 
