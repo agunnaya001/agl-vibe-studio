@@ -85,7 +85,7 @@ export default function GameBuilderWorkspace({
       });
 
       setGameProject(generated);
-      showToast?.(`Generated "${generated.title}" with playable arena!`, "success");
+      showToast?.(`Generated "${generated.title}". A local preview is available; on-chain deployment and VRF are not configured by this demo.`, "success");
     } catch (err: any) {
       showToast?.(err.message || "Failed to generate game", "error");
     } finally {
@@ -350,7 +350,7 @@ export default function GameBuilderWorkspace({
 
                 <div className="flex items-center gap-2">
                   <div className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/10 text-xs font-mono text-emerald-400">
-                    Test Bankroll: {virtualBalance.toFixed(2)} AGL
+                    Virtual Test Credits: {virtualBalance.toFixed(2)} (not real AGL)
                   </div>
                 </div>
               </div>
@@ -392,7 +392,7 @@ export default function GameBuilderWorkspace({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Flame className="w-5 h-5 text-amber-400" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">Playable Live Simulation</span>
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Local Demo Simulation — No On-Chain Transactions</span>
                     </div>
 
                     {winStreak > 0 && (
@@ -420,7 +420,7 @@ export default function GameBuilderWorkspace({
                     </div>
 
                     <div className="text-center">
-                      <div className="text-xs text-zinc-400">Verifiable VRF Target: Base L2</div>
+                      <div className="text-xs text-zinc-400">VRF integration: not deployed — this local demo uses browser randomness</div>
                       <div className="text-sm font-bold text-white mt-0.5">
                         {gameProject.gameDesign.rewardEconomy.winPayoutFormula}
                       </div>
@@ -452,7 +452,7 @@ export default function GameBuilderWorkspace({
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-300">Wager Amount (AGL):</label>
+                      <label className="text-xs font-semibold text-zinc-300">Virtual Wager (test credits):</label>
                       <div className="flex gap-2">
                         <input
                           type="number"
