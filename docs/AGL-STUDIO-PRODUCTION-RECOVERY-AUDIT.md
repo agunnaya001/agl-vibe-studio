@@ -151,3 +151,17 @@ No production branch or live deployment was changed during this audit.
 - Verify all navigation IDs and route fallbacks.
 - Verify all DeFi tabs and transaction receipts with a test wallet.
 - Confirm Vercel preview deployment and production parity.
+
+
+## Additional fail-closed remediation
+
+- The legacy server gas-oracle endpoint previously returned fixed fallback gas prices, fabricated block numbers, static gas-utilization ratios, a hardcoded ETH/USD reference price, and estimated fee figures. It now returns HTTP 503 with `GAS_ORACLE_UNAVAILABLE` until a verified live oracle and fee-estimation source are configured. Transaction gas estimation must come from the connected wallet/provider.
+- The legacy server governance endpoints previously exposed seeded proposal records, fabricated proposal IDs and vote totals, hardcoded governance statistics, and in-memory proposal creation. All three endpoints now return HTTP 503 with `GOVERNANCE_ONCHAIN_SOURCE_UNAVAILABLE` and identify the canonical Governor, Timelock, wAGL wrapper, and AGL token addresses. They do not claim to be an on-chain proposal indexer.
+- These changes deliberately reduce feature availability rather than display synthetic financial or governance data as real.
+
+## Verification after these changes
+
+- Re-run TypeScript, lint, production build, and the recovery workflow on the new commit.
+- Smoke-test the Vercel preview health endpoint and confirm the gas/governance endpoints return the documented 503 fail-closed responses.
+- The canonical staking component remains read-only. Do not enable stake/claim/unstake until deployed bytecode, source, ABI selectors, APR units, and transaction receipt behavior have been independently verified against Base Mainnet.
+- Do not merge or promote production until these checks and preview runtime tests pass.
