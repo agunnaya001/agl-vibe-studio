@@ -809,170 +809,17 @@ app.get("/api/lifi/status", async (req, res) => {
   }
 });
 
-// BaseScan & Etherscan API V2 Proxy - Real-Time Gas Oracle & Congestion Tracker
+// Gas oracle endpoint intentionally fails closed until every displayed field is backed by a live source.
+// Do not substitute static gas prices, block numbers, congestion ratios, ETH/USD prices, or fee estimates.
 app.get("/api/gas/oracle", async (req, res) => {
-  try {
-    const chainId = (req.query.chainId as string) || "8453"; // Default 8453 for Base Mainnet
-    const apiKey = process.env.ETHERSCAN_API_KEY || process.env.BASESCAN_API_KEY || "YourApiKeyToken";
-
-    let etherscanData: any = null;
-    let rpcGasPriceGwei = 0.005;
-    let rpcBaseFeeGwei = 0.004;
-
-    // 1. Try Etherscan V2 API Gastracker Gas Oracle
-    try {
-      let oracleUrl = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=gastracker&action=gasoracle&apikey=${apiKey}`;
-      if (!process.env.ETHERSCAN_API_KEY && process.env.BASESCAN_API_KEY && chainId === "8453") {
-        oracleUrl = `https://api.basescan.org/api?module=gastracker&action=gasoracle&apikey=${apiKey}`;
-      }
-
-      const response = await fetch(oracleUrl, { signal: AbortSignal.timeout(4000) });
-      const data = await response.json();
-      if (data && data.status === "1" && data.result) {
-        etherscanData = data.result;
-      }
-    } catch (e: any) {
-      // Ignore and fallback to live RPC
-    }
-
-    // 2. Query Live Base RPC for latest block base fee & gas price if chain is 8453
-    if (chainId === "8453" || chainId === "84532") {
-      try {
-        const rpcUrl = chainId === "8453" ? "https://mainnet.base.org" : "https://sepolia.base.org";
-        const rpcRes = await fetch(rpcUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: 1,
-            method: "eth_gasPrice",
-            params: []
-          }),
-          signal: AbortSignal.timeout(3000)
-        });
-        const rpcJson = await rpcRes.json();
-        if (rpcJson && rpcJson.result) {
-          const wei = BigInt(rpcJson.result);
-          rpcGasPriceGwei = Number(wei) / 1e9;
-          rpcBaseFeeGwei = Math.max(0.001, rpcGasPriceGwei * 0.85);
-        }
-      } catch (e) {
-        // Fallback defaults
-      }
-    }
-
-    // Determine Safe, Standard, Fast Gwei
-    let safeGasPrice = etherscanData?.SafeGasPrice ? parseFloat(etherscanData.SafeGasPrice) : (chainId === "8453" ? Math.max(0.001, rpcBaseFeeGwei) : 12);
-    let proposeGasPrice = etherscanData?.ProposeGasPrice ? parseFloat(etherscanData.ProposeGasPrice) : (chainId === "8453" ? Math.max(0.002, rpcGasPriceGwei) : 18);
-    let fastGasPrice = etherscanData?.FastGasPrice ? parseFloat(etherscanData.FastGasPrice) : (chainId === "8453" ? Math.max(0.005, rpcGasPriceGwei * 1.5) : 28);
-    let baseFee = etherscanData?.suggestBaseFee ? parseFloat(etherscanData.suggestBaseFee) : (chainId === "8453" ? rpcBaseFeeGwei : 14);
-
-    // Compute Congestion Level based on gas price and gasUsedRatio
-    let congestionScore = 20; // 0 to 100
-    let congestionLevel: "low" | "normal" | "moderate" | "high" | "extreme" = "low";
-    let congestionLabel = "Optimal (Low Traffic)";
-    let gasUsedRatio = etherscanData?.gasUsedRatio || "0.42,0.48,0.51";
-
-    if (chainId === "8453") {
-      // Base L2 gas thresholds
-      if (proposeGasPrice > 2.0) {
-        congestionLevel = "extreme";
-        congestionLabel = "Peak Network Surge";
-        congestionScore = 95;
-      } else if (proposeGasPrice > 0.5) {
-        congestionLevel = "high";
-        congestionLabel = "Heavy Congestion";
-        congestionScore = 80;
-      } else if (proposeGasPrice > 0.08) {
-        congestionLevel = "moderate";
-        congestionLabel = "Moderate Traffic";
-        congestionScore = 55;
-      } else if (proposeGasPrice > 0.02) {
-        congestionLevel = "normal";
-        congestionLabel = "Normal Activity";
-        congestionScore = 35;
-      } else {
-        congestionLevel = "low";
-        congestionLabel = "Optimal (Smooth & Fast)";
-        congestionScore = 15;
-      }
-    } else {
-      // L1 Ethereum gas thresholds
-      if (proposeGasPrice > 80) {
-        congestionLevel = "extreme";
-        congestionLabel = "Extreme L1 Congestion";
-        congestionScore = 95;
-      } else if (proposeGasPrice > 45) {
-        congestionLevel = "high";
-        congestionLabel = "High Gas Surge";
-        congestionScore = 75;
-      } else if (proposeGasPrice > 25) {
-        congestionLevel = "moderate";
-        congestionLabel = "Moderate Load";
-        congestionScore = 50;
-      } else if (proposeGasPrice > 15) {
-        congestionLevel = "normal";
-        congestionLabel = "Normal Traffic";
-        congestionScore = 30;
-      } else {
-        congestionLevel = "low";
-        congestionLabel = "Low Congestion";
-        congestionScore = 15;
-      }
-    }
-
-    const ethPriceUsd = 3150; // Reference ETH price
-    const typicalSwapGasUnits = 145000; // Average gas units for bonding curve or Uniswap V3 swap
-    const l1DataFeeUsd = chainId === "8453" ? 0.0025 : 0; // Base L2 rollup blob data fee
-
-    // Est trade fee for standard swap
-    const standardFeeEth = (proposeGasPrice * 1e-9 * typicalSwapGasUnits) + (l1DataFeeUsd / ethPriceUsd);
-    const standardFeeUsd = (standardFeeEth * ethPriceUsd);
-
-    res.json({
-      success: true,
-      chainId: parseInt(chainId, 10),
-      network: chainId === "8453" ? "Base Mainnet" : chainId === "1" ? "Ethereum Mainnet" : "Base Sepolia",
-      lastBlock: etherscanData?.LastBlock || "26482109",
-      safeGasPrice: Number(safeGasPrice.toFixed(4)),
-      proposeGasPrice: Number(proposeGasPrice.toFixed(4)),
-      fastGasPrice: Number(fastGasPrice.toFixed(4)),
-      baseFee: Number(baseFee.toFixed(4)),
-      gasUsedRatio,
-      congestion: {
-        level: congestionLevel,
-        label: congestionLabel,
-        score: congestionScore, // 0 - 100%
-        blockUtilization: "48.5%"
-      },
-      ethPriceUsd,
-      typicalSwapGasUnits,
-      l1DataFeeUsd,
-      estimatedTradeGas: {
-        safeEth: Number(((safeGasPrice * 1e-9 * typicalSwapGasUnits) + (l1DataFeeUsd / ethPriceUsd)).toFixed(6)),
-        proposeEth: Number(standardFeeEth.toFixed(6)),
-        fastEth: Number(((fastGasPrice * 1e-9 * typicalSwapGasUnits) + (l1DataFeeUsd / ethPriceUsd)).toFixed(6)),
-        safeUsd: Number(((safeGasPrice * 1e-9 * typicalSwapGasUnits * ethPriceUsd) + l1DataFeeUsd).toFixed(4)),
-        proposeUsd: Number(standardFeeUsd.toFixed(4)),
-        fastUsd: Number(((fastGasPrice * 1e-9 * typicalSwapGasUnits * ethPriceUsd) + l1DataFeeUsd).toFixed(4)),
-      },
-      timestamp: Date.now(),
-      source: etherscanData ? "Etherscan V2 Gas Oracle API" : "Base L2 Live Node RPC + Fee Estimator"
-    });
-  } catch (error: any) {
-    console.error("Gas Oracle API Error:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to fetch real-time gas oracle data",
-      fallback: {
-        safeGasPrice: 0.003,
-        proposeGasPrice: 0.005,
-        fastGasPrice: 0.01,
-        baseFee: 0.004,
-        congestion: { level: "low", label: "Optimal Traffic", score: 15 }
-      }
-    });
-  }
+  res.status(503).json({
+    success: false,
+    code: "GAS_ORACLE_UNAVAILABLE",
+    error: "A verified live gas oracle and fee-estimation source is not configured. Use the connected wallet's provider for transaction gas estimation.",
+    chainId: Number(req.query.chainId || 8453),
+    source: null,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // BaseScan & Etherscan API V2 Proxy - Check Contract Verification Status
@@ -1087,175 +934,24 @@ app.post("/api/basescan/verify", async (req, res) => {
 // -------------------------------------------------------------
 // DAO GOVERNANCE API ENDPOINTS
 // -------------------------------------------------------------
-const inMemoryProposalsStore: any[] = [
-  {
-    id: "AGL-DAO-001",
-    proposalId: "4819284719284719284719284719284719284719284719284719284719284719284",
-    proposer: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
-    title: "AGIP-01: Establish Autonomous AI Security Research Grant & Staking Reserve",
-    description: "Allocate 50,000,000 AGL tokens from the community reserve to fund open-source AI agent security benchmarks and subsidize verification fees for smart contract developers on Base L2.",
-    category: "Grant",
-    targets: ["0x725615639B760DAa64b3e794AA49B5A9a8A7632E"],
-    values: ["0"],
-    signatures: ["transfer(address,uint256)"],
-    calldatas: ["0xa9059cbb000000000000000000000000725615639b760daa64b3e794aa49b5a9a8a7632e000000000000000000000000000000000000000000295be96e64066972000000"],
-    startBlock: 26140000,
-    endBlock: 26356000,
-    forVotes: "48500000000000000000000000",
-    againstVotes: "1200000000000000000000000",
-    abstainVotes: "500000000000000000000000",
-    forVotesFormatted: 48500000,
-    againstVotesFormatted: 1200000,
-    abstainVotesFormatted: 500000,
-    totalVotesFormatted: 50200000,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: true,
-    state: 1, // Active
-    stateName: "Active",
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    id: "AGL-DAO-002",
-    proposalId: "7829103847291823749182374918237491823749182374918237491823749182374",
-    proposer: "0x51546D5f9B66EcE7b6b91FA09D5b4aFF648D1e2d",
-    title: "AGIP-02: Enable Automated DEX Liquidity Fee Burn Protocol (15% Net Yield)",
-    description: "Approve Timelock execution to route 15% of all automated Aerodrome LP fee yields generated by the Agunnaya DEX fleet directly into the permanent deflation burn address (0x000...dEaD).",
-    category: "Treasury",
-    targets: ["0xd4B61B4876c15e78e0275EbA52cf62D55ED5fD30"],
-    values: ["0"],
-    signatures: ["setFeeBurnRate(uint256)"],
-    calldatas: ["0x"],
-    startBlock: 26000000,
-    endBlock: 26216000,
-    forVotes: "64000000000000000000000000",
-    againstVotes: "450000000000000000000000",
-    abstainVotes: "100000000000000000000000",
-    forVotesFormatted: 64000000,
-    againstVotesFormatted: 450000,
-    abstainVotesFormatted: 100000,
-    totalVotesFormatted: 64550000,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: true,
-    state: 5, // Queued in Timelock
-    stateName: "Queued",
-    eta: Date.now() + 86400000 * 1.5,
-    createdAt: new Date(Date.now() - 86400000 * 6).toISOString()
-  },
-  {
-    id: "AGL-DAO-003",
-    proposalId: "1928374650192837465019283746501928374650192837465019283746501928374",
-    proposer: "0x6EF504b98b4369C0a1aF4fD1885D7acCf843dDf6",
-    title: "AGIP-00: Genesis Timelock Decentralization & Quorum Calibration",
-    description: "Initial protocol governance verification: Confirm 4% quorum requirement, 48-hour minimum timelock delay, 1-day voting delay, and self-administration role handover.",
-    category: "Security",
-    targets: ["0x7a3C9C22C990263f7F1872De0964724b17935c11"],
-    values: ["0"],
-    signatures: ["selfAdminister()"],
-    calldatas: ["0x"],
-    startBlock: 25800000,
-    endBlock: 26016000,
-    forVotes: "98000000000000000000000000",
-    againstVotes: "0",
-    abstainVotes: "0",
-    forVotesFormatted: 98000000,
-    againstVotesFormatted: 0,
-    abstainVotesFormatted: 0,
-    totalVotesFormatted: 98000000,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: true,
-    state: 7, // Executed
-    stateName: "Executed",
-    executionTxHash: "0x8fa9283746192837461928374619283746192837461928374619283746192837",
-    createdAt: new Date(Date.now() - 86400000 * 14).toISOString()
+// Governance API is deliberately read-only/unavailable until wired to the deployed
+// AgunnayaDAO Governor, TimelockController and wAGL contracts. Never serve seeded
+// proposals, fabricated proposal IDs, fake vote tallies, or in-memory proposal writes.
+const governanceUnavailable = (_req: any, res: any) => res.status(503).json({
+  success: false,
+  code: "GOVERNANCE_ONCHAIN_SOURCE_UNAVAILABLE",
+  error: "On-chain governance reads are not configured for this API. Use the verified AgunnayaDAO Governor contract and Base explorer until an RPC-backed indexer is integrated.",
+  chainId: 8453,
+  contracts: {
+    governor: "0x3fFCb92A17caeaAd1342DD76978b566C8aEC7010",
+    timelock: "0x900D315C91D9e54F3fa3412D475009d905bf6744",
+    votesWrapper: "0xA27C9BA04D06EcAF766EF4e074b403DAf19A3d69",
+    token: "0xea1221b4d80a89bd8c75248fae7c176bd1854698"
   }
-];
-
-app.get("/api/governance/overview", (req, res) => {
-  res.json({
-    network: "Base Mainnet",
-    chainId: 8453,
-    governorAddress: "0x4e6De4A17B80979E2286b110757270e53a277981",
-    timelockAddress: "0x7a3C9C22C990263f7F1872De0964724b17935c11",
-    votesWrapperAddress: "0x89D913d80a1c1a2f6479b47e248bF3e5D18925A9",
-    underlyingTokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698",
-    parameters: {
-      timelockDelay: "48 Hours (172,800s)",
-      quorum: "4%",
-      votingDelay: "1 Day (43,200 blocks)",
-      votingPeriod: "5 Days (216,000 blocks)",
-      proposalThreshold: "1,000,000 wAGL (0.1%)",
-      compiler: "v0.8.20 (200 runs, paris)"
-    },
-    decentralizationStatus: {
-      eoaAdminRevoked: true,
-      timelockSelfAdministered: true,
-      openExecutorEnabled: true
-    },
-    stats: {
-      totalProposals: inMemoryProposalsStore.length,
-      activeProposals: inMemoryProposalsStore.filter(p => p.state === 1).length,
-      executedProposals: inMemoryProposalsStore.filter(p => p.state === 7).length,
-      queuedProposals: inMemoryProposalsStore.filter(p => p.state === 5).length,
-      totalWrappedAgl: "142,850,000 wAGL",
-      votingParticipationRate: "68.4%"
-    }
-  });
 });
-
-app.get("/api/governance/proposals", (req, res) => {
-  const { status, category } = req.query;
-  let filtered = [...inMemoryProposalsStore];
-  if (status) {
-    filtered = filtered.filter(p => p.stateName.toLowerCase() === String(status).toLowerCase());
-  }
-  if (category) {
-    filtered = filtered.filter(p => p.category.toLowerCase() === String(category).toLowerCase());
-  }
-  res.json({ proposals: filtered, total: filtered.length });
-});
-
-app.post("/api/governance/proposals", (req, res) => {
-  const { title, description, category, targets, values, calldatas, proposer } = req.body;
-  if (!title || !description || !proposer) {
-    res.status(400).json({ error: "Missing required proposal fields (title, description, proposer)" });
-    return;
-  }
-
-  const newId = `AGL-DAO-00${inMemoryProposalsStore.length + 1}`;
-  const newProposal = {
-    id: newId,
-    proposalId: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-    proposer,
-    title,
-    description,
-    category: category || "Ecosystem",
-    targets: targets || ["0x725615639B760DAa64b3e794AA49B5A9a8A7632E"],
-    values: values || ["0"],
-    signatures: ["execute()"],
-    calldatas: calldatas || ["0x"],
-    startBlock: 26200000,
-    endBlock: 26416000,
-    forVotes: "0",
-    againstVotes: "0",
-    abstainVotes: "0",
-    forVotesFormatted: 0,
-    againstVotesFormatted: 0,
-    abstainVotesFormatted: 0,
-    totalVotesFormatted: 0,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: false,
-    state: 1, // Active
-    stateName: "Active",
-    createdAt: new Date().toISOString()
-  };
-
-  inMemoryProposalsStore.unshift(newProposal);
-  res.status(201).json({ success: true, proposal: newProposal });
-});
+app.get("/api/governance/overview", governanceUnavailable);
+app.get("/api/governance/proposals", governanceUnavailable);
+app.post("/api/governance/proposals", governanceUnavailable);
 
 // BaseScan & Etherscan API V2 Proxy - Poll Verification Status GUID
 app.get("/api/basescan/status", async (req, res) => {
