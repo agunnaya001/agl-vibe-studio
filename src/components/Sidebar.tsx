@@ -138,7 +138,7 @@ export default function Sidebar({
     { id: "ecosystem-dashboard", label: "Ecosystem Analytics", icon: BarChart3, category: "Ecosystem Layer", description: "Verified On-Chain & Studio Metrics" },
     { id: "developer-sdk", label: "Developer SDK & APIs", icon: Code2, category: "Ecosystem Layer", description: "TypeScript SDK & REST Documentation" },
     { id: "ai-suite", label: "Gemini AI Suite Hub", icon: Sparkles, category: "Gemini Web3 AI Suite", highlight: true, description: "All 5 AI Web3 Workspaces" },
-    { id: "autonomous-agents", label: "Autonomous AI Agents", icon: Cpu, category: "Gemini Web3 AI Suite", highlight: true, description: "Self-Executing Treasury Agents" },
+    { id: "autonomous-agents", label: "Autonomous AI Agents", icon: Cpu, category: "Gemini Web3 AI Suite", highlight: true, description: "Agent workspace — execution gated pending secure on-chain approval" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace", description: "Personal Activity & Assets" },
     { id: "task-sync", label: "TaskSync", icon: Clock, category: "Workspace", description: "Automated On-Chain Cron Tasks" },
     { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", description: "Prompt to Solidity Generator" },
