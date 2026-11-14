@@ -31,10 +31,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { WalletState, Token } from "../types";
-import { AgunnayaDatabase } from "../lib/db";
-import { AGL_TREASURY_ADDRESS } from "../lib/aglContracts";
 import ImageWithFallback from "../components/ImageWithFallback";
-import BurnLeaderboard from "../components/BurnLeaderboard";
 
 interface TokenBurnerPageProps {
   wallet: WalletState;
@@ -134,9 +131,7 @@ const DEFAULT_PORTFOLIO_TOKENS = [
   }
 ];
 
-const DEAD_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 const BASE_RPC_URL = "https://mainnet.base.org";
-const MULTICALL3_BASE_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
 export default function TokenBurnerPage({
   wallet,
@@ -438,7 +433,7 @@ export default function TokenBurnerPage({
           <div className="bg-black/40 p-3 rounded-xl border border-white/5">
             <span className="text-zinc-500 block text-[10px] uppercase">USD Deflated Value</span>
             <span className="text-emerald-400 font-bold text-base mt-0.5">
-              ${totalBurnedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalBurnedUsd === null ? "Unavailable" : totalBurnedUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
 
@@ -698,7 +693,7 @@ export default function TokenBurnerPage({
                     <div className="bg-black/50 p-2.5 rounded-xl border border-white/5">
                       <span className="text-[10px] text-zinc-500 block">Gas Savings</span>
                       <span className="text-sm font-bold text-amber-300 flex items-center gap-1">
-                        <Fuel className="w-3.5 h-3.5" /> ~{estimatedBatchGasSavedPercent || 65}%
+                        <Fuel className="w-3.5 h-3.5" /> Unavailable
                       </span>
                     </div>
 
@@ -710,21 +705,8 @@ export default function TokenBurnerPage({
                     </div>
                   </div>
 
-                  {/* Multicall3 Contract reference */}
-                  <div className="p-3 rounded-xl bg-black/60 border border-white/5 text-[11px] flex items-center justify-between text-zinc-400">
-                    <span className="flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      Multicall3 Base Address:
-                    </span>
-                    <span className="text-zinc-300 font-bold flex items-center gap-1">
-                      {MULTICALL3_BASE_ADDRESS.slice(0, 8)}...{MULTICALL3_BASE_ADDRESS.slice(-6)}
-                      <button 
-                        onClick={() => copyToClipboard(MULTICALL3_BASE_ADDRESS, "Multicall3 contract")}
-                        className="text-zinc-500 hover:text-white"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </span>
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-amber-200">
+                    Multicall batch execution is disabled pending verified token-specific burn methods and a tested transaction payload.
                   </div>
                 </div>
 
@@ -749,10 +731,10 @@ export default function TokenBurnerPage({
                         </span>
                         {batchBurnMode === "standard" && <CheckCircle2 className="w-4 h-4 text-red-500" />}
                       </div>
-                      <p className="text-[10px] text-zinc-400">Atomically send all {validBatchItems.length} tokens to Dead Address ({DEAD_ADDRESS.slice(0, 10)}...).</p>
+                      <p className="text-[10px] text-zinc-400">Disabled. Token-specific burn functions and transaction receipts have not been verified.</p>
                     </button>
 
-                    {/* Mode 2: Burn for Studio Credits */}
+                    {/* Mode 2: Buy Studio Credits */}
                     <button
                       type="button"
                       onClick={() => setBatchBurnMode("credits")}
@@ -992,7 +974,7 @@ export default function TokenBurnerPage({
                         </span>
                         {burnMode === "standard" && <CheckCircle2 className="w-4 h-4 text-red-500" />}
                       </div>
-                      <p className="text-[10px] text-zinc-400">Send to Dead Address ({DEAD_ADDRESS.slice(0, 10)}...). Permanently reduces total supply.</p>
+                      <p className="text-[10px] text-zinc-400">Disabled. A dead-address transfer is not assumed to invoke a token burn function.</p>
                     </button>
 
                     {/* Mode 2: Burn for Studio Credits */}
@@ -1208,12 +1190,9 @@ export default function TokenBurnerPage({
         </div>
       </div>
 
-      {/* Firestore-backed Burn Leaderboard Component */}
-      <BurnLeaderboard
-        wallet={wallet}
-        showToast={showToast}
-        onOpenConnectWallet={onOpenConnectWallet}
-      />
+      <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-xs text-zinc-400">
+        Historical burn entries are hidden until their Base transaction receipts and token burn events can be independently verified. No new burn records can be created from this page.
+      </div>
 
       {/* Single Burn Step Execution Loader Modal */}
       {isBurning && (
