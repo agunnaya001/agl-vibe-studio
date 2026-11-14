@@ -503,12 +503,12 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
             {executing ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Executing Cross-Chain Bridge...</span>
+                <span>Executing Base Swap...</span>
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4 fill-white" />
-                <span>Execute LI.FI Cross-Chain Swap ({getChainName(fromChainId)} → {getChainName(toChainId)})</span>
+                <span>Execute LI.FI Base Swap</span>
               </>
             )}
           </button>
@@ -542,7 +542,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
         {/* RIGHT COLUMN: ROUTE BREAKDOWN & SOLVER DETAILS */}
         <div className="lg:col-span-5 glass-panel p-6 rounded-2xl border border-white/10 bg-zinc-950/60 space-y-5">
           <h4 className="text-sm font-bold text-white font-display flex items-center gap-2">
-            <Layers className="w-4 h-4 text-brand-purple" /> LI.FI Route & Bridge Solver Details
+            <Layers className="w-4 h-4 text-brand-purple" /> LI.FI Base Swap Route Details
           </h4>
 
           {loadingQuote ? (
@@ -556,13 +556,13 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
               <div className="p-3.5 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   {quoteData.toolDetails?.logoURI ? (
-                    <ImageWithFallback src={quoteData.toolDetails.logoURI} alt="Bridge Logo" fallbackText="BRIDGE" className="w-6 h-6 rounded-full object-cover" />
+                    <ImageWithFallback src={quoteData.toolDetails.logoURI} alt="LI.FI Route Logo" fallbackText="BRIDGE" className="w-6 h-6 rounded-full object-cover" />
                   ) : (
                     <ShieldCheck className="w-5 h-5 text-purple-400" />
                   )}
                   <div>
                     <div className="text-xs font-bold text-white font-display">
-                      {quoteData.toolDetails?.name || "LI.FI Smart DEX & Bridge Solver"}
+                      {quoteData.toolDetails?.name || "LI.FI Base Swap"}
                     </div>
                     <div className="text-[10px] text-zinc-400 font-mono">
                       {fromChainId === toChainId ? "Intra-chain DEX Aggregation" : "Cross-chain Liquidity Bridge"}
