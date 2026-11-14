@@ -176,8 +176,8 @@ export default function AutonomousAgentsHub({
             <p className="text-xl font-bold text-purple-400 mt-1">
               {activeCount} <span className="text-xs font-normal text-zinc-400">/ {agents.length} configured</span>
             </p>
-            <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Execution paused
+            <span className="text-[11px] text-amber-400 flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Execution paused
             </span>
           </div>
 
