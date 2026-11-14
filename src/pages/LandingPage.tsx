@@ -5,32 +5,23 @@ import { Sparkles, ArrowRight, ShieldCheck, Zap, Coins, Bot, Globe, ChevronDown,
 
 interface LandingPageProps {
   onLaunchApp: () => void;
+  onOpenServices: () => void;
 }
 
-export default function LandingPage({ onLaunchApp }: LandingPageProps) {
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
+export default function LandingPage({ onLaunchApp, onOpenServices }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      setSubscribed(true);
-      setEmail("");
-    }
-  };
-
   const stats = [
-    { label: "Transactions Processed", value: "1,245,982" },
-    { label: "Contracts Generated", value: "24,852" },
-    { label: "TVL on Base", value: "$45.2M ETH" },
-    { label: "Active Builders", value: "8,410" },
-  ];
+    { label: "Network", value: "Base" },
+    { label: "Service pricing", value: "From $100 USD" },
+    { label: "Project pricing", value: "Scope-confirmed" },
+    { label: "Security audits", value: "Not included" },
+  ]; 
 
   const features = [
     {
       title: "AI Smart Contract Architect",
-      desc: "Describe what you want to build in plain English, and our Gemini agent generates verified, audited Solidity contracts ready for Base.",
+      desc: "Describe a Base smart contract in plain English and receive an AI-assisted Solidity draft for developer review. Generated code is not an independent security audit.",
       icon: Sparkles,
       color: "text-purple-400 bg-purple-500/10"
     },
@@ -57,7 +48,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
   const faqs = [
     {
       q: "What is Agunnaya Labs Studio?",
-      a: "Agunnaya Labs Studio is a state-of-the-art Web3 creation platform. It allows developers, creators, and communities to launch audited smart contracts, ERC-20 bonding curve tokens, DAOs, AI Agents, and GameFi infrastructure on Base using simple conversational prompts or structured form interfaces."
+      a: "Agunnaya Labs Studio provides AI-assisted Web3 building tools and developer services for Base. Generated code and automated checks are not an independent security audit."
     },
     {
       q: "How does the linear bonding curve model work?",
@@ -68,8 +59,8 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
       a: "AGL is the native utility token of our platform. Staking AGL unlocks advanced premium contract templates, provides active fee discounts on token trading, grants access to elite AI Agent prompts, and allows participating in treasury DAO grants."
     },
     {
-      q: "Are the generated smart contracts audited?",
-      a: "Yes. All code templates are thoroughly audited for reentrancy vulnerabilities and follow ERC standards. Our integrated Gemini AI auditor automatically reviews any custom modifications for safety, checks-effects-interactions compliance, and gas efficiency prior to mock deployment."
+      q: "Are generated smart contracts independently audited?",
+      a: "No. AI-generated code and automated review notes are not an independent security audit. Arrange an independent audit before relying on a contract in production."
     }
   ];
 
@@ -130,6 +121,13 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
             <span>Enter Developer Studio</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
+          <button
+            type="button"
+            onClick={onOpenServices}
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-emerald-400/30 hover:border-emerald-300/60 bg-emerald-400/5 hover:bg-emerald-400/10 transition-all font-semibold text-sm font-display text-emerald-200"
+          >
+            Explore Developer Services
+          </button>
           <a
             href="#features-section"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/20 bg-zinc-900/40 hover:bg-zinc-900/60 transition-all font-semibold text-sm font-display"
@@ -188,7 +186,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
       <section className="max-w-4xl mx-auto px-6 py-20 border-t border-white/5">
         <div className="text-center space-y-3 mb-12">
           <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-brand-blue">Access Tier</span>
-          <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight">Flexible Developer Plans</h2>
+          <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight">Developer Service Pricing</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -233,12 +231,12 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
               Popular
             </div>
             <h3 className="text-lg font-display font-semibold text-white flex items-center gap-2">
-              Agunnaya Pro Builder
+              Scoped Engineering
             </h3>
-            <p className="text-xs text-zinc-400 mt-1">For live launches and custom multi-sig templates.</p>
+            <p className="text-xs text-zinc-400 mt-1">Base contract development, wallet integrations and dApp projects quoted by scope.</p>
             <div className="my-6">
-              <span className="text-3xl font-mono font-bold text-white">0.05 ETH</span>
-              <span className="text-zinc-500 text-xs font-mono ml-1">/ one-off deployment</span>
+              <span className="text-3xl font-mono font-bold text-white">By quote</span>
+              <span className="text-zinc-500 text-xs font-mono ml-1">/ after scope review</span>
             </div>
             <ul className="space-y-3.5 text-xs text-zinc-300 border-t border-brand-purple/20 pt-6 mb-8">
               <li className="flex items-center gap-2">
@@ -260,10 +258,10 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
             </ul>
             <button
               id="plan-start-pro"
-              onClick={onLaunchApp}
+              onClick={onOpenServices}
               className="w-full py-3 rounded-xl bg-brand-purple hover:bg-purple-600 transition-all text-xs font-semibold font-display text-white shadow-lg shadow-brand-purple/20"
             >
-              Configure Live Deployments
+              Request a Project Quote
             </button>
           </div>
         </div>
@@ -317,7 +315,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
               </span>
             </div>
             <p className="text-zinc-500 text-xs leading-relaxed">
-              Decentralized infrastructure enabling seamless deployment, scaling, and capitalization on Base. Pure math, permissionless access, absolute security.
+              AI-assisted Web3 tools and developer services for Base. Project scope and payment details are confirmed before work begins.
             </p>
           </div>
 
@@ -339,44 +337,25 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
             </div>
           </div>
 
-          {/* Newsletter */}
           <div className="glass-panel p-6 rounded-xl border border-white/5 space-y-4">
             <span className="block font-bold text-white uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-              <Mail className="w-4 h-4 text-brand-purple" /> Join the Builder Newsletter
+              <Mail className="w-4 h-4 text-brand-purple" /> Project inquiries
             </span>
-            <p className="text-zinc-500 text-xs">
-              Get weekly summaries on the latest deployed contracts and linear curve models.
+            <p className="text-zinc-500 text-xs leading-relaxed">
+              Tell us what you are building. Scope and final pricing are reviewed with you before any payment is requested.
             </p>
-            {subscribed ? (
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono">
-                <CheckCircle className="w-4 h-4" />
-                <span>Subscription saved! Welcome aboard.</span>
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="flex gap-1">
-                <input
-                  id="newsletter-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="dev@domain.com"
-                  required
-                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs flex-1 text-white focus:outline-none focus:border-brand-purple/40 placeholder:text-zinc-700"
-                />
-                <button
-                  id="newsletter-submit"
-                  type="submit"
-                  className="px-4 py-2 bg-brand-purple hover:bg-purple-600 rounded-lg text-xs font-bold font-display"
-                >
-                  Join
-                </button>
-              </form>
-            )}
+            <button
+              type="button"
+              onClick={onOpenServices}
+              className="min-h-11 w-full rounded-lg bg-brand-purple px-4 py-3 text-sm font-bold font-display hover:bg-purple-600"
+            >
+              Explore developer services
+            </button>
           </div>
         </div>
 
         <div className="max-w-6xl mx-auto px-6 border-t border-white/5 pt-8 text-center text-zinc-600 text-xs flex flex-col md:flex-row justify-between items-center gap-4">
-          <span>Agunnaya Labs Studio is an independent development sandbox. All smart contracts are simulated on sandboxed Base L2 nodes.</span>
+          <span>AI-generated code and heuristic checks are not an independent security audit. Payment instructions appear only after a reviewed quote.</span>
           <span>© 2026 Agunnaya Labs. All rights reserved.</span>
         </div>
       </footer>

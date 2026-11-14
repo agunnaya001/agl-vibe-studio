@@ -1,11 +1,15 @@
 import express from "express";
+import dotenv from "dotenv";
+if (process.env.NODE_ENV !== "production") dotenv.config({ path: ".env.development.local" });
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
+import revenueRouter from "./src/server/revenue";
 
 const app = express();
 const PORT = 3000;
 
+app.use(revenueRouter);
 app.use(express.json());
 
 // Lazy-loaded GoogleGenAI client to avoid startup crashes if key is not defined yet

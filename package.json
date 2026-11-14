@@ -18,12 +18,14 @@
     "ethers": "^6.17.0",
     "express": "^4.21.2",
     "firebase": "^12.15.0",
+    "firebase-admin": "^14.5.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-helmet-async": "^3.0.0",
     "recharts": "^3.9.0",
+    "swr": "^2.5.1",
     "vite": "^6.2.3"
   },
   "devDependencies": {

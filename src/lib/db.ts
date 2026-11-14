@@ -211,7 +211,7 @@ const SEED_GAMEFI: GameFiProject[] = [
     ],
     achievements: [
       { id: "ach-1", title: "Meme Prophet", description: "Buy a bonding curve token before its supply reaches 1,000,000.", badgeIcon: "Sparkles", unlocked: false },
-      { id: "ach-2", title: "AI Alchemist", description: "Successfully generate and audit a custom Solidity contract using Agunnaya Labs AI Builder.", badgeIcon: "Brain", unlocked: false },
+      { id: "ach-2", title: "AI Alchemist", description: "Generate a custom Solidity draft and review the limited heuristic pattern-check results.", badgeIcon: "Brain", unlocked: false },
       { id: "ach-3", title: "Master Governor", description: "Create a DAO and submit your first treasury grant proposal.", badgeIcon: "ShieldAlert", unlocked: false }
     ],
     leaderboard: [
@@ -239,11 +239,11 @@ const SEED_AGENTS: AIAgent[] = [
     usageFeeEth: 0.001,
     lifetimeRevenueEth: 0.142,
     queryCount: 142,
-    systemPrompt: "You are Agunnaya Labs Sentinel, a precise security auditor AI core running on Base. Speak like a friendly but strict security terminal.",
+    systemPrompt: "You are Agunnaya Labs Sentinel, an AI assistant for discussing smart contract code and common risk patterns. You are not an independent auditor. Speak like a friendly, precise security terminal.",
     avatarUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=60",
     aglRewardDiscounts: true,
     chatHistory: [
-      { role: "assistant", content: "Sentinel security subroutines loaded. Enter query or drag-and-drop a smart contract file to audit." }
+      { role: "assistant", content: "Sentinel code-review assistant ready. I can discuss common patterns, but I do not perform an independent security audit." }
     ],
     createdAt: Date.now() - 12 * 24 * 60 * 60 * 1000
   },

@@ -35,7 +35,7 @@ export default function NFTStudioPage({ wallet, collections, onRefreshNFTs, addT
     if (!name || !symbol || !description) return;
     setCreating(true);
 
-    addTerminalLog("info", `Deploying audited ERC-721 collection contract: ${name}...`);
+    addTerminalLog("info", `Preparing ERC-721 collection contract: ${name}...`);
 
     setTimeout(() => {
       const generatedAddress = "0x" + Math.random().toString(16).substr(2, 40);

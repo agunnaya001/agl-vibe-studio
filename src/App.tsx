@@ -11,6 +11,8 @@ import AIAssistantSidebar from "./components/AIAssistantSidebar";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
+import ServicesPage from "./pages/ServicesPage";
+import RevenueAdminPage from "./pages/RevenueAdminPage";
 import DashboardPage from "./pages/DashboardPage";
 import ExplorePage from "./pages/ExplorePage";
 import CreatePage from "./pages/CreatePage";
@@ -35,8 +37,10 @@ import { TerminalLine } from "./components/TerminalLog";
 import { BrainCircuit } from "lucide-react";
 
 export default function App() {
-  const [isLaunched, setIsLaunched] = useState(false);
-  const [currentTab, setCurrentTab] = useState("dashboard");
+  const requestedTab = new URLSearchParams(window.location.search).get("tab");
+  const initialTab = requestedTab === "services" || requestedTab === "revenue-admin" ? requestedTab : "dashboard";
+  const [isLaunched, setIsLaunched] = useState(initialTab !== "dashboard");
+  const [currentTab, setCurrentTab] = useState(initialTab);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [network, setNetwork] = useState<"sepolia" | "mainnet">("sepolia");
 
@@ -499,6 +503,20 @@ export default function App() {
     }
 
     switch (currentTab) {
+      case "revenue-admin":
+        return {
+          title: "Founder Revenue Console | Agunnaya Labs",
+          description: "Private service inquiries, approved quotes and verified Base payment records.",
+          image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
+          url: `${window.location.origin}/?tab=revenue-admin`,
+        };
+      case "services":
+        return {
+          title: "Base Developer Services | Agunnaya Labs",
+          description: "Base smart contract development, wallet integrations and dApp engineering. Request a scoped quote before payment.",
+          image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
+          url: `${window.location.origin}/?tab=services${new URLSearchParams(window.location.search).get("service") ? `&service=${new URLSearchParams(window.location.search).get("service")}` : ""}`,
+        };
       case "dashboard":
         return {
           title: "Dashboard | Agunnaya Labs Studio",
@@ -621,6 +639,16 @@ export default function App() {
     }
 
     switch (currentTab) {
+      case "revenue-admin":
+        return <RevenueAdminPage user={firebaseUser} onSignIn={handleSignInWithGoogle} />;
+      case "services":
+        return (
+          <ServicesPage
+            firebaseUser={firebaseUser}
+            onSignIn={handleSignInWithGoogle}
+            initialService={new URLSearchParams(window.location.search).get("service")}
+          />
+        );
       case "dashboard":
         return (
           <DashboardPage
@@ -797,7 +825,16 @@ export default function App() {
           <meta name="twitter:description" content="Decentralized on-chain developer studio with AI-powered builders, advanced DeFi swaps, staking, DAO voting tools, and smart token launchpads." />
           <meta name="twitter:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80" />
         </Helmet>
-        <LandingPage onLaunchApp={() => setIsLaunched(true)} />
+          <LandingPage
+            onLaunchApp={() => setIsLaunched(true)}
+            onOpenServices={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set("tab", "services");
+              window.history.pushState({}, "", url);
+              setCurrentTab("services");
+              setIsLaunched(true);
+            }}
+          />
       </HelmetProvider>
     );
   }

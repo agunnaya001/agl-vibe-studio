@@ -30,7 +30,7 @@ export function analyzeSolidityCode(code: string | undefined): SecurityAuditResu
       status: "passed",
       score: 100,
       findings: [],
-      summary: "No source code provided for security audit."
+      summary: "No Solidity source was provided for this limited pattern check."
     };
   }
 
@@ -136,12 +136,12 @@ export function analyzeSolidityCode(code: string | undefined): SecurityAuditResu
 
   let summary = "";
   if (findings.length === 0) {
-    summary = "Solid code architecture. No vulnerability patterns or code smells detected during simulated static analysis. High compliance with standard checks-effects-interactions patterns.";
+    summary = "No patterns in this limited checklist were flagged. This heuristic result does not establish code quality, deployability, or security.";
   } else {
     const highCount = findings.filter(f => f.severity === "high").length;
     const medCount = findings.filter(f => f.severity === "medium").length;
     const infoCount = findings.filter(f => f.severity === "info").length;
-    summary = `Static analysis identified ${findings.length} concern(s) (${highCount} high, ${medCount} medium, ${infoCount} low/info). Correct the listed items to secure your deployment.`;
+    summary = `This limited static checklist flagged ${findings.length} potential pattern(s) (${highCount} high, ${medCount} medium, ${infoCount} low/info). Have the code reviewed and tested independently; this is not a security determination.`;
   }
 
   return {

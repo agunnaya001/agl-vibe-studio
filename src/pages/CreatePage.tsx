@@ -682,7 +682,7 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
               </div>
             </div>
 
-            {/* Security Audit panel */}
+            {/* Limited heuristic Solidity pattern checks */}
             {(() => {
               const audit = analyzeSolidityCode(aiResult.solidityCode);
               return (
@@ -697,11 +697,11 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                     }`}>
                       {audit.status === "passed" ? (
                         <>
-                          <ShieldCheck className="w-4 h-4 animate-pulse" /> AI Security Audit Status: Passed
+                          <Code className="w-4 h-4" /> Heuristic Checks: No common patterns flagged
                         </>
                       ) : (
                         <>
-                          <ShieldAlert className="w-4 h-4 animate-pulse" /> AI Security Audit Status: Warning
+                          <ShieldAlert className="w-4 h-4 animate-pulse" /> Heuristic Checks: Patterns flagged
                         </>
                       )}
                     </span>
@@ -710,17 +710,16 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                         ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                         : "bg-amber-500/10 border-amber-500/20 text-amber-400"
                     }`}>
-                      Score: {audit.score}/100
+                      Limited pattern scan
                     </span>
                   </div>
-                  <p className="text-[11px] text-zinc-300 leading-normal">
-                    {audit.summary}
-                  </p>
+                  <p className="text-[11px] text-zinc-300 leading-normal">{audit.summary}</p>
+                  <p className="border-t border-white/5 pt-2 text-[10px] leading-4 text-amber-200/80">This limited heuristic scan is not a compiler, expert review, or independent security audit. No flagged pattern does not mean the contract is secure.</p>
                   
-                  {/* Detailed security audit insights/findings if present */}
+                  {/* Heuristic pattern findings, not an audit */}
                   {audit.findings.length > 0 && (
                     <div className="space-y-2 border-t border-white/5 pt-3 animate-fade-in">
-                      <span className="block text-[8px] uppercase tracking-wider text-zinc-500 font-bold">Static Analysis Finding(s):</span>
+                      <span className="block text-[8px] uppercase tracking-wider text-zinc-500 font-bold">Potential patterns to review:</span>
                       <div className="space-y-2 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
                         {audit.findings.map((finding, idx) => (
                           <div key={idx} className="bg-zinc-900/60 border border-white/5 p-2 rounded-lg space-y-1">
@@ -831,7 +830,7 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
               </p>
             </div>
 
-            {/* Security Audit Badge in deployment flow */}
+            {/* Limited static pattern-check status */}
             {aiResult && (
               <div className="animate-fade-in">
                 {(() => {
@@ -840,11 +839,11 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                     return (
                       <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4 text-emerald-400 animate-pulse" />
-                          <span className="text-zinc-300 font-bold">Static Audit:</span>
+                          <Code className="w-4 h-4 text-emerald-400" />
+                          <span className="text-zinc-300 font-bold">Heuristic scan:</span>
                         </div>
                         <span className="flex items-center gap-1 text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full text-[10px] border border-emerald-500/20">
-                          SECURE ✔ ({audit.score}/100)
+                            No common pattern flagged
                         </span>
                       </div>
                     );
@@ -854,14 +853,14 @@ export default function CreatePage({ wallet, onLaunchSuccess, onRefreshWallet, a
                         <div className="flex items-center justify-between bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 text-xs font-mono">
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-amber-400 animate-pulse" />
-                            <span className="text-zinc-300 font-bold">Static Audit:</span>
+                            <span className="text-zinc-300 font-bold">Heuristic scan:</span>
                           </div>
                           <span className="flex items-center gap-1 text-amber-400 font-bold bg-amber-500/10 px-2.5 py-1 rounded-full text-[10px] border border-amber-500/20">
-                            WARNING ⚠ ({audit.score}/100)
+                            Patterns flagged
                           </span>
                         </div>
                         <div className="bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-lg text-[10px] font-mono text-amber-300 leading-normal">
-                          ⚠️ <span className="font-bold">Caution:</span> {audit.findings.length} compiler/design recommendations found. Contract is deployable but optimizations are advised.
+                          <span className="font-bold">Review required:</span> {audit.findings.length} potential pattern(s) found. This scan does not establish deployability or contract security.
                         </div>
                       </div>
                     );

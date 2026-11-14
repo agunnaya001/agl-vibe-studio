@@ -74,7 +74,7 @@ export default function TerminalLog({ logs, onClear }: TerminalLogProps) {
     let reply = "";
 
     if (cmd === "help") {
-      reply = "Available commands: help | stats | status | clear | audit | version | theme";
+      reply = "Available commands: help | stats | status | clear | scan | version | theme";
     } else if (cmd === "stats") {
       reply = "NETWORK: Base Mainnet | COMPILER: solc v0.8.20 | GAS: 0.05 gwei | SYNC_STATE: 100% synced";
     } else if (cmd === "status") {
@@ -84,8 +84,8 @@ export default function TerminalLog({ logs, onClear }: TerminalLogProps) {
       setInputCommand("");
       if (onClear) onClear();
       return;
-    } else if (cmd === "audit") {
-      reply = "AUDIT SECURE: CEI pattern compliant. ReentrancyGuard active on all entrypoints.";
+    } else if (cmd === "scan") {
+      reply = "DEMO CHECK ONLY: This terminal cannot verify contract security. No independent audit is represented.";
     } else if (cmd === "version") {
       reply = "Agunnaya Labs Studio CLI - v2.4.0-release";
     } else if (cmd === "theme") {
@@ -403,7 +403,7 @@ export default function TerminalLog({ logs, onClear }: TerminalLogProps) {
             type="text"
             value={inputCommand}
             onChange={(e) => setInputCommand(e.target.value)}
-            placeholder="Type command (e.g. 'help', 'stats', 'audit') and press Enter..."
+            placeholder="Type command (e.g. 'help', 'stats', 'scan') and press Enter..."
             className={`bg-transparent ${themeInputTextColor} focus:outline-none w-full placeholder:text-zinc-700 ${themeCaretClass}`}
             autoComplete="off"
             spellCheck={false}

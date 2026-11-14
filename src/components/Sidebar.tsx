@@ -67,6 +67,8 @@ export default function Sidebar({
 
   const menuItems = [
     { id: "landing", label: "Studio Home", icon: Sparkles, category: "Welcome" },
+    { id: "services", label: "Developer Services", icon: Layers, category: "Welcome" },
+    { id: "revenue-admin", label: "Services & Revenue Console", icon: Coins, category: "Administration" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace" },
     { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", highlight: true },
     { id: "gdrive", label: "Google Drive Cloud", icon: HardDrive, category: "Workspace" },
