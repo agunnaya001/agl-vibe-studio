@@ -243,7 +243,7 @@ export default function GeminiChatbotView({
         model: selectedModel,
         roleId: selectedRole.id,
         customSystemInstruction: systemInstruction,
-        thinkingLevel: selectedModel === "gemini-4-carbon" ? thinkingLevel : undefined
+        thinkingLevel: selectedRole.id === "carbon-auditor" && selectedModel === "gemini-3.8-flash" ? thinkingLevel : undefined
       });
 
       const assistantMessage: ChatMessageItem = {
