@@ -141,6 +141,15 @@ export default function TokenBurnerPage({
   showToast,
   tokens = []
 }: TokenBurnerPageProps) {
+  const copyToClipboard = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast(`${label} copied to clipboard`, "success");
+    } catch {
+      showToast("Clipboard access is unavailable in this browser.", "error");
+    }
+  };
+
   // Burn Mode Tabs: Single Burn vs Batch Multicall Burn
   const [activeBurnTab, setActiveBurnTab] = useState<"single" | "batch">("batch");
 
