@@ -192,6 +192,7 @@ ${solidityCode || "// Bytecode or address provided"}
         error: "AI security auditing is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
         code: "AI_PROVIDER_UNAVAILABLE",
       });
+    }
   });
 
   // =========================================================================
@@ -395,6 +396,7 @@ Return clean JSON matching the schema. Do not truncate code or write placeholder
         error: "AI dApp generation is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
         code: "AI_PROVIDER_UNAVAILABLE",
       });
+    }
   });
 
   // =========================================================================
