@@ -3,7 +3,6 @@ import { Type } from "@google/genai";
 import { ethers } from "ethers";
 import {
   executeGeminiWithFallback,
-  generateStaticSecurityAuditFallback,
   safeParseJson,
 } from "./geminiHelper.ts";
 
@@ -171,7 +170,7 @@ ${solidityCode || "// Bytecode or address provided"}
         },
         {
           operationName: "Security Audit",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
           maxRetriesPerModel: 2,
         }
       );
@@ -188,14 +187,11 @@ ${solidityCode || "// Bytecode or address provided"}
         ...parsed,
       });
     } catch (error: any) {
-      console.warn("AI Security Audit live model error, applying deterministic static fallback:", error?.message || error);
-      const fallbackReport = generateStaticSecurityAuditFallback(
-        solidityCode || "",
-        contractName || "SmartContract",
-        network || "base-mainnet",
-        contractAddress
-      );
-      res.json(fallbackReport);
+      console.error("AI Security Audit provider error:", error?.message || error);
+      return res.status(503).json({
+        error: "AI security auditing is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+        code: "AI_PROVIDER_UNAVAILABLE",
+      });
     }
   });
 
@@ -376,7 +372,7 @@ Return clean JSON matching the schema. Do not truncate code or write placeholder
         },
         {
           operationName: "dApp Generation",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -395,48 +391,10 @@ Return clean JSON matching the schema. Do not truncate code or write placeholder
         ...parsed,
       });
     } catch (error: any) {
-      console.warn("AI Generate dApp fallback triggered:", error?.message || error);
-      const cleanTitle = prompt.slice(0, 30).replace(/[^a-zA-Z0-9\s]/g, "").trim() || "Base DeFi App";
-      res.json({
-        id: `dapp-${Date.now()}`,
-        title: cleanTitle,
-        description: `Production-ready Base L2 Web3 application built for prompt: "${prompt}".`,
-        category: category || "DeFi & Staking",
-        targetNetwork: network || "base-mainnet",
-        architecture: {
-          summary: "Full-stack Base L2 dApp combining high-throughput Solidity smart contracts with reactive React frontend.",
-          frontend: "React 19 + Wagmi + Viem + Tailwind CSS with ERC-8021 builder attribution.",
-          smartContracts: "Solidity 0.8.24 OpenZeppelin v5.0 compliant with ReentrancyGuard and Ownable2Step.",
-          backendApi: "Express.js REST APIs with live Base RPC sync.",
-          database: "Local state with Cloud Firestore caching.",
-          blockchainIndexing: "BaseScan API + Viem event watchers.",
-          authentication: "Sign-In with Ethereum (SIWE) / EIP-4361."
-        },
-        files: [
-          {
-            path: "contracts/Vault.sol",
-            filename: "Vault.sol",
-            language: "solidity",
-            category: "contract",
-            description: "Core Staking and Liquidity Vault contract",
-            content: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\nimport "@openzeppelin/contracts/access/Ownable2Step.sol";\nimport "@openzeppelin/contracts/utils/ReentrancyGuard.sol";\nimport "@openzeppelin/contracts/token/ERC20/IERC20.sol";\n\ncontract ProtocolVault is Ownable2Step, ReentrancyGuard {\n    IERC20 public immutable stakingToken;\n    mapping(address => uint256) public userStakes;\n    uint256 public totalStaked;\n\n    event Staked(address indexed user, uint256 amount);\n    event Withdrawn(address indexed user, uint256 amount);\n\n    constructor(address _stakingToken, address initialOwner) Ownable(initialOwner) {\n        require(_stakingToken != address(0), "Zero address");\n        stakingToken = IERC20(_stakingToken);\n    }\n\n    function stake(uint256 amount) external nonReentrant {\n        require(amount > 0, "Amount > 0");\n        userStakes[msg.sender] += amount;\n        totalStaked += amount;\n        require(stakingToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");\n        emit Staked(msg.sender, amount);\n    }\n\n    function withdraw(uint256 amount) external nonReentrant {\n        require(userStakes[msg.sender] >= amount, "Insufficient balance");\n        userStakes[msg.sender] -= amount;\n        totalStaked -= amount;\n        require(stakingToken.transfer(msg.sender, amount), "Transfer failed");\n        emit Withdrawn(msg.sender, amount);\n    }\n}`
-          }
-        ],
-        dependencies: {
-          npm: ["wagmi", "viem", "@tanstack/react-query", "ethers", "lucide-react"],
-          solidity: ["@openzeppelin/contracts@5.0.1"]
-        },
-        deployInstructions: [
-          "Set PRIVATE_KEY and BASE_RPC_URL in .env",
-          "Deploy contract with: npx hardhat run scripts/deploy.ts --network base",
-          "Verify on BaseScan with: npx hardhat verify --network base <DEPLOYED_ADDRESS>"
-        ],
-        conversationHistory: [
-          { role: "user", message: prompt, timestamp: Date.now() },
-          { role: "assistant", message: `Generated complete full-stack architecture and code for "${cleanTitle}".`, timestamp: Date.now() }
-        ],
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+      console.error("AI Generate dApp provider error:", error?.message || error);
+      return res.status(503).json({
+        error: "AI dApp generation is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+        code: "AI_PROVIDER_UNAVAILABLE",
       });
     }
   });
@@ -519,7 +477,7 @@ USER MODIFICATION REQUEST:
         },
         {
           operationName: "Iterate dApp",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -736,7 +694,7 @@ ${solidityCode || "// Address inspection"}
         },
         {
           operationName: "Explain Contract",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -801,7 +759,7 @@ USER QUESTION:
         },
         {
           operationName: "Contract Q&A",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -874,7 +832,7 @@ SAFETY DIRECTIVES:
         },
         {
           operationName: "Onchain Agent",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -993,7 +951,7 @@ ABI: ${JSON.stringify(abi || "Standard ERC-20 / EVM contract")}`;
         },
         {
           operationName: "Simulate Tx",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -1112,7 +1070,7 @@ Return strictly structured JSON matching the schema.`;
         },
         {
           operationName: "Generate Game",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 
@@ -1219,7 +1177,7 @@ USER MODIFICATION:
         },
         {
           operationName: "Iterate Game",
-          preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+          preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
         }
       );
 

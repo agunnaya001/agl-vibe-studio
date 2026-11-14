@@ -78,12 +78,12 @@ export default function AgentFleetStudio({ showToast }: AgentFleetStudioProps) {
 
   const handlePauseAll = () => {
     agents.forEach((a) => BackgroundFleetManager.setAgentStatus(a.id, "PAUSED"));
-    showToast("Paused all background agent fleets.", "info");
+    showToast("Paused all read-only agent monitors.", "info");
   };
 
   const handleResumeAll = () => {
     agents.forEach((a) => BackgroundFleetManager.setAgentStatus(a.id, "RUNNING"));
-    showToast("Resumed all background agent fleets.", "success");
+    showToast("Resumed read-only monitoring. No on-chain actions are executed.", "info");
   };
 
   const handleDeployLabAgent = (agent: BackgroundFleetAgent) => {
@@ -165,7 +165,7 @@ export default function AgentFleetStudio({ showToast }: AgentFleetStudioProps) {
             </h1>
 
             <p className="text-xs sm:text-sm text-zinc-300 max-w-3xl leading-relaxed">
-              Build, test, and deploy autonomous AI workers that run persistently in the background to automate DEX liquidity rebalancing, 24/7 security watchdogs, gas-optimized yield compounding, and multi-agent governance swarms.
+              Create agent configurations and run read-only monitoring checks. Live swaps, yield compounding, burns, governance votes, and treasury transfers are not enabled in this build.
             </p>
           </div>
 
@@ -177,7 +177,7 @@ export default function AgentFleetStudio({ showToast }: AgentFleetStudioProps) {
                 className="px-4 py-2.5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center gap-2 transition"
               >
                 <Pause className="w-3.5 h-3.5 text-amber-400" />
-                <span>Pause All</span>
+                <span>Pause Monitors</span>
               </button>
             ) : (
               <button
@@ -185,7 +185,7 @@ export default function AgentFleetStudio({ showToast }: AgentFleetStudioProps) {
                 className="px-4 py-2.5 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-2 transition"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Resume All</span>
+                <span>Resume Read-only Monitoring</span>
               </button>
             )}
 
@@ -206,7 +206,7 @@ export default function AgentFleetStudio({ showToast }: AgentFleetStudioProps) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-zinc-800/80 font-mono">
           <div className="p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800/60">
             <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">
-              Active Fleets
+              Read-only monitors
             </span>
             <span className="text-lg font-bold text-white">
               {metrics.activeCount} <span className="text-xs text-zinc-400 font-normal">/ {metrics.totalAgents} total</span>
@@ -215,7 +215,7 @@ export default function AgentFleetStudio({ showToast }: AgentFleetStudioProps) {
 
           <div className="p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800/60">
             <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">
-              Automated Actions
+              Verified on-chain actions
             </span>
             <span className="text-lg font-bold text-emerald-400">
               {metrics.totalActions}
@@ -224,19 +224,19 @@ export default function AgentFleetStudio({ showToast }: AgentFleetStudioProps) {
 
           <div className="p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800/60">
             <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">
-              Gas Spent on Base
+              Verified gas spent
             </span>
             <span className="text-lg font-bold text-brand-purple">
-              {metrics.totalGasEth} ETH
+              Unavailable
             </span>
           </div>
 
           <div className="p-3 rounded-2xl bg-zinc-950/70 border border-zinc-800/60">
             <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">
-              Yield & Value Generated
+              Verified value generated
             </span>
             <span className="text-lg font-bold text-amber-300">
-              ${metrics.totalValueUsd}
+              Unavailable
             </span>
           </div>
         </div>

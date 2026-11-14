@@ -5,8 +5,8 @@ const router = Router();
 
 // Lazy Gemini client helper
 function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "AIzaSy_placeholder_key") return null;
   return new GoogleGenAI({ apiKey });
 }
 
@@ -19,7 +19,7 @@ export interface ChatRolePreset {
   id: string;
   name: string;
   badge: string;
-  recommendedModel: "gemini-4-carbon" | "gemini-4-argon" | "gemini-3.8-flash" | "gemini-3.1-flash-lite";
+  recommendedModel: "gemini-3.8-flash" | "gemini-3.5-flash-lite" | "gemini-3.7-flash";
   description: string;
   systemInstruction: string;
 }
@@ -29,7 +29,7 @@ export const CHAT_ROLES: ChatRolePreset[] = [
     id: "carbon-auditor",
     name: "Carbon Security Auditor",
     badge: "Deep Reasoning",
-    recommendedModel: "gemini-4-carbon",
+    recommendedModel: "gemini-3.8-flash",
     description: "Rigorous formal verification, CEI checks, reentrancy audits, EVM storage layout, and assembly-level vulnerability modeling.",
     systemInstruction: `You are the Lead Smart Contract Security Auditor at Agunnaya Labs on Base L2. 
 You specialize in deep mathematical reasoning, checks-effects-interactions (CEI) validation, reentrancy protection, ERC-4337 paymaster exploit mitigation, and ERC-20 bonding curve mathematics.
@@ -39,7 +39,7 @@ Always review smart contracts with paranoia: point out exact lines of vulnerabil
     id: "argon-dapp-master",
     name: "Argon dApp Architect",
     badge: "Complex Interactive",
-    recommendedModel: "gemini-4-argon",
+    recommendedModel: "gemini-3.8-flash",
     description: "Full-stack Web3 application synthesis, Viem/Wagmi v2 integration, Base Paymaster sponsorship, and high-complexity UI logic.",
     systemInstruction: `You are the Principal dApp Architect at Agunnaya Labs.
 You excel at multi-file architecture, React 19 + TypeScript patterns, Tailwind CSS, Wagmi v2 / Viem hooks, Base L2 gas optimization, and LI.FI cross-chain bridging routes.
@@ -59,7 +59,7 @@ Respond concisely, format math formulas clearly, and provide practical next step
     id: "lite-synthesizer",
     name: "Lite Rapid Synthesizer",
     badge: "Ultra Fast",
-    recommendedModel: "gemini-3.1-flash-lite",
+    recommendedModel: "gemini-3.5-flash-lite",
     description: "Low-latency assistant for quick answers, ABI function summaries, regex pattern matching, and transaction decoding.",
     systemInstruction: `You are the Ultra-Fast Agunnaya Labs Synthesizer.
 Provide quick, accurate, bulleted answers with minimal latency. Summarize EVM topics, decode function signatures, and generate concise snippets on demand.`
@@ -71,10 +71,9 @@ router.get("/roles", (_req: Request, res: Response) => {
   res.json({
     roles: CHAT_ROLES,
     models: [
-      { id: "gemini-4-carbon", label: "Gemini 4 Carbon", role: "Deep Reasoning", bestFor: "Audits, Math & Security" },
-      { id: "gemini-4-argon", label: "Gemini 4 Argon", role: "Complex Interactive", bestFor: "Full-Stack dApps & Game Logic" },
-      { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash", role: "General Tasks", bestFor: "Tokenomics, Architecture & Q&A" },
-      { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite", role: "Fast Tasks", bestFor: "Quick Summaries & Rapid Snippets" }
+      { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash", role: "General & Reasoning", bestFor: "Audits, architecture, tokenomics & Q&A" },
+      { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite", role: "Fast Tasks", bestFor: "Quick summaries & rapid snippets" },
+      { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash", role: "Alternative Stable", bestFor: "Complex Web3 tasks" }
     ]
   });
 });
@@ -114,12 +113,9 @@ router.post("/", async (req: Request, res: Response) => {
 
     // Validate Model Alias
     const ALLOWED_MODELS = [
-      "gemini-4-carbon",
-      "gemini-4-argon",
       "gemini-3.8-flash",
-      "gemini-3.1-flash-lite",
-      "gemini-2.5-flash",
-      "gemini-2.5-pro"
+      "gemini-3.5-flash-lite",
+      "gemini-3.7-flash"
     ];
     let targetModel = ALLOWED_MODELS.includes(model) ? model : "gemini-3.8-flash";
 
@@ -143,9 +139,9 @@ router.post("/", async (req: Request, res: Response) => {
     };
 
     // If Carbon reasoning is selected and thinkingLevel is set
-    if (targetModel === "gemini-4-carbon" && thinkingLevel) {
+    if (roleId === "carbon-auditor" && thinkingLevel && targetModel === "gemini-3.8-flash") {
       config.thinkingConfig = {
-        thinkingBudget: thinkingLevel === "HIGH" ? 1024 : 512
+        thinkingLevel: thinkingLevel === "HIGH" ? "HIGH" : "LOW"
       };
     }
 

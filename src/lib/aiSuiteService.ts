@@ -10,6 +10,7 @@ import {
   SUPPORTED_NETWORKS
 } from "../types/aiSuite";
 import { ethers } from "ethers";
+import { AGL_TOKEN_ADDRESS } from "./aglContracts";
 
 export const AIService = {
   /**
@@ -252,49 +253,64 @@ export const AIService = {
     balances: TokenBalanceItem[];
     recentTxs: DecodedTransactionItem[];
   }> {
+    if (!ethers.isAddress(address)) throw new Error("A valid EVM wallet address is required.");
+
     const netConfig = SUPPORTED_NETWORKS[network] || SUPPORTED_NETWORKS["base-mainnet"];
+    const provider = new ethers.JsonRpcProvider(netConfig.rpcUrl);
     const balances: TokenBalanceItem[] = [];
     const recentTxs: DecodedTransactionItem[] = [];
 
-    try {
-      const provider = new ethers.JsonRpcProvider(netConfig.rpcUrl);
-      const ethBal = await provider.getBalance(address);
-      const formattedEth = ethers.formatEther(ethBal);
+    // Native balance is real RPC data. USD valuation is omitted until a trusted price source is connected.
+    const ethBal = await provider.getBalance(address);
+    balances.push({
+      symbol: "ETH",
+      name: "Ether",
+      address: "0x0000000000000000000000000000000000000000",
+      balance: ethBal.toString(),
+      balanceFormatted: Number(ethers.formatEther(ethBal)).toFixed(6),
+      decimals: 18,
+    });
 
-      balances.push({
-        symbol: "ETH",
-        name: "Ether",
-        address: "0x0000000000000000000000000000000000000000",
-        balance: ethBal.toString(),
-        balanceFormatted: parseFloat(formattedEth).toFixed(4),
-        usdValue: (parseFloat(formattedEth) * 2850).toFixed(2),
-        decimals: 18,
-      });
+    if (network === "base-mainnet") {
+      const tokens = [
+        {
+          symbol: "AGL",
+          name: "Agunnaya Labs",
+          address: AGL_TOKEN_ADDRESS,
+          decimals: 18,
+        },
+        {
+          symbol: "USDC",
+          name: "USD Coin",
+          address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          decimals: 6,
+        },
+      ];
 
-      // Query AGL Token on Base
-      if (network === "base-mainnet" || network === "base-sepolia") {
+      for (const token of tokens) {
         try {
-          const aglContract = new ethers.Contract(
-            "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Standard or USDC/AGL placeholder
-            ["function balanceOf(address) view returns (uint256)", "function symbol() view returns (string)", "function decimals() view returns (uint8)"],
+          const tokenContract = new ethers.Contract(
+            token.address,
+            ["function balanceOf(address) view returns (uint256)"],
             provider
           );
-          const usdcBal = await aglContract.balanceOf(address);
+          const rawBalance = await tokenContract.balanceOf(address);
           balances.push({
-            symbol: "USDC",
-            name: "USD Coin (Native Base)",
-            address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-            balance: usdcBal.toString(),
-            balanceFormatted: (Number(usdcBal) / 1e6).toFixed(2),
-            usdValue: (Number(usdcBal) / 1e6).toFixed(2),
-            decimals: 6,
+            symbol: token.symbol,
+            name: token.name,
+            address: token.address,
+            balance: rawBalance.toString(),
+            balanceFormatted: Number(ethers.formatUnits(rawBalance, token.decimals)).toLocaleString(undefined, {
+              maximumFractionDigits: token.decimals === 6 ? 2 : 6,
+            }),
+            decimals: token.decimals,
           });
-        } catch {}
+        } catch (error) {
+          console.warn(`Unable to read ${token.symbol} balance from Base:`, error);
+        }
       }
-    } catch (e) {
-      console.warn("Could not query live RPC balances:", e);
     }
 
+    // Transaction history is intentionally empty until an explorer/indexer provider is configured.
     return { balances, recentTxs };
-  }
-};
+  }};

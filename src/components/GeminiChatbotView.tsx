@@ -44,34 +44,26 @@ interface GeminiChatbotViewProps {
 
 const MODEL_TIERS = [
   {
-    id: "gemini-4-carbon",
-    name: "Gemini 4 Carbon",
-    tag: "Deep Reasoning",
-    description: "Multi-step mathematical reasoning, formal smart contract audits, CEI verification & vulnerability modeling.",
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash",
+    tag: "General & Reasoning",
+    description: "Stable shared model for Web3 analysis, smart-contract review, architecture, and multi-step assistance.",
     badgeClass: "bg-purple-500/10 text-purple-300 border-purple-500/30",
     color: "#a855f7"
   },
   {
-    id: "gemini-4-argon",
-    name: "Gemini 4 Argon",
-    tag: "Complex Interactive",
-    description: "High-complexity dApp state machines, full-stack Wagmi v2 architecture, interactive simulation logic.",
+    id: "gemini-3.7-flash",
+    name: "Gemini 3.7 Flash",
+    tag: "Alternative Stable",
+    description: "Stable alternative for complex Web3 tasks and coding assistance.",
     badgeClass: "bg-blue-500/10 text-blue-300 border-blue-500/30",
     color: "#3b82f6"
   },
   {
-    id: "gemini-3.8-flash",
-    name: "Gemini 3.8 Flash",
-    tag: "General Tasks",
-    description: "Standard Web3 advisor: tokenomics, linear bonding curves, DAO governance, staking APY guidance.",
-    badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-    color: "#10b981"
-  },
-  {
-    id: "gemini-3.1-flash-lite",
-    name: "Gemini 3.1 Flash Lite",
+    id: "gemini-3.5-flash-lite",
+    name: "Gemini 3.5 Flash-Lite",
     tag: "Ultra Fast",
-    description: "Lowest latency execution: function selector decoding, quick syntax summaries, rapid EVM lookups.",
+    description: "Cost-efficient model for quick summaries, ABI explanations, and rapid EVM lookups.",
     badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     color: "#f59e0b"
   }
@@ -81,7 +73,7 @@ const ROLES = [
   {
     id: "carbon-auditor",
     name: "Carbon Security Auditor",
-    recommendedModel: "gemini-4-carbon",
+    recommendedModel: "gemini-3.8-flash",
     badge: "Formal CEI",
     icon: ShieldCheck,
     tagline: "Audits & Reentrancy Mitigation",
@@ -90,7 +82,7 @@ const ROLES = [
   {
     id: "argon-dapp-master",
     name: "Argon dApp Master",
-    recommendedModel: "gemini-4-argon",
+    recommendedModel: "gemini-3.8-flash",
     badge: "Full-Stack dApp",
     icon: Zap,
     tagline: "React 19 + Wagmi v2 Architecture",
@@ -108,7 +100,7 @@ const ROLES = [
   {
     id: "lite-synthesizer",
     name: "Lite Rapid Synthesizer",
-    recommendedModel: "gemini-3.1-flash-lite",
+    recommendedModel: "gemini-3.5-flash-lite",
     badge: "Instant Summary",
     icon: Cpu,
     tagline: "Low-Latency EVM Lookups",
@@ -155,7 +147,7 @@ export default function GeminiChatbotView({
     {
       id: "initial-welcome",
       role: "assistant",
-      content: "Hello! I am your multi-turn Gemini Web3 Assistant on Base L2. You can switch models between **Gemini 4 Carbon** (Deep Reasoning), **Gemini 4 Argon** (Complex Interactive), **Gemini 3.8 Flash** (General Tasks), and **Gemini 3.1 Flash Lite** (Ultra Fast). How can I assist your Web3 build today?",
+      content: "Hello! I am your multi-turn Gemini Web3 Assistant on Base L2. You can switch between Carbon and Argon role profiles powered by supported Gemini models, plus Gemini 3.7 Flash and Gemini 3.5 Flash-Lite. How can I assist your Web3 build today?",
       timestamp: Date.now(),
       modelUsed: "gemini-3.8-flash",
       roleName: "Flash Protocol Advisor"
@@ -251,7 +243,7 @@ export default function GeminiChatbotView({
         model: selectedModel,
         roleId: selectedRole.id,
         customSystemInstruction: systemInstruction,
-        thinkingLevel: selectedModel === "gemini-4-carbon" ? thinkingLevel : undefined
+        thinkingLevel: selectedRole.id === "carbon-auditor" && selectedModel === "gemini-3.8-flash" ? thinkingLevel : undefined
       });
 
       const assistantMessage: ChatMessageItem = {
@@ -524,7 +516,7 @@ export default function GeminiChatbotView({
               className="w-full p-2.5 rounded-lg bg-zinc-950 border border-white/10 text-xs font-mono text-zinc-200 focus:outline-none focus:border-brand-purple transition-colors resize-y"
               placeholder="Custom system instructions sent directly to Gemini with every turn..."
             />
-            {selectedModel === "gemini-4-carbon" && (
+            {selectedRole.id === "carbon-auditor" && selectedModel === "gemini-3.8-flash" && (
               <div className="flex items-center gap-3 pt-1 text-xs font-mono">
                 <span className="text-purple-300">Carbon Thinking Budget:</span>
                 {(["HIGH", "LOW", "MINIMAL"] as const).map(lvl => (

@@ -198,7 +198,7 @@ export default function UniversalWalletModal({
       walletType: newAddressType,
       balanceEth: parseFloat(initialEth) || 0.05,
       aglTokenBalance: parseFloat(initialAgl) || 100,
-      aglCredits: 200,
+      aglCredits: 0,
       isSmartAccount: newAddressType === "smart",
     });
 

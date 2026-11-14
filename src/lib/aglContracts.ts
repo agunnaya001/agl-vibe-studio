@@ -747,21 +747,14 @@ export async function disburseOnChainVentureTranche(
         weiAgl
       );
       const receipt = await tx.wait();
-      return {
-        txHash: receipt?.hash || tx.hash,
-        blockNumber: receipt?.blockNumber || 26450120
-      };
+      if (!receipt || receipt.status !== 1) throw new Error("Venture grant transaction was not confirmed.");
+      return { txHash: receipt.hash || tx.hash, blockNumber: receipt.blockNumber };
     } catch (e: any) {
-      console.warn("Direct contract execution fallback to signed state:", e?.message);
+      console.error("Venture grant transaction failed:", e?.message);
+      throw e;
     }
   }
-
-  // Realistic Base Mainnet transaction simulation
-  const randomHex = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-  return {
-    txHash: `0x${randomHex}`,
-    blockNumber: 26450000 + Math.floor(Math.random() * 1500)
-  };
+  throw new Error("No injected wallet provider is available. No venture grant transaction was submitted.");
 }
 
 /**
@@ -786,20 +779,13 @@ export async function coInvestTreasuryLiquidity(
         { value: weiEth }
       );
       const receipt = await tx.wait();
-      return {
-        txHash: receipt?.hash || tx.hash,
-        lpTokensAcquired: `${(matchingEthAmount * 420000).toLocaleString()} AGL-POL`,
-        blockNumber: receipt?.blockNumber || 26450145
-      };
+      if (!receipt || receipt.status !== 1) throw new Error("Treasury co-investment transaction was not confirmed.");
+      const event = receipt.logs.length ? "Transaction confirmed; LP output must be read from verified contract events." : "Transaction confirmed; no LP output event was returned.";
+      return { txHash: receipt.hash || tx.hash, lpTokensAcquired: event, blockNumber: receipt.blockNumber };
     } catch (e: any) {
-      console.warn("Direct liquidity execution fallback to signed state:", e?.message);
+      console.error("Treasury co-investment failed:", e?.message);
+      throw e;
     }
   }
-
-  const randomHex = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-  return {
-    txHash: `0x${randomHex}`,
-    lpTokensAcquired: `${(matchingEthAmount * 420000).toLocaleString()} AGL-POL`,
-    blockNumber: 26450000 + Math.floor(Math.random() * 1500)
-  };
+  throw new Error("No injected wallet provider is available. No co-investment transaction was submitted.");
 }

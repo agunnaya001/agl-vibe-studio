@@ -23,13 +23,6 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
     }
   };
 
-  const stats = [
-    { label: "Transactions Processed", value: "1,245,982" },
-    { label: "Contracts Generated", value: "24,852" },
-    { label: "TVL on Base", value: "$45.2M ETH" },
-    { label: "Active Builders", value: "8,410" },
-  ];
-
   const features = [
     {
       title: "AI Smart Contract Architect",
@@ -174,15 +167,6 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
           />
         </div>
 
-        {/* Live Chain stats widget */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-16">
-          {stats.map((s, idx) => (
-            <div key={idx} className="glass-panel p-4 rounded-xl border border-white/5 text-center">
-              <span className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-1">{s.label}</span>
-              <span className="block text-lg md:text-xl font-mono font-bold text-white tracking-tight">{s.value}</span>
-            </div>
-          ))}
-        </div>
       </header>
 
       {/* Bento Grid Features Showcase */}

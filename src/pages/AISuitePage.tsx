@@ -96,7 +96,7 @@ export default function AISuitePage({
       id: "chatbot" as const,
       name: "Gemini Chatbot",
       badge: "Multi-Turn Intelligence",
-      description: "Conversational reasoning with Gemini 4 Carbon, Argon, 3.8 Flash & 3.1 Flash Lite",
+      description: "Conversational reasoning with Carbon/Argon role profiles and supported Gemini models",
       icon: MessageSquare,
       color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10",
       activeTabClass: "bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-lg shadow-cyan-500/20",
@@ -115,7 +115,7 @@ export default function AISuitePage({
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-brand-purple/20 text-brand-purple border border-brand-purple/30 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                Gemini 3.7 Flash Engine
+                Gemini 3.8 Flash Engine
               </span>
               <span className="px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                 <Activity className="w-3 h-3" />
@@ -135,7 +135,7 @@ export default function AISuitePage({
           <div className="flex flex-wrap gap-2 shrink-0">
             <div className="p-3 rounded-2xl bg-zinc-900/80 border border-white/10 text-center min-w-[90px]">
               <div className="text-lg font-mono font-bold text-brand-purple">5</div>
-              <div className="text-[10px] text-zinc-400 uppercase font-semibold">AI Modules</div>
+              <div className="text-[10px] text-zinc-400 uppercase font-semibold">Core Modules</div>
             </div>
             <div className="p-3 rounded-2xl bg-zinc-900/80 border border-white/10 text-center min-w-[90px]">
               <div className="text-lg font-mono font-bold text-emerald-400">20+</div>

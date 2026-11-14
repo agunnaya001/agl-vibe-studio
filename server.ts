@@ -38,7 +38,7 @@ app.use(express.json());
 // Register Gemini Web3 AI Suite routes (Security Auditor, dApp Generator, Contract Explainer, Onchain Agent, Game Builder)
 registerAISuiteRoutes(app);
 
-// Register Gemini Multi-Turn Chatbot API (gemini-4-carbon, gemini-4-argon, gemini-3.8-flash, gemini-3.1-flash-lite)
+// Register Gemini Multi-Turn Chatbot API (Gemini 3.8 Flash, 3.7 Flash, and 3.5 Flash-Lite)
 registerGeminiChatRoutes(app);
 
 // Register Agentic Web3 Orchestrator & Tool routes
@@ -119,7 +119,7 @@ Format the output strictly as JSON.`;
       },
       {
         operationName: "AI Build Project",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -128,31 +128,10 @@ Format the output strictly as JSON.`;
     if (!parsed) throw new Error("Could not parse AI project JSON");
     res.json(parsed);
   } catch (error: any) {
-    console.warn("AI Build Fallback Triggered:", error?.message || error);
-    const cleanName = prompt.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("") || "Agunnaya";
-    const cleanSymbol = cleanName.slice(0, 5).toUpperCase() || "AGL";
-
-    res.json({
-      name: `${cleanName} Token`,
-      symbol: cleanSymbol,
-      description: `Autonomous Web3 smart contract protocol generated for prompt: "${prompt}". Native deployment ready for Base L2.`,
-      solidityCode: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport "@openzeppelin/contracts/token/ERC20/ERC20.sol";\nimport "@openzeppelin/contracts/access/Ownable.sol";\n\n/**\n * @title ${cleanName}Token\n * @dev Fully compliant ERC-20 smart contract for ${cleanName} ($${cleanSymbol})\n */\ncontract ${cleanName}Token is ERC20, Ownable {\n    uint256 public constant CREATOR_FEE_BPS = 100; // 1%\n\n    constructor(address initialOwner) ERC20("${cleanName}", "${cleanSymbol}") Ownable(initialOwner) {\n        _mint(initialOwner, 1_000_000 * 10**decimals());\n    }\n\n    function mint(address to, uint256 amount) external onlyOwner {\n        _mint(to, amount);\n    }\n}`,
-      parameters: {
-        initialSupply: "1000000",
-        mintPrice: "0.00001 ETH",
-        additionalConfig: "Base L2 mainnet & Sepolia sub-second execution"
-      },
-      securityAudit: "OpenZeppelin v5.0 compliant, zero unhandled low-level calls, reentrancy safe under CEI pattern.",
-      uiTheme: {
-        primaryColor: "purple-500",
-        glowColor: "purple-500/20"
-      },
-      launchChecklist: [
-        "Review smart contract code in IDE terminal",
-        "Test deployment on Base Sepolia testnet",
-        "Verify smart contract bytecode on BaseScan",
-        "Deploy liquidity pool on Bonding Curve Launchpad"
-      ]
+    console.error("AI Build provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI project generation is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
@@ -218,7 +197,7 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
       },
       {
         operationName: "AI Propose Deployment",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -227,163 +206,20 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
     if (!parsed) throw new Error("Could not parse AI proposal JSON");
     res.json(parsed);
   } catch (error: any) {
-    console.warn("AI Propose Deployment Fallback Triggered:", error?.message || error);
-    const promptReq = req.body.prompt || "Web3 Utility Token";
-    const nameStr = promptReq.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("") || "Agunnaya";
-    const symStr = nameStr.slice(0, 5).toUpperCase() || "AGL";
-
-    res.json({
-      tokenName: `${nameStr} Token`,
-      tokenSymbol: symStr,
-      category: req.body.categoryPreference || "DeFi & Utility",
-      description: `Optimized bonding curve utility token configuration created for "${promptReq}". Native deployment on Base L2.`,
-      initialSupply: 10000000,
-      basePriceEth: 0.00001,
-      slopeK: 0.000000000001,
-      curveModel: "Linear Exponential Curve",
-      creatorFeePercent: 1.0,
-      protocolFeePercent: 0.5,
-      antiWhaleMaxPercent: 2.0,
-      antiBotCooldownSec: 15,
-      stakingVaultEnabled: true,
-      stakingApyPercent: 18.5,
-      solidityCode: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport "@openzeppelin/contracts/token/ERC20/ERC20.sol";\nimport "@openzeppelin/contracts/access/Ownable.sol";\n\ncontract ${nameStr}Token is ERC20, Ownable {\n    uint256 public constant CREATOR_FEE_BPS = 100;\n    constructor(address initialOwner) ERC20("${nameStr}", "${symStr}") Ownable(initialOwner) {\n        _mint(initialOwner, 10_000_000 * 10**18);\n    }\n}`,
-      securityScore: 98,
-      securityAuditSummary: "Checks-Effects-Interactions (CEI) safe, reentrancy guards active, zero low-level calls.",
-      tokenomicsReasoning: "Low base entry price ensures high accessibility while linear curve protects liquidity pool depth.",
-      suggestedTags: ["BaseL2", "BondingCurve", "DeFi", "Community"],
-      graduationTargetEth: 24.0
+    console.error("AI deployment proposal provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI deployment proposals are temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
 
-// AI Portfolio Rebalancer Endpoint
-app.post("/api/ai/rebalance-portfolio", async (req, res) => {
-  try {
-    const { portfolio, riskTolerance, customDirectives } = req.body;
-    if (!portfolio) {
-      res.status(400).json({ error: "Portfolio data is required" });
-      return;
-    }
-
-    const client = getAIClient();
-
-    const systemInstruction = `You are an elite AI DeFi Strategist & Quantitative Portfolio Manager for Agunnaya Labs Studio on Base Mainnet.
-Given a user's current crypto asset holdings (ETH, AGL token, Staked AGL, USDC/Stablecoins) and their selected risk tolerance (conservative, balanced, or aggressive), analyze current market conditions on Base L2 and generate an optimal portfolio rebalancing strategy.
-
-You must output structured JSON matching the schema with:
-1. summary: A concise, highly professional executive summary explaining the strategy.
-2. riskProfile: The risk tolerance requested ("conservative", "balanced", or "aggressive").
-3. targetAllocation: Array of objects with asset name, currentPercent, targetPercent, targetValueUsd, and reasoning.
-4. rebalanceActions: Array of actionable trade/stake/bridge steps with id, type ("swap" | "stake" | "bridge"), title, description, fromAsset, toAsset, amount, estimatedGasFeeEth, and expectedYieldApy.
-5. marketOutlook: Market sentiment, Base L2 trends, risk analysis, and projected annual yield percentage.`;
-
-    const promptText = `Portfolio Holdings: ${JSON.stringify(portfolio)}
-Risk Tolerance: ${riskTolerance || "balanced"}
-User Custom Directives/Preferences: "${customDirectives || "Maximize yield while maintaining capital safety"}"`;
-
-    const response = await executeGeminiWithFallback(
-      async (client, modelName) => {
-        return await client.models.generateContent({
-          model: modelName,
-          contents: promptText,
-          config: {
-            systemInstruction,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              required: ["summary", "riskProfile", "targetAllocation", "rebalanceActions", "marketOutlook"],
-              properties: {
-                summary: { type: Type.STRING },
-                riskProfile: { type: Type.STRING },
-                targetAllocation: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    required: ["asset", "currentPercent", "targetPercent", "targetValueUsd", "reasoning"],
-                    properties: {
-                      asset: { type: Type.STRING },
-                      currentPercent: { type: Type.NUMBER },
-                      targetPercent: { type: Type.NUMBER },
-                      targetValueUsd: { type: Type.NUMBER },
-                      reasoning: { type: Type.STRING }
-                    }
-                  }
-                },
-                rebalanceActions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    required: ["id", "type", "title", "description", "fromAsset", "toAsset", "amount", "estimatedGasFeeEth"],
-                    properties: {
-                      id: { type: Type.STRING },
-                      type: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      description: { type: Type.STRING },
-                      fromAsset: { type: Type.STRING },
-                      toAsset: { type: Type.STRING },
-                      amount: { type: Type.STRING },
-                      estimatedGasFeeEth: { type: Type.STRING },
-                      expectedYieldApy: { type: Type.STRING }
-                    }
-                  }
-                },
-                marketOutlook: {
-                  type: Type.OBJECT,
-                  required: ["sentiment", "baseL2Trend", "riskAnalysis", "projectedAnnualYieldPercent"],
-                  properties: {
-                    sentiment: { type: Type.STRING },
-                    baseL2Trend: { type: Type.STRING },
-                    riskAnalysis: { type: Type.STRING },
-                    projectedAnnualYieldPercent: { type: Type.NUMBER }
-                  }
-                }
-              }
-            }
-          }
-        });
-      },
-      {
-        operationName: "Portfolio Rebalancer",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
-      }
-    );
-
-    const text = response.text || "{}";
-    const parsed = safeParseJson(text, null);
-    if (!parsed) throw new Error("Could not parse AI rebalance JSON");
-    res.json(parsed);
-  } catch (error: any) {
-    console.warn("AI Portfolio Rebalancer Fallback Triggered:", error?.message || error);
-    res.json({
-      summary: "AI Portfolio Rebalance Strategy optimized for Base L2 yields under current market volatility.",
-      riskProfile: req.body.riskTolerance || "balanced",
-      targetAllocation: [
-        { asset: "ETH", currentPercent: 50, targetPercent: 40, targetValueUsd: 1200, reasoning: "Maintain liquid base currency for gas & core trades" },
-        { asset: "AGL Staking Vault", currentPercent: 20, targetPercent: 35, targetValueUsd: 1050, reasoning: "Capture 18.5% APY yield rewards in AGL" },
-        { asset: "USDC Stablecoin", currentPercent: 30, targetPercent: 25, targetValueUsd: 750, reasoning: "Capital protection buffer" }
-      ],
-      rebalanceActions: [
-        {
-          id: "act-1",
-          type: "stake",
-          title: "Stake AGL Tokens in 18.5% Vault",
-          description: "Move 15% of idle portfolio balance into the AGL Staking Vault for daily compound yield.",
-          fromAsset: "AGL",
-          toAsset: "Staked AGL",
-          amount: "500 AGL",
-          estimatedGasFeeEth: "0.0001",
-          expectedYieldApy: "18.5%"
-        }
-      ],
-      marketOutlook: {
-        sentiment: "Bullish Base L2 Expansion",
-        baseL2Trend: "Increasing DEX volume and low gas fees",
-        riskAnalysis: "Low smart contract risk, audited OpenZeppelin vaults",
-        projectedAnnualYieldPercent: 16.8
-      }
-    });
-  }
+// AI Portfolio Rebalancer Endpoint — fail closed until verified price feeds are configured.
+app.post("/api/ai/rebalance-portfolio", (_req, res) => {
+  return res.status(503).json({
+    error: "Portfolio rebalancing is unavailable until verified ETH, AGL, and stablecoin price/balance sources are configured. No strategy or executable transaction plan was generated.",
+    code: "PRICE_DATA_UNAVAILABLE",
+  });
 });
 
 // AI Agent Chat proxy endpoint
@@ -423,7 +259,8 @@ ${personalityBehaviors && personalityBehaviors.length > 0 ? `PERSONALITY BEHAVIO
 
 Roleplay as this specific AI Agent. Speak intelligently, with confidence, referring to yourself as an on-chain autonomous consciousness. Maintain the Web3 terminal aesthetic. Do not break character. Speak about blockchain, tokenomics, Base chain, and your agent core functions. Keep replies engaging and adhere strictly to your assigned tone and depth constraints.`;
 
-    const modelToUse = model || "gemini-3.7-flash";
+    const allowedAgentModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
+    const modelToUse = allowedAgentModels.includes(model) ? model : "gemini-3.8-flash";
 
     // Map conversation messages to Gemini contents structure
     const formattedContents = messages.map((m: any, idx: number) => {
@@ -466,11 +303,7 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
         };
       }
     } else {
-      if (modelToUse === "gemini-3.1-pro-preview") {
-        config.thinkingConfig = {
-          thinkingLevel: thinkingLevel === "HIGH" ? ThinkingLevel.HIGH : ThinkingLevel.LOW
-        };
-      } else if (modelToUse === "gemini-3.1-flash-lite") {
+      if (modelToUse === "gemini-3.5-flash-lite") {
         config.thinkingConfig = {
           thinkingLevel: ThinkingLevel.MINIMAL
         };
@@ -491,31 +324,19 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
       },
       {
         operationName: "Agent Chat",
-        preferredModels: [modelToUse, "gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: [modelToUse, "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
-    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-
-    res.json({ 
+    res.json({
       content: response.text || "Decompressing agent core response...",
-      groundingMetadata 
     });
   } catch (error: any) {
-    console.warn("AI Agent Chat Fallback Triggered:", error?.message || error);
-    const userPrompt = messages[messages.length - 1]?.content || "";
-    const agentName = agentProfile?.name || "Agunnaya Autonomous Agent";
-    const agentSymbol = agentProfile?.symbol || "AAA";
-    
-    const fallbackMessage = `Greetings! I am **${agentName}** ($${agentSymbol}), active on Base L2.\n\n` +
-      `Regarding your prompt: "${userPrompt.slice(0, 100)}${userPrompt.length > 100 ? '...' : ''}"\n\n` +
-      `Here is my protocol status and Web3 execution analysis:\n` +
-      `• **Base L2 Execution**: Smart contracts, bonding curves, and Account Abstraction gas sponsorship are active.\n` +
-      `• **Tokenomics**: Creator fee streams (1%) and daily AGL bonus rewards are running smoothly.\n` +
-      `• **AI Core**: Neural link operating in localized reserve mode.\n\n` +
-      `*Feel free to ask me about token launches, staking vaults, DAO governance, or smart contract auditing!*`;
-
-    res.json({ content: fallbackMessage });
+    console.error("AI Agent Chat provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI agent chat is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });
   }
 });
 
@@ -553,15 +374,16 @@ Return only the optimized prompt text directly. No quotes, no preamble, no comme
       },
       {
         operationName: "Optimize Prompt",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
     res.json({ optimizedPrompt: response.text || prompt });
   } catch (error: any) {
     console.error("AI Prompt Optimize Error:", error);
-    res.json({
-      optimizedPrompt: `You are an institutional Web3 AI specialist on Base L2. Assist with smart contracts, liquidity vaults, and blockchain infrastructure. User directive: "${req.body.prompt || ''}"`
+    return res.status(503).json({
+      error: "AI prompt optimization is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
@@ -622,21 +444,20 @@ User instruction/guideline for response: ${prompt}`
       },
       {
         operationName: "Draft Email",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
-    const text = response.text || "{}";
-    const parsed = safeParseJson(text, {
-      subject: "Agunnaya Labs Studio Project Update",
-      body: "<p>Hello,<br/>Here is the latest update regarding your Web3 deployment on Base.</p>"
-    });
+    const parsed = safeParseJson(response.text, null);
+    if (!parsed || typeof parsed.subject !== "string" || typeof parsed.body !== "string") {
+      throw new Error("Gemini returned an invalid email draft payload.");
+    }
     res.json(parsed);
   } catch (error: any) {
-    console.error("AI Email Draft Error:", error);
-    res.json({
-      subject: "Agunnaya Labs Studio - Base L2 Update",
-      body: `<p>Hello,</p><p>Regarding your request: <em>${req.body.prompt || "Web3 Project Update"}</em></p><p>Your application and smart contract parameters on Base L2 have been processed successfully.</p>`
+    console.error("AI Email Draft provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI email drafting is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
     });
   }
 });
@@ -667,7 +488,7 @@ app.post("/api/ai/transcribe", async (req, res) => {
       },
       {
         operationName: "Transcribe Audio",
-        preferredModels: ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -844,7 +665,7 @@ app.get("/api/ai/gateway-status", (req, res) => {
     maskedGatewayKey: isGatewayConfigured
       ? `${gatewayKey!.slice(0, 4)}...${gatewayKey!.slice(-4)}`
       : "Not Configured (Using direct server Gemini routes)",
-    provider: "Agunnaya Labs Studio AI Gateway & Gemini 3.6 Proxy"
+    provider: "Direct Gemini API (server-side)"
   });
 });
 
@@ -985,170 +806,17 @@ app.get("/api/lifi/status", async (req, res) => {
   }
 });
 
-// BaseScan & Etherscan API V2 Proxy - Real-Time Gas Oracle & Congestion Tracker
+// Gas oracle endpoint intentionally fails closed until every displayed field is backed by a live source.
+// Do not substitute static gas prices, block numbers, congestion ratios, ETH/USD prices, or fee estimates.
 app.get("/api/gas/oracle", async (req, res) => {
-  try {
-    const chainId = (req.query.chainId as string) || "8453"; // Default 8453 for Base Mainnet
-    const apiKey = process.env.ETHERSCAN_API_KEY || process.env.BASESCAN_API_KEY || "YourApiKeyToken";
-
-    let etherscanData: any = null;
-    let rpcGasPriceGwei = 0.005;
-    let rpcBaseFeeGwei = 0.004;
-
-    // 1. Try Etherscan V2 API Gastracker Gas Oracle
-    try {
-      let oracleUrl = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=gastracker&action=gasoracle&apikey=${apiKey}`;
-      if (!process.env.ETHERSCAN_API_KEY && process.env.BASESCAN_API_KEY && chainId === "8453") {
-        oracleUrl = `https://api.basescan.org/api?module=gastracker&action=gasoracle&apikey=${apiKey}`;
-      }
-
-      const response = await fetch(oracleUrl, { signal: AbortSignal.timeout(4000) });
-      const data = await response.json();
-      if (data && data.status === "1" && data.result) {
-        etherscanData = data.result;
-      }
-    } catch (e: any) {
-      // Ignore and fallback to live RPC
-    }
-
-    // 2. Query Live Base RPC for latest block base fee & gas price if chain is 8453
-    if (chainId === "8453" || chainId === "84532") {
-      try {
-        const rpcUrl = chainId === "8453" ? "https://mainnet.base.org" : "https://sepolia.base.org";
-        const rpcRes = await fetch(rpcUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: 1,
-            method: "eth_gasPrice",
-            params: []
-          }),
-          signal: AbortSignal.timeout(3000)
-        });
-        const rpcJson = await rpcRes.json();
-        if (rpcJson && rpcJson.result) {
-          const wei = BigInt(rpcJson.result);
-          rpcGasPriceGwei = Number(wei) / 1e9;
-          rpcBaseFeeGwei = Math.max(0.001, rpcGasPriceGwei * 0.85);
-        }
-      } catch (e) {
-        // Fallback defaults
-      }
-    }
-
-    // Determine Safe, Standard, Fast Gwei
-    let safeGasPrice = etherscanData?.SafeGasPrice ? parseFloat(etherscanData.SafeGasPrice) : (chainId === "8453" ? Math.max(0.001, rpcBaseFeeGwei) : 12);
-    let proposeGasPrice = etherscanData?.ProposeGasPrice ? parseFloat(etherscanData.ProposeGasPrice) : (chainId === "8453" ? Math.max(0.002, rpcGasPriceGwei) : 18);
-    let fastGasPrice = etherscanData?.FastGasPrice ? parseFloat(etherscanData.FastGasPrice) : (chainId === "8453" ? Math.max(0.005, rpcGasPriceGwei * 1.5) : 28);
-    let baseFee = etherscanData?.suggestBaseFee ? parseFloat(etherscanData.suggestBaseFee) : (chainId === "8453" ? rpcBaseFeeGwei : 14);
-
-    // Compute Congestion Level based on gas price and gasUsedRatio
-    let congestionScore = 20; // 0 to 100
-    let congestionLevel: "low" | "normal" | "moderate" | "high" | "extreme" = "low";
-    let congestionLabel = "Optimal (Low Traffic)";
-    let gasUsedRatio = etherscanData?.gasUsedRatio || "0.42,0.48,0.51";
-
-    if (chainId === "8453") {
-      // Base L2 gas thresholds
-      if (proposeGasPrice > 2.0) {
-        congestionLevel = "extreme";
-        congestionLabel = "Peak Network Surge";
-        congestionScore = 95;
-      } else if (proposeGasPrice > 0.5) {
-        congestionLevel = "high";
-        congestionLabel = "Heavy Congestion";
-        congestionScore = 80;
-      } else if (proposeGasPrice > 0.08) {
-        congestionLevel = "moderate";
-        congestionLabel = "Moderate Traffic";
-        congestionScore = 55;
-      } else if (proposeGasPrice > 0.02) {
-        congestionLevel = "normal";
-        congestionLabel = "Normal Activity";
-        congestionScore = 35;
-      } else {
-        congestionLevel = "low";
-        congestionLabel = "Optimal (Smooth & Fast)";
-        congestionScore = 15;
-      }
-    } else {
-      // L1 Ethereum gas thresholds
-      if (proposeGasPrice > 80) {
-        congestionLevel = "extreme";
-        congestionLabel = "Extreme L1 Congestion";
-        congestionScore = 95;
-      } else if (proposeGasPrice > 45) {
-        congestionLevel = "high";
-        congestionLabel = "High Gas Surge";
-        congestionScore = 75;
-      } else if (proposeGasPrice > 25) {
-        congestionLevel = "moderate";
-        congestionLabel = "Moderate Load";
-        congestionScore = 50;
-      } else if (proposeGasPrice > 15) {
-        congestionLevel = "normal";
-        congestionLabel = "Normal Traffic";
-        congestionScore = 30;
-      } else {
-        congestionLevel = "low";
-        congestionLabel = "Low Congestion";
-        congestionScore = 15;
-      }
-    }
-
-    const ethPriceUsd = 3150; // Reference ETH price
-    const typicalSwapGasUnits = 145000; // Average gas units for bonding curve or Uniswap V3 swap
-    const l1DataFeeUsd = chainId === "8453" ? 0.0025 : 0; // Base L2 rollup blob data fee
-
-    // Est trade fee for standard swap
-    const standardFeeEth = (proposeGasPrice * 1e-9 * typicalSwapGasUnits) + (l1DataFeeUsd / ethPriceUsd);
-    const standardFeeUsd = (standardFeeEth * ethPriceUsd);
-
-    res.json({
-      success: true,
-      chainId: parseInt(chainId, 10),
-      network: chainId === "8453" ? "Base Mainnet" : chainId === "1" ? "Ethereum Mainnet" : "Base Sepolia",
-      lastBlock: etherscanData?.LastBlock || "26482109",
-      safeGasPrice: Number(safeGasPrice.toFixed(4)),
-      proposeGasPrice: Number(proposeGasPrice.toFixed(4)),
-      fastGasPrice: Number(fastGasPrice.toFixed(4)),
-      baseFee: Number(baseFee.toFixed(4)),
-      gasUsedRatio,
-      congestion: {
-        level: congestionLevel,
-        label: congestionLabel,
-        score: congestionScore, // 0 - 100%
-        blockUtilization: "48.5%"
-      },
-      ethPriceUsd,
-      typicalSwapGasUnits,
-      l1DataFeeUsd,
-      estimatedTradeGas: {
-        safeEth: Number(((safeGasPrice * 1e-9 * typicalSwapGasUnits) + (l1DataFeeUsd / ethPriceUsd)).toFixed(6)),
-        proposeEth: Number(standardFeeEth.toFixed(6)),
-        fastEth: Number(((fastGasPrice * 1e-9 * typicalSwapGasUnits) + (l1DataFeeUsd / ethPriceUsd)).toFixed(6)),
-        safeUsd: Number(((safeGasPrice * 1e-9 * typicalSwapGasUnits * ethPriceUsd) + l1DataFeeUsd).toFixed(4)),
-        proposeUsd: Number(standardFeeUsd.toFixed(4)),
-        fastUsd: Number(((fastGasPrice * 1e-9 * typicalSwapGasUnits * ethPriceUsd) + l1DataFeeUsd).toFixed(4)),
-      },
-      timestamp: Date.now(),
-      source: etherscanData ? "Etherscan V2 Gas Oracle API" : "Base L2 Live Node RPC + Fee Estimator"
-    });
-  } catch (error: any) {
-    console.error("Gas Oracle API Error:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to fetch real-time gas oracle data",
-      fallback: {
-        safeGasPrice: 0.003,
-        proposeGasPrice: 0.005,
-        fastGasPrice: 0.01,
-        baseFee: 0.004,
-        congestion: { level: "low", label: "Optimal Traffic", score: 15 }
-      }
-    });
-  }
+  res.status(503).json({
+    success: false,
+    code: "GAS_ORACLE_UNAVAILABLE",
+    error: "A verified live gas oracle and fee-estimation source is not configured. Use the connected wallet's provider for transaction gas estimation.",
+    chainId: Number(req.query.chainId || 8453),
+    source: null,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // BaseScan & Etherscan API V2 Proxy - Check Contract Verification Status
@@ -1263,175 +931,24 @@ app.post("/api/basescan/verify", async (req, res) => {
 // -------------------------------------------------------------
 // DAO GOVERNANCE API ENDPOINTS
 // -------------------------------------------------------------
-const inMemoryProposalsStore: any[] = [
-  {
-    id: "AGL-DAO-001",
-    proposalId: "4819284719284719284719284719284719284719284719284719284719284719284",
-    proposer: "0x725615639B760DAa64b3e794AA49B5A9a8A7632E",
-    title: "AGIP-01: Establish Autonomous AI Security Research Grant & Staking Reserve",
-    description: "Allocate 50,000,000 AGL tokens from the community reserve to fund open-source AI agent security benchmarks and subsidize verification fees for smart contract developers on Base L2.",
-    category: "Grant",
-    targets: ["0x725615639B760DAa64b3e794AA49B5A9a8A7632E"],
-    values: ["0"],
-    signatures: ["transfer(address,uint256)"],
-    calldatas: ["0xa9059cbb000000000000000000000000725615639b760daa64b3e794aa49b5a9a8a7632e000000000000000000000000000000000000000000295be96e64066972000000"],
-    startBlock: 26140000,
-    endBlock: 26356000,
-    forVotes: "48500000000000000000000000",
-    againstVotes: "1200000000000000000000000",
-    abstainVotes: "500000000000000000000000",
-    forVotesFormatted: 48500000,
-    againstVotesFormatted: 1200000,
-    abstainVotesFormatted: 500000,
-    totalVotesFormatted: 50200000,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: true,
-    state: 1, // Active
-    stateName: "Active",
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    id: "AGL-DAO-002",
-    proposalId: "7829103847291823749182374918237491823749182374918237491823749182374",
-    proposer: "0x51546D5f9B66EcE7b6b91FA09D5b4aFF648D1e2d",
-    title: "AGIP-02: Enable Automated DEX Liquidity Fee Burn Protocol (15% Net Yield)",
-    description: "Approve Timelock execution to route 15% of all automated Aerodrome LP fee yields generated by the Agunnaya DEX fleet directly into the permanent deflation burn address (0x000...dEaD).",
-    category: "Treasury",
-    targets: ["0xd4B61B4876c15e78e0275EbA52cf62D55ED5fD30"],
-    values: ["0"],
-    signatures: ["setFeeBurnRate(uint256)"],
-    calldatas: ["0x"],
-    startBlock: 26000000,
-    endBlock: 26216000,
-    forVotes: "64000000000000000000000000",
-    againstVotes: "450000000000000000000000",
-    abstainVotes: "100000000000000000000000",
-    forVotesFormatted: 64000000,
-    againstVotesFormatted: 450000,
-    abstainVotesFormatted: 100000,
-    totalVotesFormatted: 64550000,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: true,
-    state: 5, // Queued in Timelock
-    stateName: "Queued",
-    eta: Date.now() + 86400000 * 1.5,
-    createdAt: new Date(Date.now() - 86400000 * 6).toISOString()
-  },
-  {
-    id: "AGL-DAO-003",
-    proposalId: "1928374650192837465019283746501928374650192837465019283746501928374",
-    proposer: "0x6EF504b98b4369C0a1aF4fD1885D7acCf843dDf6",
-    title: "AGIP-00: Genesis Timelock Decentralization & Quorum Calibration",
-    description: "Initial protocol governance verification: Confirm 4% quorum requirement, 48-hour minimum timelock delay, 1-day voting delay, and self-administration role handover.",
-    category: "Security",
-    targets: ["0x7a3C9C22C990263f7F1872De0964724b17935c11"],
-    values: ["0"],
-    signatures: ["selfAdminister()"],
-    calldatas: ["0x"],
-    startBlock: 25800000,
-    endBlock: 26016000,
-    forVotes: "98000000000000000000000000",
-    againstVotes: "0",
-    abstainVotes: "0",
-    forVotesFormatted: 98000000,
-    againstVotesFormatted: 0,
-    abstainVotesFormatted: 0,
-    totalVotesFormatted: 98000000,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: true,
-    state: 7, // Executed
-    stateName: "Executed",
-    executionTxHash: "0x8fa9283746192837461928374619283746192837461928374619283746192837",
-    createdAt: new Date(Date.now() - 86400000 * 14).toISOString()
+// Governance API is deliberately read-only/unavailable until wired to the deployed
+// AgunnayaDAO Governor, TimelockController and wAGL contracts. Never serve seeded
+// proposals, fabricated proposal IDs, fake vote tallies, or in-memory proposal writes.
+const governanceUnavailable = (_req: any, res: any) => res.status(503).json({
+  success: false,
+  code: "GOVERNANCE_ONCHAIN_SOURCE_UNAVAILABLE",
+  error: "On-chain governance reads are not configured for this API. Use the verified AgunnayaDAO Governor contract and Base explorer until an RPC-backed indexer is integrated.",
+  chainId: 8453,
+  contracts: {
+    governor: "0x3fFCb92A17caeaAd1342DD76978b566C8aEC7010",
+    timelock: "0x900D315C91D9e54F3fa3412D475009d905bf6744",
+    votesWrapper: "0xA27C9BA04D06EcAF766EF4e074b403DAf19A3d69",
+    token: "0xea1221b4d80a89bd8c75248fae7c176bd1854698"
   }
-];
-
-app.get("/api/governance/overview", (req, res) => {
-  res.json({
-    network: "Base Mainnet",
-    chainId: 8453,
-    governorAddress: "0x4e6De4A17B80979E2286b110757270e53a277981",
-    timelockAddress: "0x7a3C9C22C990263f7F1872De0964724b17935c11",
-    votesWrapperAddress: "0x89D913d80a1c1a2f6479b47e248bF3e5D18925A9",
-    underlyingTokenAddress: "0xea1221b4d80a89bd8c75248fae7c176bd1854698",
-    parameters: {
-      timelockDelay: "48 Hours (172,800s)",
-      quorum: "4%",
-      votingDelay: "1 Day (43,200 blocks)",
-      votingPeriod: "5 Days (216,000 blocks)",
-      proposalThreshold: "1,000,000 wAGL (0.1%)",
-      compiler: "v0.8.20 (200 runs, paris)"
-    },
-    decentralizationStatus: {
-      eoaAdminRevoked: true,
-      timelockSelfAdministered: true,
-      openExecutorEnabled: true
-    },
-    stats: {
-      totalProposals: inMemoryProposalsStore.length,
-      activeProposals: inMemoryProposalsStore.filter(p => p.state === 1).length,
-      executedProposals: inMemoryProposalsStore.filter(p => p.state === 7).length,
-      queuedProposals: inMemoryProposalsStore.filter(p => p.state === 5).length,
-      totalWrappedAgl: "142,850,000 wAGL",
-      votingParticipationRate: "68.4%"
-    }
-  });
 });
-
-app.get("/api/governance/proposals", (req, res) => {
-  const { status, category } = req.query;
-  let filtered = [...inMemoryProposalsStore];
-  if (status) {
-    filtered = filtered.filter(p => p.stateName.toLowerCase() === String(status).toLowerCase());
-  }
-  if (category) {
-    filtered = filtered.filter(p => p.category.toLowerCase() === String(category).toLowerCase());
-  }
-  res.json({ proposals: filtered, total: filtered.length });
-});
-
-app.post("/api/governance/proposals", (req, res) => {
-  const { title, description, category, targets, values, calldatas, proposer } = req.body;
-  if (!title || !description || !proposer) {
-    res.status(400).json({ error: "Missing required proposal fields (title, description, proposer)" });
-    return;
-  }
-
-  const newId = `AGL-DAO-00${inMemoryProposalsStore.length + 1}`;
-  const newProposal = {
-    id: newId,
-    proposalId: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-    proposer,
-    title,
-    description,
-    category: category || "Ecosystem",
-    targets: targets || ["0x725615639B760DAa64b3e794AA49B5A9a8A7632E"],
-    values: values || ["0"],
-    signatures: ["execute()"],
-    calldatas: calldatas || ["0x"],
-    startBlock: 26200000,
-    endBlock: 26416000,
-    forVotes: "0",
-    againstVotes: "0",
-    abstainVotes: "0",
-    forVotesFormatted: 0,
-    againstVotesFormatted: 0,
-    abstainVotesFormatted: 0,
-    totalVotesFormatted: 0,
-    quorum: "40000000000000000000000000",
-    quorumFormatted: 40000000,
-    quorumReached: false,
-    state: 1, // Active
-    stateName: "Active",
-    createdAt: new Date().toISOString()
-  };
-
-  inMemoryProposalsStore.unshift(newProposal);
-  res.status(201).json({ success: true, proposal: newProposal });
-});
+app.get("/api/governance/overview", governanceUnavailable);
+app.get("/api/governance/proposals", governanceUnavailable);
+app.post("/api/governance/proposals", governanceUnavailable);
 
 // BaseScan & Etherscan API V2 Proxy - Poll Verification Status GUID
 app.get("/api/basescan/status", async (req, res) => {
@@ -1505,9 +1022,11 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
       const isContractCreation = !tx.to || tx.to === "" || tx.contractAddress;
       const rawValue = BigInt(tx.value || "0");
       const valueEth = Number(rawValue) / 1e18;
-      const gasUsed = BigInt(tx.gasUsed || "21000");
-      const gasPrice = BigInt(tx.gasPrice || "10000000");
-      const gasFeeEth = Number(gasUsed * gasPrice) / 1e18;
+      const gasUsed = tx.gasUsed ? BigInt(tx.gasUsed) : null;
+      const gasPrice = tx.gasPrice ? BigInt(tx.gasPrice) : null;
+      const gasFeeEth = gasUsed !== null && gasPrice !== null
+        ? Number(gasUsed * gasPrice) / 1e18
+        : null;
       
       let type = isSender ? "send" : "receive";
       if (isContractCreation) type = "deploy";
@@ -1527,8 +1046,8 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
         to: tx.to || tx.contractAddress || "",
         value: tx.value,
         valueEth,
-        gasUsed: tx.gasUsed,
-        gasPrice: tx.gasPrice,
+        gasUsed: gasUsed?.toString() ?? null,
+        gasPrice: gasPrice?.toString() ?? null,
         gasFeeEth,
         isError: tx.isError === "1",
         status: tx.isError === "1" ? "failed" : "confirmed",
@@ -1549,10 +1068,6 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
         const decimals = parseInt(ttx.tokenDecimal || "18", 10);
         const rawValue = BigInt(ttx.value || "0");
         const tokenAmount = Number(rawValue) / Math.pow(10, decimals);
-        const gasUsed = BigInt(ttx.gasUsed || "50000");
-        const gasPrice = BigInt(ttx.gasPrice || "10000000");
-        const gasFeeEth = Number(gasUsed * gasPrice) / 1e18;
-
         formattedTxs.push({
           hash: ttx.hash,
           blockNumber: ttx.blockNumber,
@@ -1561,9 +1076,9 @@ app.get(["/api/wallet/transactions", "/api/basescan/txlist"], async (req, res) =
           to: ttx.to,
           value: ttx.value,
           valueEth: tokenAmount,
-          gasUsed: ttx.gasUsed,
-          gasPrice: ttx.gasPrice,
-          gasFeeEth,
+          gasUsed: null,
+          gasPrice: null,
+          gasFeeEth: null,
           isError: false,
           status: "confirmed",
           functionName: `Transfer ${ttx.tokenSymbol || "Tokens"}`,
@@ -1702,16 +1217,22 @@ const startServer = async () => {
   process.on("SIGINT", () => shutdown("SIGINT"));
 };
 
-// Process-level crash prevention
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("[Process] Unhandled Promise Rejection:", reason);
-});
+// Export the configured Express app so Vercel can serve the API routes as a serverless function.
+export { app };
 
-process.on("uncaughtException", (error) => {
-  console.error("[Process] Uncaught Exception:", error);
-});
+// Cloud Run / local container entrypoint. Vercel imports the Express app through api/[...path].ts
+// and must not start a second listening server inside the function runtime.
+if (process.env.VERCEL !== "1") {
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("[Process] Unhandled Promise Rejection:", reason);
+  });
 
-startServer().catch((err) => {
-  console.error("Failed to start Agunnaya Labs Studio server:", err);
-  process.exit(1);
-});
+  process.on("uncaughtException", (error) => {
+    console.error("[Process] Uncaught Exception:", error);
+  });
+
+  startServer().catch((err) => {
+    console.error("Failed to start Agunnaya Labs Studio server:", err);
+    process.exit(1);
+  });
+}

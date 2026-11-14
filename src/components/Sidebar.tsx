@@ -138,13 +138,7 @@ export default function Sidebar({
     { id: "ecosystem-dashboard", label: "Ecosystem Analytics", icon: BarChart3, category: "Ecosystem Layer", description: "Verified On-Chain & Studio Metrics" },
     { id: "developer-sdk", label: "Developer SDK & APIs", icon: Code2, category: "Ecosystem Layer", description: "TypeScript SDK & REST Documentation" },
     { id: "ai-suite", label: "Gemini AI Suite Hub", icon: Sparkles, category: "Gemini Web3 AI Suite", highlight: true, description: "All 5 AI Web3 Workspaces" },
-    { id: "gemini-chat", label: "Gemini AI Chatbot", icon: MessageSquare, category: "Gemini Web3 AI Suite", highlight: true, description: "Multi-Turn Roles: Carbon, Argon, Flash" },
-    { id: "ai-security-auditor", label: "AI Security Auditor", icon: ShieldCheck, category: "Gemini Web3 AI Suite", highlight: true, description: "Solidity Auditing & CEI Checks" },
-    { id: "ai-dapp-generator", label: "AI dApp Generator", icon: Zap, category: "Gemini Web3 AI Suite", highlight: true, description: "Prompt to Full-Stack Web3" },
-    { id: "ai-contract-explainer", label: "Contract Explainer", icon: BrainCircuit, category: "Gemini Web3 AI Suite", description: "ABI, Functions & Interactive Q&A" },
-    { id: "ai-onchain-agent", label: "Onchain AI Agent", icon: Bot, category: "Gemini Web3 AI Suite", highlight: true, description: "Base L2 Autonomous Assistant" },
-    { id: "autonomous-agents", label: "Autonomous AI Agents", icon: Cpu, category: "Gemini Web3 AI Suite", highlight: true, description: "Self-Executing Treasury Agents" },
-    { id: "ai-game-builder", label: "Web3 Game Builder", icon: Gamepad2, category: "Gemini Web3 AI Suite", highlight: true, description: "Verifiable VRF & Playable Arena" },
+    { id: "autonomous-agents", label: "Autonomous AI Agents", icon: Cpu, category: "Gemini Web3 AI Suite", highlight: true, description: "Agent workspace — execution gated pending secure on-chain approval" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace", description: "Personal Activity & Assets" },
     { id: "task-sync", label: "TaskSync", icon: Clock, category: "Workspace", description: "Automated On-Chain Cron Tasks" },
     { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", description: "Prompt to Solidity Generator" },
@@ -159,7 +153,6 @@ export default function Sidebar({
     { id: "gamefi", label: "Arena Gaming & PvP Hub", icon: Gamepad2, category: "Assets & Creation", highlight: true, description: "Champion NFTs, Marketplace & PvP" },
     { id: "ai-agents", label: "AI Agent Studio", icon: Bot, category: "Assets & Creation", description: "Deploy AI Web3 Assistants" },
     { id: "defi", label: "Staking & Swaps", icon: Coins, category: "DeFi Tools", description: "DeFi Liquidity Swaps" },
-    { id: "staking-vault", label: "Automated Staking Vaults", icon: Landmark, category: "DeFi Tools", highlight: true, description: "Earn Passive Staking Rewards" },
     { id: "token-burner", label: "ERC-20 Token Burner", icon: Flame, category: "DeFi Tools", highlight: true, description: "Deflationary Token Burning" },
     { id: "batch-transfer", label: "Batch Multi-Send", icon: Send, category: "DeFi Tools", highlight: true, description: "Airdrop Multi-Send Engine" },
     { id: "treasury-monitor", label: "Treasury Fee Auto-Sweep", icon: Building2, category: "DeFi Tools", highlight: true, description: "Treasury Auto-Sweep Rules" },
@@ -193,7 +186,6 @@ export default function Sidebar({
     "crosschain-routes",
     "token-factory",
     "governance",
-    "staking-vault",
     "gas-dashboard"
   ];
 

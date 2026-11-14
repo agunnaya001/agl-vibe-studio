@@ -13,7 +13,7 @@ import { useEIP6963 } from "./useEIP6963";
 import { EIP6963ProviderDetail } from "../types/eip6963";
 import { AgunnayaDatabase } from "../lib/db";
 import { WalletState } from "../types";
-import { BASE_MAINNET, isBaseMainnet } from "../lib/chains";
+import { BASE_MAINNET, getChainConfig, isBaseMainnet } from "../lib/chains";
 import { AGL_TOKEN_ADDRESS } from "../lib/aglContracts";
 import { isWalletConnectConfigured } from "../lib/wagmi";
 
@@ -32,10 +32,7 @@ export function useAGLWallet() {
   const { providers: eip6963Providers, hasProviders, rescan } = useEIP6963();
 
   // Native ETH balance query via Wagmi
-  const { data: balanceData, refetch: refetchBalance } = useBalance({
-    address,
-    chainId: 8453, // Base Mainnet
-  });
+  const { data: balanceData, refetch: refetchBalance } = useBalance({ address });
 
   // Local state for AGL Token & Credits
   const [aglTokenBalance, setAglTokenBalance] = useState<number>(() => {
@@ -59,16 +56,11 @@ export function useAGLWallet() {
 
   // Sync with on-chain Base Mainnet AGL token contract & Database
   const syncOnChainBalances = useCallback(async (walletAddr: string) => {
-    if (!walletAddr || !ethers.isAddress(walletAddr)) return;
+    if (!walletAddr || !ethers.isAddress(walletAddr) || chainId !== BASE_MAINNET.id) return;
 
     setIsSyncingOnChain(true);
     try {
-      // Connect to Base Mainnet public RPC provider
-      const provider = new ethers.JsonRpcProvider("https://mainnet.base.org");
-      
-      // Native ETH
-      const rawEth = await provider.getBalance(walletAddr);
-      const formattedEth = parseFloat(ethers.formatEther(rawEth));
+      const provider = new ethers.JsonRpcProvider(BASE_MAINNET.rpcUrls.default.http[0]);
 
       // AGL Token Balance
       let fetchedAgl = 0;
@@ -92,7 +84,6 @@ export function useAGLWallet() {
         ...dbWallet,
         address: walletAddr,
         isConnected: true,
-        balanceEth: formattedEth,
         aglTokenBalance: fetchedAgl,
         walletType: (connector?.id as any) || "metamask",
       };
@@ -103,7 +94,7 @@ export function useAGLWallet() {
     } finally {
       setIsSyncingOnChain(false);
     }
-  }, [connector?.id]);
+  }, [chainId, connector?.id]);
 
   // Trigger sync on account change
   useEffect(() => {
@@ -120,7 +111,7 @@ export function useAGLWallet() {
         });
       }
     }
-  }, [isConnected, address, syncOnChainBalances, refetchBalance]);
+  }, [isConnected, address, chainId, syncOnChainBalances, refetchBalance]);
 
   // Connect specific EIP-6963 provider or standard connector
   const connectWithProvider = useCallback(async (detail: EIP6963ProviderDetail) => {
@@ -254,7 +245,7 @@ export function useAGLWallet() {
     
     // Network State
     chainId,
-    chainName: isBase ? "Base Mainnet" : chainId === 84532 ? "Base Sepolia" : "Other EVM",
+    chainName: getChainConfig(chainId)?.badgeLabel ?? `Unsupported EVM (${chainId})`,
     isBaseNetwork: isBase,
     
     // Balances

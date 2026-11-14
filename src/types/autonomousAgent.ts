@@ -34,7 +34,7 @@ export interface GovernanceConfig {
 
 export interface AgentTreasuryWallet {
   treasuryAddress: string;
-  walletType: "smart_contract" | "derived_key" | "safe_multisig";
+  walletType: "smart_contract" | "derived_key" | "safe_multisig" | "not_deployed";
   ethBalance: number;
   aglBalance: number;
   tokenBalances: Record<string, { symbol: string; balance: number; usdValue: number }>;

@@ -11,7 +11,7 @@ export function registerServiceWorker(
   onOffline?: () => void,
   onOnline?: () => void
 ): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || import.meta.env.DEV) return;
 
   const isSupported = "serviceWorker" in navigator;
   let status: ServiceWorkerStatus = {
@@ -19,7 +19,7 @@ export function registerServiceWorker(
     isSupported,
     isOnline: navigator.onLine,
     cacheCount: 0,
-    cacheName: "agunnaya-studio-v1"
+    cacheName: "agunnaya-studio-v2"
   };
 
   const updateStatus = (partial: Partial<ServiceWorkerStatus>) => {
@@ -98,11 +98,11 @@ export function queryCacheStatus(callback: (cachedCount: number, cacheName: stri
             });
           });
         } else {
-          callback(0, "agunnaya-studio-v1");
+          callback(0, "agunnaya-studio-v2");
         }
       });
     } else {
-      callback(0, "agunnaya-studio-v1");
+      callback(0, "agunnaya-studio-v2");
     }
     return;
   }

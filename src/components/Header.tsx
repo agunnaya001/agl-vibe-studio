@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Wallet, Coins, RefreshCw, Layers, Database, Search, X, Bot, Palette, Cloud, CloudOff, Menu, AlertTriangle, Clock, ShieldAlert, ArrowRightLeft, Share2, Compass, Store, History } from "lucide-react";
 import { WalletState, Token, NFTCollection, AIAgent } from "../types";
 import { AuthHealthState } from "../lib/authSyncService";
-import { ensureCorrectChain, getChainNameFromId } from "../lib/tokenFactory";
 import { aglSdk } from "../lib/aglSdk";
+import NetworkSwitcher from "./NetworkSwitcher";
 import ImageWithFallback from "./ImageWithFallback";
 import OfflineIndicator from "./OfflineIndicator";
 import ThemeToggle from "./ThemeToggle";
@@ -15,8 +15,6 @@ interface HeaderProps {
   onOpenConnect: () => void;
   onDisconnect: () => void;
   onFundWallet: () => void;
-  network: "mainnet" | "sepolia";
-  setNetwork: (network: "mainnet" | "sepolia") => void;
   tokens: Token[];
   nfts: NFTCollection[];
   agents: AIAgent[];
@@ -36,8 +34,6 @@ export default function Header({
   onOpenConnect, 
   onDisconnect, 
   onFundWallet, 
-  network, 
-  setNetwork,
   tokens = [],
   nfts = [],
   agents = [],
@@ -57,32 +53,8 @@ export default function Header({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [currentChainId, setCurrentChainId] = useState<number | null>(null);
   const [showRecentTxModal, setShowRecentTxModal] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-
-  // Monitor connected wallet chain ID
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).ethereum) {
-      const ethereum = (window as any).ethereum;
-
-      const updateChain = () => {
-        if (ethereum.chainId) {
-          setCurrentChainId(parseInt(ethereum.chainId, 16));
-        }
-      };
-
-      updateChain();
-
-      ethereum.on?.("chainChanged", (hexChainId: string) => {
-        setCurrentChainId(parseInt(hexChainId, 16));
-      });
-
-      return () => {
-        ethereum.removeListener?.("chainChanged", updateChain);
-      };
-    }
-  }, [wallet.isConnected]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -160,31 +132,7 @@ export default function Header({
           <div className="h-4 w-px bg-white/10"></div>
         </div>
 
-        {/* Network Switcher */}
-        <div className="flex items-center gap-1 bg-black/50 p-1 rounded-lg border border-white/10 text-xs font-mono">
-          <button
-            id="switch-network-mainnet"
-            onClick={() => setNetwork("mainnet")}
-            className={`px-3 py-1 rounded-md transition-all ${
-              network === "mainnet"
-                ? "bg-[#0052FF] text-white shadow-[0_0_15px_rgba(0,82,255,0.4)] font-bold text-[11px]"
-                : "text-zinc-500 hover:text-zinc-200 text-[11px]"
-            }`}
-          >
-            Base Mainnet
-          </button>
-          <button
-            id="switch-network-sepolia"
-            onClick={() => setNetwork("sepolia")}
-            className={`px-3 py-1 rounded-md transition-all ${
-              network === "sepolia"
-                ? "bg-brand-purple text-white shadow-[0_0_15px_rgba(139,92,246,0.4)] font-bold text-[11px]"
-                : "text-zinc-500 hover:text-zinc-200 text-[11px]"
-            }`}
-          >
-            Sepolia Sandbox
-          </button>
-        </div>
+        <NetworkSwitcher className="shrink-0" />
 
         {/* Live Gas Monitor */}
         <button
@@ -193,7 +141,7 @@ export default function Header({
           className="hidden md:flex items-center gap-2 text-zinc-500 hover:text-brand-purple hover:bg-white/5 px-2 py-1 rounded-md transition-all text-xs font-mono group"
         >
           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981] group-hover:bg-brand-purple group-hover:shadow-[0_0_8px_rgba(139,92,246,0.6)]"></span>
-          <span className="text-[10px] font-bold">GAS: 0.01 gwei</span>
+          <span className="text-[10px] font-bold">Open gas estimates</span>
         </button>
 
         {/* Offline & Service Worker Status Indicator */}

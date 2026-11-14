@@ -63,10 +63,8 @@ export default function AGLPollsGovernanceComponent({
       return;
     }
 
-    // Voting weight equals user's AGL balance + Staked AGL balance (min 1 vote weight for preview)
-    const userAglBalance = wallet.aglTokenBalance || 0;
-    const userStakedAgl = wallet.aglLiquidityStaked || 0;
-    const voteWeight = Math.max(1000, userAglBalance + userStakedAgl);
+    // Off-chain poll weight uses the wallet AGL balance shown in the app; it is not Governor voting power.
+    const voteWeight = wallet.aglTokenBalance || 0;
 
     setIsVoting(true);
 
@@ -79,9 +77,9 @@ export default function AGLPollsGovernanceComponent({
 
         const chosenOption = updatedPoll.options.find(o => o.id === selectedOptionId);
         if (addTerminalLog) {
-          addTerminalLog("success", `AGL Poll Vote Cast! Voted ${voteWeight.toLocaleString()} $AGL weight on "${chosenOption?.label}" in "${updatedPoll.title}"`);
+          addTerminalLog("success", `Off-chain poll vote recorded with ${voteWeight.toLocaleString()} displayed AGL weight on "${chosenOption?.label}" in "${updatedPoll.title}"`);
         }
-        showToast(`Cast ${voteWeight.toLocaleString()} $AGL vote on "${chosenOption?.label}"!`, "success");
+        showToast(`Recorded an off-chain poll vote using ${voteWeight.toLocaleString()} displayed AGL weight on "${chosenOption?.label}".`, "success");
       } catch (err: any) {
         setIsVoting(false);
         showToast(`Failed to cast vote: ${err.message}`, "error");
@@ -128,7 +126,7 @@ export default function AGLPollsGovernanceComponent({
     }
   };
 
-  const votingWeight = Math.max(1000, (wallet.aglTokenBalance || 0) + (wallet.aglLiquidityStaked || 0));
+  const votingWeight = wallet.aglTokenBalance || 0;
 
   return (
     <div id="agl-polls-governance-container" className="space-y-6 animate-fade-in font-sans">
@@ -138,18 +136,21 @@ export default function AGLPollsGovernanceComponent({
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-brand-purple font-mono text-[10px] font-bold uppercase tracking-widest">
+            <div className="flex flex-col items-start gap-2 text-brand-purple font-mono text-[10px] font-bold uppercase tracking-widest sm:flex-row sm:items-center">
               <Vote className="w-4 h-4 text-brand-purple" />
-              <span>Agunnaya On-Chain DAO Governance & Pair Voting</span>
+              <span>Community Polls · Nonbinding · Off-Chain</span>
+              <p className="text-xs text-zinc-400 max-w-2xl">
+                These are nonbinding community polls. They do not submit proposals to the AgunnayaDAO Governor, lock AGL, or represent on-chain voting power.
+              </p>
             </div>
             <h2 className="text-2xl lg:text-3xl font-display font-bold text-white flex items-center gap-3">
               AGL Liquidity & Protocol Polls
               <span className="text-xs font-mono font-bold bg-brand-purple/20 text-purple-300 border border-brand-purple/30 px-2.5 py-1 rounded-full">
-                WEIGHT: {votingWeight.toLocaleString()} $AGL
+                NONBINDING · DISPLAYED WEIGHT: {votingWeight.toLocaleString()} AGL
               </span>
             </h2>
             <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">
-              Vote on live AGL liquidity pair additions, protocol fee splits, and AI agent grants using your $AGL token and staked LP balances.
+              Share off-chain feedback on protocol ideas. Poll weight uses the displayed AGL wallet balance only; it is not Governor voting power and does not include staked LP balances.
             </p>
           </div>
 
@@ -159,7 +160,7 @@ export default function AGLPollsGovernanceComponent({
               onClick={() => setShowCreateModal(true)}
               className="px-4 py-2.5 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-2 shadow-lg shadow-brand-purple/20 cursor-pointer"
             >
-              <Plus className="w-4 h-4" /> Create AGL Poll
+              <Plus className="w-4 h-4" /> Create Community Poll
             </button>
             <button
               id="btn-refresh-polls"
@@ -181,7 +182,7 @@ export default function AGLPollsGovernanceComponent({
             <span className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-brand-purple" /> Active AGL Polls ({polls.length})
             </span>
-            <span>Your Vote Power: {votingWeight.toLocaleString()} $AGL</span>
+            <span>Displayed AGL weight: {votingWeight.toLocaleString()} AGL</span>
           </div>
 
           <div className="space-y-3">
@@ -258,7 +259,7 @@ export default function AGLPollsGovernanceComponent({
               {/* Options List with Live Tally Percentage Bars */}
               <div className="space-y-3">
                 <label className="text-xs font-mono font-bold uppercase text-zinc-400 block">
-                  Select Poll Option & Vote:
+                  Select an option (off-chain poll vote):
                 </label>
 
                 {selectedPoll.options.map((opt) => {
@@ -314,7 +315,7 @@ export default function AGLPollsGovernanceComponent({
               {/* Vote Submit Action */}
               <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5 space-y-3">
                 <div className="flex justify-between items-center text-xs font-mono text-zinc-400">
-                  <span>Voting Weight (AGL + Staked):</span>
+                  <span>App poll weight (displayed AGL balance):</span>
                   <span className="font-bold text-emerald-400">{votingWeight.toLocaleString()} $AGL</span>
                 </div>
 
@@ -325,11 +326,11 @@ export default function AGLPollsGovernanceComponent({
                 >
                   {isVoting ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Recording On-Chain Vote...
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Recording Off-Chain Poll Vote...
                     </>
                   ) : (
                     <>
-                      <Vote className="w-4 h-4" /> Cast On-Chain Vote
+                      <Vote className="w-4 h-4" /> Record Off-Chain Poll Vote
                     </>
                   )}
                 </button>

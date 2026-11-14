@@ -31,14 +31,6 @@ export interface CreditValidationResult {
 }
 
 /**
- * Grants free computational developer credits to the user's active wallet and sub-account.
- */
-export function grantFreeCredits(amount: number = 500, reason: string = "Developer Faucet"): number {
-  const updatedWallet = AgunnayaDatabase.claimStarterCredits(amount);
-  return updatedWallet.aglCredits || 0;
-}
-
-/**
  * Validates whether the user has sufficient computational credits before launching an AI generation.
  * - If insufficient: returns success=false, displays a prominent error toast, logs to terminal, triggers modal if available.
  * - If sufficient: deducts credits immediately, saves wallet state, alerts if credits are low, and provides a refund callback.
@@ -88,17 +80,17 @@ export function validateAndConsumeCredits({
   AgunnayaDatabase.saveWallet(updatedWallet);
   onRefreshWallet();
 
-  showToast(`Consumed ${requiredCredits} AGL Credits for ${featureName}`, "info");
+  showToast(`Used ${requiredCredits} local prototype credits for ${featureName}`, "info");
 
   if (addTerminalLog) {
     addTerminalLog(
       "system",
-      `[CREDIT ENGINE] Deducted ${requiredCredits} AGL Credits for ${featureName}. Remaining balance: ${remainingCredits} credits.`
+      `[LOCAL PROTOTYPE QUOTA] Deducted ${requiredCredits} local credits for ${featureName}. Remaining browser-only balance: ${remainingCredits}.`
     );
   }
 
   if (remainingCredits < 20) {
-    showToast(`⚠️ Low Computational Credits: Only ${remainingCredits} AGL Credits remaining. Burn AGL tokens to maintain uninterrupted AI generation!`, "info");
+    showToast(`Low local prototype quota: ${remainingCredits} credits remaining. This is not an on-chain balance.`, "info");
   }
 
   let refunded = false;

@@ -33,7 +33,6 @@ import GoogleFormsPage from "./pages/GoogleFormsPage";
 import TokenFactoryPage from "./pages/TokenFactoryPage";
 import TokenBurnerPage from "./pages/TokenBurnerPage";
 import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
-import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
 import AISuitePage from "./pages/AISuitePage";
@@ -67,7 +66,6 @@ export default function App() {
   const [isLaunched, setIsLaunched] = useState(false);
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
-  const [network, setNetwork] = useState<"sepolia" | "mainnet">("mainnet");
 
   // Modals state
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -319,24 +317,8 @@ export default function App() {
       const state = TreasuryFeeService.getState();
       if (!state.autoSweepEnabled) return;
 
-      // Simulate incoming micro-fees from protocol activity (e.g. DEX swaps, bonding curve trades, AI agent executions)
-      if (Math.random() < 0.40) {
-        const ethFee = parseFloat((Math.random() * 0.0035 + 0.0012).toFixed(5));
-        const aglFee = Math.floor(Math.random() * 120 + 30);
-        
-        const { swept, sweepLog } = TreasuryFeeService.addProtocolFees(ethFee, aglFee, "Base Mainnet Protocol Activity");
-        
-        if (swept && sweepLog) {
-          addTerminalLog(
-            "success",
-            `TREASURY_AUTO_SWEEP: Target threshold reached (${sweepLog.amountEth} ETH)! Automatically dispatched Web3 transaction (${sweepLog.txHash.slice(0, 10)}...) to Treasury Wallet (${AGL_TREASURY_ADDRESS.slice(0, 6)}...${AGL_TREASURY_ADDRESS.slice(-4)}).`
-          );
-          showToast(
-            `⚡ Automated Treasury Sweep Executed! Transferred ${sweepLog.amountEth} ETH ($${sweepLog.amountUsd.toFixed(2)}) to Treasury Wallet`,
-            "success"
-          );
-        }
-      }
+      // No synthetic protocol fees or background treasury transactions are generated.
+      // A sweep can only be reported after a real wallet-signed transaction and receipt verification.
     };
 
     const currentState = TreasuryFeeService.getState();
@@ -691,7 +673,7 @@ export default function App() {
       isSmartAccount: type === "smart",
       walletType: type,
       sponsoredGasEth: type === "smart" ? 0.05 : 0,
-      aglCredits: wallet.aglCredits || 500
+      aglCredits: wallet.aglCredits ?? 0
     };
 
     AgunnayaDatabase.saveWallet(newWallet);
@@ -737,13 +719,6 @@ export default function App() {
     AgunnayaDatabase.saveWallet(freshWallet);
     setWallet(freshWallet);
     addTerminalLog("system", "SECURE LINK: Wallet link severed by user.");
-  };
-
-  const handleSwitchNetwork = () => {
-    addTerminalLog("info", "Switching between Base Sepolia and Base Mainnet networks...");
-    setTimeout(() => {
-      addTerminalLog("success", "Switched network safely. Reserves are compiled.");
-    }, 800);
   };
 
   // Determine page metadata dynamically for Open Graph dynamic social sharing previews
@@ -819,7 +794,7 @@ export default function App() {
       case "defi":
         return {
           title: "AMM Token Swap & Staking | Agunnaya Labs Studio",
-          description: "Perform instant low-slippage swaps between ETH and native AGL utility tokens or lock up liquidity in compounding high-yield staking vaults.",
+          description: "Access verified Base DeFi integrations. AGL staking reads the deployed staking contract; swaps remain unavailable until a verified router and live quote source are configured.",
           image: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=defi`
         };
@@ -861,7 +836,7 @@ export default function App() {
       case "staking-vault":
         return {
           title: "Automated AGL Staking Vaults (Base Mainnet) | Agunnaya Labs Studio",
-          description: "Lock AGL tokens in automated smart contract vaults on Base Mainnet to earn high annual yield up to 72.5% APY with real-time compounding.",
+          description: "Access the canonical AGL staking workspace on Base Mainnet. Staking tiers and rewards are shown only when returned by the deployed contract.",
           image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80",
           url: `${baseUrl}/?tab=staking-vault`
         };
@@ -1224,9 +1199,9 @@ export default function App() {
         );
       case "staking-vault":
         return (
-          <StakingVaultPage
+          <DeFiPage
             wallet={wallet}
-            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            initialHubTab="swaps-staking"
             onRefreshWallet={refreshAllData}
             addTerminalLog={addTerminalLog}
             showToast={showToast}
@@ -1405,7 +1380,7 @@ export default function App() {
       >
         {/* Side Navigation bar */}
         <Sidebar 
-          currentTab={selectedToken ? "explore" : currentTab} 
+          currentTab={selectedToken ? "explore" : currentTab === "staking-vault" ? "defi" : currentTab} 
           onSelectTab={handleTabChange} 
           isAdmin={wallet.isConnected}
           onGoHome={() => setIsLaunched(false)}
@@ -1426,11 +1401,6 @@ export default function App() {
             onOpenConnect={() => setIsWalletModalOpen(true)}
             onDisconnect={handleWalletDisconnect}
             onFundWallet={handleFundWallet}
-            network={network}
-            setNetwork={(net) => {
-              setNetwork(net);
-              handleSwitchNetwork();
-            }}
             tokens={tokens}
             nfts={nfts}
             agents={agents}
@@ -1454,18 +1424,9 @@ export default function App() {
           </main>
 
           {/* Bottom Activity Bar / Footer */}
-          <footer className="h-12 border-t border-white/5 bg-[#050505] flex items-center px-8 justify-between shrink-0 text-zinc-500 text-[10px] font-mono">
-            <div className="flex gap-8">
-              <span>GAS: <span className="text-white">0.01 Gwei</span></span>
-              <span>TXS: <span className="text-white">1.2k/min</span></span>
-              <span>AGL STAKED: <span className="text-white">85%</span></span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
-                <span className="font-bold text-white/60">SYSTEMS OPERATIONAL</span>
-              </div>
-            </div>
+          <footer className="min-h-12 border-t border-white/5 bg-[#050505] flex items-center px-4 sm:px-8 py-2 justify-between gap-3 shrink-0 text-zinc-500 text-[10px] font-mono">
+            <span>Base is the primary AGL network. Other-chain AGL contracts are unavailable.</span>
+            <span className="shrink-0">Network data is shown when verified.</span>
           </footer>
         </div>
 

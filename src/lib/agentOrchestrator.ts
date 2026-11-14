@@ -369,11 +369,15 @@ class AgentOrchestratorEngine {
             contractName: contractState.contractName || "Contract",
           });
 
+          if (!auditRes.success || !auditRes.data) {
+            throw new Error(auditRes.error || "Security audit unavailable. No deployment-safety verdict was generated.");
+          }
+
           contractState.securityReport = auditRes.data;
           stepOutput = {
-            score: auditRes.data?.overallScore || 95,
-            isSafe: auditRes.data?.isSafeForDeployment ?? true,
-            findingsCount: auditRes.data?.findings?.length || 0,
+            score: auditRes.data.overallScore ?? "Unavailable",
+            isSafe: auditRes.data.isSafeForDeployment === true,
+            findingsCount: auditRes.data.findings?.length ?? 0,
           };
         } else if (toolName === "compileContract") {
           const compRes = await AgentToolService.compileContract({

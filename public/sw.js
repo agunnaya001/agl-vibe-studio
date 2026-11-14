@@ -1,5 +1,5 @@
 // Agunnaya Studio Service Worker - Core Asset & App Shell Caching
-const CACHE_NAME = "agunnaya-studio-v1";
+const CACHE_NAME = "agunnaya-studio-v2";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -41,8 +41,17 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests or WebSocket / HMR requests
-  if (request.method !== "GET" || url.pathname.includes("vite-hmr") || url.pathname.includes("socket.io")) {
+  // Never intercept API, authenticated, or cross-origin requests; they may contain private or user-specific data.
+  if (
+    request.method !== "GET" ||
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith("/api/") ||
+    request.credentials === "include" ||
+    request.headers.has("authorization") ||
+    request.cache === "no-store" ||
+    url.pathname.includes("vite-hmr") ||
+    url.pathname.includes("socket.io")
+  ) {
     return;
   }
 
@@ -102,22 +111,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // For all other GET requests (e.g., API calls, external resources), try network first, fallback to cache
-  event.respondWith(
-    fetch(request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && url.origin === self.location.origin) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        return caches.match(request);
-      })
-  );
+  // Unknown dynamic GETs stay network-only; only the app shell and static assets are cached.
 });
 
 // PostMessage Handler for status queries or explicit cache reloads

@@ -855,6 +855,9 @@ ventureGrantsRoutes.post("/apply", (req: Request, res: Response) => {
 
 // 6. POST /api/venture-grants/disburse-tranche
 ventureGrantsRoutes.post("/disburse-tranche", (req: Request, res: Response) => {
+  res.status(503).json({ error: "Execution is disabled until this endpoint verifies a real Base transaction receipt. No grant or liquidity state was changed." });
+  return;
+
   const { grantId, trancheIndex, txHash } = req.body;
 
   const grant = activeGrants.find(g => g.id === grantId || g.grantNumber === grantId);
@@ -907,6 +910,9 @@ ventureGrantsRoutes.post("/disburse-tranche", (req: Request, res: Response) => {
 
 // 7. POST /api/venture-grants/co-invest (Matching LP injection)
 ventureGrantsRoutes.post("/co-invest", (req: Request, res: Response) => {
+  res.status(503).json({ error: "Execution is disabled until this endpoint verifies a real Base transaction receipt. No grant or liquidity state was changed." });
+  return;
+
   const { grantId, txHash } = req.body;
 
   const grant = activeGrants.find(g => g.id === grantId || g.grantNumber === grantId);
