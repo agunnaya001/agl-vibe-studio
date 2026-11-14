@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import { useAccount } from "wagmi";
 import { WalletState } from "../types";
 import ImageWithFallback from "./ImageWithFallback";
 import { 
@@ -78,6 +79,8 @@ const SUPPORTED_CHAINS: LifiChain[] = [
 ];
 
 export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTerminalLog, showToast, targetToken, compact }: LiFiBridgeProps) {
+  const { connector, address: connectedAddress, isConnected } = useAccount();
+
   // Compute available tokens including targetToken
   const availableTokens = React.useMemo(() => {
     const list = [...BASE_COMMON_TOKENS];
@@ -94,10 +97,10 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
   }, [targetToken]);
 
   // State
-  const [fromChainId, setFromChainId] = useState<number>(1); // Ethereum Mainnet
+  const [fromChainId, setFromChainId] = useState<number>(8453); // Base Mainnet
   const [toChainId, setToChainId] = useState<number>(8453); // Base Mainnet
   const [fromTokenSymbol, setFromTokenSymbol] = useState<string>("ETH");
-  const [toTokenSymbol, setToTokenSymbol] = useState<string>(targetToken?.symbol || "ETH");
+  const [toTokenSymbol, setToTokenSymbol] = useState<string>(targetToken?.symbol || "AGL");
   const [fromAmount, setFromAmount] = useState<string>("0.05");
 
   // Route & Quote State
@@ -128,8 +131,15 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
     fetchApiKeyStatus();
   }, [fetchApiKeyStatus]);
 
-  // Fetch Quote from LI.FI Backend Proxy
+  // Fetch a real LI.FI quote for the connected wallet. No fallback estimates are generated.
   const fetchQuote = useCallback(async () => {
+    if (!wallet.isConnected || !wallet.address || !isConnected || !connectedAddress || connectedAddress.toLowerCase() !== wallet.address.toLowerCase()) {
+      setQuoteData(null);
+      setQuoteError("Connect your wallet to request a live Base route quote.");
+      setLoadingQuote(false);
+      return;
+    }
+
     if (!fromAmount || parseFloat(fromAmount) <= 0) {
       setQuoteData(null);
       setQuoteError(null);
@@ -142,65 +152,37 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
     try {
       const fromToken = availableTokens.find(t => t.symbol === fromTokenSymbol);
       const toToken = availableTokens.find(t => t.symbol === toTokenSymbol);
+      if (!fromToken || !toToken) throw new Error("Select supported Base tokens for this route.");
 
-      const parsedAmount = ethers.parseUnits(fromAmount, fromToken?.decimals || 18).toString();
-
-      const userAddr = wallet.address || "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"; // fallback vitalik.eth
-
+      const parsedAmount = ethers.parseUnits(fromAmount, fromToken.decimals).toString();
       const queryParams = new URLSearchParams({
         fromChain: fromChainId.toString(),
         toChain: toChainId.toString(),
-        fromToken: fromToken?.address || "0x0000000000000000000000000000000000000000",
-        toToken: toToken?.address || "0x0000000000000000000000000000000000000000",
+        fromToken: fromToken.address,
+        toToken: toToken.address,
         fromAmount: parsedAmount,
-        fromAddress: userAddr,
-        slippage: "0.005"
+        fromAddress: wallet.address,
+        slippage: String(effectiveSlippage / 100)
       });
 
       const res = await fetch(`/api/lifi/quote?${queryParams.toString()}`);
-      const data = await res.json();
-
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // Build fallback realistic simulation if API gives rate limit or test route error
-        const simulatedToAmount = (parseFloat(fromAmount) * (fromTokenSymbol === "ETH" ? 20000 : 1)).toFixed(4);
-        setQuoteData({
-          isSimulated: true,
-          estimate: {
-            toAmount: ethers.parseUnits(simulatedToAmount, toToken?.decimals || 18).toString(),
-            toAmountMin: ethers.parseUnits((parseFloat(simulatedToAmount) * 0.995).toFixed(4), toToken?.decimals || 18).toString(),
-            executionDuration: 45, // 45 seconds
-            feeCosts: [
-              { name: "Bridge Relayer Gas", amountUSD: "0.45" },
-              { name: "LI.FI Protocol Fee", amountUSD: "0.00" }
-            ],
-            gasCosts: [
-              { amountUSD: "1.20" }
-            ]
-          },
-          toolDetails: {
-            name: fromChainId === toChainId ? "LI.FI DEX Aggregator (1inch / Paraswap)" : "Stargate / Across Bridge",
-            key: "stargate",
-            logoURI: "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/bridges/stargate.png"
-          },
-          action: {
-            fromChainId,
-            toChainId,
-            fromToken,
-            toToken
-          }
-        });
-        addTerminalLog("info", `LIFI_ORACLE: Fetched fallback route for ${fromAmount} ${fromTokenSymbol} (${fromChainId}) -> ${toTokenSymbol} (${toChainId})`);
-      } else {
-        setQuoteData(data);
-        addTerminalLog("success", `LIFI_ORACLE: Fetched live LI.FI route quote via server proxy.`);
+        throw new Error(data.message || data.error || `LI.FI quote request failed (${res.status}).`);
       }
+      if (data.isSimulated) {
+        throw new Error("LI.FI returned a simulated quote. Simulated routes cannot be executed.");
+      }
+      setQuoteData(data);
+      addTerminalLog("success", "LIFI_ORACLE: Received a live route quote for the connected wallet.");
     } catch (err: any) {
-      console.error("Quote error:", err);
-      setQuoteError("Unable to query live LI.FI route. Using local estimate engine.");
+      console.error("LI.FI quote error:", err);
+      setQuoteData(null);
+      setQuoteError(err.message || "Unable to retrieve a live LI.FI quote.");
     } finally {
       setLoadingQuote(false);
     }
-  }, [fromChainId, toChainId, fromTokenSymbol, toTokenSymbol, fromAmount, wallet.address, addTerminalLog, availableTokens]);
+  }, [fromChainId, toChainId, fromTokenSymbol, toTokenSymbol, fromAmount, wallet.address, wallet.isConnected, isConnected, connectedAddress, addTerminalLog, availableTokens, effectiveSlippage]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -209,163 +191,128 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
     return () => clearTimeout(timer);
   }, [fetchQuote]);
 
-  // Execute Bridge Transaction
+  // Execute only the fresh LI.FI transaction request after explicit wallet approval.
   const handleExecuteBridge = async () => {
-    if (!wallet.isConnected) {
-      showToast("Please connect your Web3 wallet first.", "error");
+    if (!wallet.isConnected || !wallet.address || !isConnected || !connectedAddress || connectedAddress.toLowerCase() !== wallet.address.toLowerCase()) {
+      showToast("Connect the active AGL Studio wallet before executing a route.", "error");
       return;
     }
-
+    if (!quoteData || quoteData.isSimulated) {
+      showToast("A live LI.FI quote is required. No transaction was submitted.", "error");
+      return;
+    }
     if (!fromAmount || parseFloat(fromAmount) <= 0) {
-      showToast("Please enter a valid amount to bridge.", "error");
+      showToast("Enter a valid amount.", "error");
+      return;
+    }
+    if (!connector) {
+      showToast("The active wallet connector is unavailable. Reconnect your wallet.", "error");
       return;
     }
 
     setExecuting(true);
     setTxHash(null);
-    setBridgeStatus("Initiating cross-chain bridge payload via LI.FI Router...");
-    addTerminalLog("system", `LIFI_BRIDGE: Executing bridge swap from Chain ID ${fromChainId} (${getChainName(fromChainId)}) -> Chain ID ${toChainId} (${getChainName(toChainId)})...`);
-
+    setBridgeStatus("Preparing a fresh LI.FI transaction request...");
     try {
-      let realTxHash = "";
-      if (typeof window !== "undefined" && (window as any).ethereum) {
-        // Step 1: Connect Provider & Signer
-        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-        await browserProvider.send("eth_requestAccounts", []);
-        const signer = await browserProvider.getSigner();
-        const userAddress = await signer.getAddress();
+      const eip1193Provider = await connector.getProvider();
+      const requestProvider = eip1193Provider as any;
+      const chainCfg = CHAIN_CONFIG[fromChainId];
+      if (!chainCfg) throw new Error("The selected source chain is not supported by this Base-only swap workspace.");
 
-        // Step 2: Ensure correct source network in MetaMask
-        const network = await browserProvider.getNetwork();
-        const currentChainId = Number(network.chainId);
-
-        if (currentChainId !== fromChainId) {
-          const chainCfg = CHAIN_CONFIG[fromChainId];
-          if (chainCfg) {
-            setBridgeStatus(`Switching MetaMask network to ${chainCfg.name}...`);
-            addTerminalLog("info", `LIFI_BRIDGE: Requesting network switch in MetaMask to ${chainCfg.name} (${chainCfg.chainIdHex})...`);
-            try {
-              await (window as any).ethereum.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: chainCfg.chainIdHex }]
-              });
-            } catch (switchErr: any) {
-              if (switchErr.code === 4902) {
-                await (window as any).ethereum.request({
-                  method: "wallet_addEthereumChain",
-                  params: [{
-                    chainId: chainCfg.chainIdHex,
-                    chainName: chainCfg.name,
-                    rpcUrls: [chainCfg.rpcUrl],
-                    nativeCurrency: { name: chainCfg.symbol, symbol: chainCfg.symbol, decimals: 18 }
-                  }]
-                });
-              } else {
-                throw switchErr;
-              }
-            }
-          }
-        }
-
-        // Step 3: Fetch fresh LI.FI transaction request payload for connected userAddress
-        setBridgeStatus("Fetching signed transaction payload from LI.FI route solver...");
-        addTerminalLog("info", `LIFI_BRIDGE: Requesting live route quote from LI.FI API for user ${userAddress}...`);
-
-        const fromTokenObj = availableTokens.find(t => t.symbol === fromTokenSymbol);
-        const toTokenObj = availableTokens.find(t => t.symbol === toTokenSymbol);
-        const parsedAmountWei = ethers.parseUnits(fromAmount, fromTokenObj?.decimals || 18).toString();
-
-        const queryParams = new URLSearchParams({
-          fromChain: fromChainId.toString(),
-          toChain: toChainId.toString(),
-          fromToken: fromTokenObj?.address || "0x0000000000000000000000000000000000000000",
-          toToken: toTokenObj?.address || "0x0000000000000000000000000000000000000000",
-          fromAmount: parsedAmountWei,
-          fromAddress: userAddress,
-          slippage: "0.005"
-        });
-
-        const res = await fetch(`/api/lifi/quote?${queryParams.toString()}`);
-        const freshQuote = await res.json();
-
-        const txReq = freshQuote?.transactionRequest || quoteData?.transactionRequest;
-
-        // Step 4: ERC20 Token Allowance Approval (if fromToken is not native ETH)
-        const isNative = !fromTokenObj?.address || fromTokenObj.address === "0x0000000000000000000000000000000000000000" || fromTokenSymbol === "ETH";
-        
-        if (!isNative && fromTokenObj?.address) {
-          const spenderAddress = txReq?.to || "0x1231DE61715dE53659E66118a68700080f8286a1"; // LI.FI Diamond Router
-          const erc20Contract = new ethers.Contract(fromTokenObj.address, STANDARD_ERC20_ABI, signer);
-
-          setBridgeStatus(`Checking ERC-20 ${fromTokenSymbol} allowance for LI.FI Router...`);
-          const currentAllowance = await erc20Contract.allowance(userAddress, spenderAddress);
-
-          if (currentAllowance < BigInt(parsedAmountWei)) {
-            setBridgeStatus(`Prompting MetaMask to approve ${fromTokenSymbol} spending for LI.FI...`);
-            addTerminalLog("info", `LIFI_BRIDGE: Prompting MetaMask for ${fromTokenSymbol} ERC-20 approval...`);
-            
-            const approveTx = await erc20Contract.approve(spenderAddress, parsedAmountWei);
-            setBridgeStatus(`Approval broadcast (${approveTx.hash.slice(0, 10)}...). Awaiting confirmation...`);
-            await approveTx.wait();
-            addTerminalLog("success", `LIFI_BRIDGE: ERC-20 approval confirmed on-chain!`);
-          }
-        }
-
-        // Step 5: Send Real LI.FI Transaction via MetaMask Signer
-        setBridgeStatus("Prompting MetaMask to sign and execute LI.FI cross-chain route transaction...");
-        addTerminalLog("info", "LIFI_BRIDGE: Sending transaction request to MetaMask extension for user signature...");
-
-        let tx;
-        if (txReq && txReq.to && txReq.data) {
-          const txParams: any = {
-            to: txReq.to,
-            data: txReq.data,
-            value: txReq.value ? BigInt(txReq.value) : BigInt(0)
-          };
-          if (txReq.gasLimit) txParams.gasLimit = BigInt(txReq.gasLimit);
-          if (txReq.gasPrice) txParams.gasPrice = BigInt(txReq.gasPrice);
-
-          tx = await signer.sendTransaction(txParams);
-        } else {
-          // Direct native transfer to LI.FI Diamond Router address if no custom call data
-          const targetSpender = "0x1231DE61715dE53659E66118a68700080f8286a1";
-          tx = await signer.sendTransaction({
-            to: targetSpender,
-            value: BigInt(parsedAmountWei)
+      const activeChainHex = await requestProvider.request({ method: "eth_chainId" });
+      if (Number(BigInt(activeChainHex)) !== fromChainId) {
+        setBridgeStatus(`Requesting wallet network switch to ${chainCfg.name}...`);
+        try {
+          await requestProvider.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: chainCfg.chainIdHex }]
+          });
+        } catch (switchErr: any) {
+          if (switchErr?.code !== 4902) throw switchErr;
+          await requestProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: chainCfg.chainIdHex,
+              chainName: chainCfg.name,
+              rpcUrls: [chainCfg.rpcUrl],
+              nativeCurrency: { name: chainCfg.symbol, symbol: chainCfg.symbol, decimals: 18 },
+              blockExplorerUrls: [chainCfg.explorer]
+            }]
           });
         }
-
-        setBridgeStatus(`Tx broadcast on ${CHAIN_CONFIG[fromChainId]?.name || 'chain'}! Hash: ${tx.hash.slice(0, 12)}... Awaiting block confirmation...`);
-        addTerminalLog("info", `LIFI_BRIDGE: Transaction broadcast to network! Hash: ${tx.hash}`);
-
-        const receipt = await tx.wait();
-        realTxHash = receipt?.hash || tx.hash;
-        setTxHash(realTxHash);
-        addTerminalLog("success", `LIFI_BRIDGE: MetaMask Transaction Confirmed on-chain! Hash: ${realTxHash}`);
-      } else {
-        addTerminalLog("info", "LIFI_BRIDGE: Web3 extension (MetaMask) not detected. Processing via LI.FI relayer solver.");
-        await new Promise(r => setTimeout(r, 1200));
-        const generatedTx = "0x" + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join("");
-        realTxHash = generatedTx;
-        setTxHash(generatedTx);
       }
 
-      setBridgeStatus("Cross-chain message finalized! Bridge settlement complete.");
-      addTerminalLog("success", `LIFI_BRIDGE: Settlement complete! Successfully routed ${fromAmount} ${fromTokenSymbol} to ${toTokenSymbol} on Base.`);
+      const browserProvider = new ethers.BrowserProvider(eip1193Provider as any);
+      const signer = await browserProvider.getSigner();
+      const userAddress = await signer.getAddress();
+      if (userAddress.toLowerCase() !== wallet.address.toLowerCase()) {
+        throw new Error("The wallet account changed. Reconnect AGL Studio and request a new quote.");
+      }
 
-      showToast(`LI.FI cross-chain bridge transaction confirmed! Tx: ${realTxHash.slice(0, 8)}...`, "success");
+      const fromTokenObj = availableTokens.find(t => t.symbol === fromTokenSymbol);
+      if (!fromTokenObj) throw new Error("The selected source token is unavailable.");
+      const parsedAmountWei = ethers.parseUnits(fromAmount, fromTokenObj.decimals).toString();
+      const queryParams = new URLSearchParams({
+        fromChain: fromChainId.toString(),
+        toChain: toChainId.toString(),
+        fromToken: fromTokenObj.address,
+        toToken: availableTokens.find(t => t.symbol === toTokenSymbol)?.address || "",
+        fromAmount: parsedAmountWei,
+        fromAddress: userAddress,
+        slippage: String(effectiveSlippage / 100)
+      });
+
+      const response = await fetch(`/api/lifi/quote?${queryParams.toString()}`);
+      const freshQuote = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(freshQuote.message || freshQuote.error || "Unable to refresh LI.FI transaction data.");
+      if (freshQuote.isSimulated) throw new Error("LI.FI returned a simulated route. Execution is blocked.");
+
+      const txReq = freshQuote?.transactionRequest;
+      if (!txReq?.to || !txReq?.data || !ethers.isAddress(txReq.to) || !String(txReq.data).startsWith("0x")) {
+        throw new Error("LI.FI did not return a valid transaction request. No transaction was submitted.");
+      }
+
+      const isNative = fromTokenObj.address.toLowerCase() === "0x0000000000000000000000000000000000000000";
+      if (!isNative) {
+        const spenderAddress = txReq.to;
+        const erc20Contract = new ethers.Contract(fromTokenObj.address, STANDARD_ERC20_ABI, signer);
+        const currentAllowance = await erc20Contract.allowance(userAddress, spenderAddress);
+        if (currentAllowance < BigInt(parsedAmountWei)) {
+          setBridgeStatus(`Requesting approval for ${fromTokenSymbol}...`);
+          const approveTx = await erc20Contract.approve(spenderAddress, parsedAmountWei);
+          const approvalReceipt = await approveTx.wait();
+          if (!approvalReceipt || approvalReceipt.status !== 1) {
+            throw new Error("Token approval was not confirmed. Swap was not submitted.");
+          }
+        }
+      }
+
+      setBridgeStatus("Requesting wallet signature for the LI.FI route...");
+      const tx = await signer.sendTransaction({
+        to: txReq.to,
+        data: txReq.data,
+        value: txReq.value ? BigInt(txReq.value) : BigInt(0),
+        ...(txReq.gasLimit ? { gasLimit: BigInt(txReq.gasLimit) } : {}),
+        ...(txReq.gasPrice ? { gasPrice: BigInt(txReq.gasPrice) } : {})
+      });
+      setBridgeStatus(`Transaction submitted: ${tx.hash.slice(0, 12)}... Waiting for confirmation...`);
+      addTerminalLog("info", `LIFI_SWAP: Transaction submitted on Base: ${tx.hash}`);
+
+      const receipt = await tx.wait();
+      if (!receipt || receipt.status !== 1) throw new Error("The LI.FI transaction did not confirm successfully.");
+      const confirmedHash = receipt.hash || tx.hash;
+      setTxHash(confirmedHash);
+      setBridgeStatus("LI.FI transaction confirmed on Base.");
+      addTerminalLog("success", `LIFI_SWAP: Confirmed on Base. Transaction: ${confirmedHash}`);
+      showToast(`LI.FI route confirmed: ${confirmedHash.slice(0, 10)}...`, "success");
       onRefreshWallet();
+      await fetchQuote();
     } catch (err: any) {
-      if (err?.code === 4001 || err?.message?.toLowerCase().includes("user rejected") || err?.message?.toLowerCase().includes("user denied")) {
-        showToast("Bridge transaction rejected in MetaMask by user.", "error");
-        addTerminalLog("error", "LIFI_BRIDGE_ERROR: Transaction was cancelled / rejected by user in MetaMask.");
-        setBridgeStatus("Transaction cancelled by user.");
-      } else {
-        console.error("Bridge execution error:", err);
-        showToast("Bridge execution error: " + (err.message || "Execution failed"), "error");
-        addTerminalLog("error", `LIFI_BRIDGE_ERROR: ${err.message || "Failed to execute bridge tx."}`);
-        setBridgeStatus("Bridge execution failed.");
-      }
+      console.error("LI.FI execution error:", err);
+      const message = err?.message || "LI.FI execution failed.";
+      showToast(message, "error");
+      addTerminalLog("error", `LIFI_SWAP_ERROR: ${message}`);
+      setBridgeStatus(message);
     } finally {
       setExecuting(false);
     }
@@ -379,9 +326,9 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
 
   const getChainName = (id: number) => SUPPORTED_CHAINS.find(c => c.id === id)?.name || `Chain #${id}`;
 
-  const formattedToAmount = quoteData?.estimate?.toAmount 
-    ? (parseFloat(ethers.formatUnits(quoteData.estimate.toAmount, availableTokens.find(t => t.symbol === toTokenSymbol)?.decimals || 18))).toFixed(4)
-    : "0.00";
+  const formattedToAmount = quoteData?.estimate?.toAmount
+    ? Number(ethers.formatUnits(quoteData.estimate.toAmount, availableTokens.find(t => t.symbol === toTokenSymbol)?.decimals || 18)).toFixed(6)
+    : "Unavailable";
 
   return (
     <div className="space-y-6">
@@ -699,7 +646,7 @@ export default function LiFiBridgeComponent({ wallet, onRefreshWallet, addTermin
                   <div className="text-[10px] text-zinc-500 uppercase">Est. Gas Overhead</div>
                   <div className="text-xs font-bold text-emerald-400 flex items-center gap-1">
                     <Flame className="w-3.5 h-3.5 text-amber-400" />
-                    <span>${quoteData.estimate?.gasCosts?.[0]?.amountUSD || "1.20"}</span>
+                    <span>${quoteData.estimate?.gasCosts?.[0]?.amountUSD || "Unavailable"}</span>
                   </div>
                 </div>
               </div>
