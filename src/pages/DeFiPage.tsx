@@ -142,7 +142,7 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
             }`}
           >
             <ArrowLeftRight className="w-4 h-4 text-blue-300" />
-            <span>AMM Swaps & Staking Vaults</span>
+            <span>AGL Staking</span>
           </button>
 
 
@@ -214,8 +214,6 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
           showToast={showToast}
         />
       )}
-
-}
     </div>
   );
 }
