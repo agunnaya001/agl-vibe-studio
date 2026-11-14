@@ -91,9 +91,9 @@ export default function DeFiPage({ wallet, initialHubTab = "dex-aggregator", onR
             }`}
           >
             <Vote className="w-4 h-4 text-brand-purple" />
-            <span>AGL Governance Polls</span>
+            <span>Community Polls (Off-chain)</span>
             <span className="px-2 py-0.5 rounded-full bg-brand-purple/20 text-purple-300 text-[9px] font-bold">
-              DAO
+              Off-chain
             </span>
           </button>
 
