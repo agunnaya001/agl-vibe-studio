@@ -149,12 +149,12 @@ export default function AutonomousAgentsHub({
           <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
             <span className="text-xs text-zinc-400 flex items-center gap-1.5">
               <Wallet className="w-3.5 h-3.5 text-blue-400" />
-              Total Treasury AUM
+              Verified Treasury AUM
             </span>
             <p className="text-xl font-bold text-white mt-1">
-              ${totalAumUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              Unavailable
             </p>
-            <span className="text-[11px] text-zinc-500">Across dedicated agent wallets</span>
+            <span className="text-[11px] text-zinc-500">No deployed treasury wallets verified</span>
           </div>
 
           <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80">
@@ -337,20 +337,22 @@ export default function AutonomousAgentsHub({
               {/* Action Buttons */}
               <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
                 <button
+                  disabled
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedAgentForTreasury(agent);
                   }}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
                 >
-                  Manage Treasury
+                  Treasury unavailable
                 </button>
 
                 <button
+                  disabled
                   onClick={(e) => handleSingleRun(agent, e)}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600/90 hover:bg-blue-600 text-white transition-colors flex items-center gap-1.5 shadow-md shadow-blue-600/10"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> Run Cycle
+                  <RefreshCw className="w-3.5 h-3.5" /> Paused
                 </button>
               </div>
             </div>
