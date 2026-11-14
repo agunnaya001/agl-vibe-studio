@@ -38,7 +38,7 @@ app.use(express.json());
 // Register Gemini Web3 AI Suite routes (Security Auditor, dApp Generator, Contract Explainer, Onchain Agent, Game Builder)
 registerAISuiteRoutes(app);
 
-// Register Gemini Multi-Turn Chatbot API (gemini-4-carbon, gemini-4-argon, gemini-3.8-flash, gemini-3.1-flash-lite)
+// Register Gemini Multi-Turn Chatbot API (Gemini 3.8 Flash, 3.7 Flash, and 3.5 Flash-Lite)
 registerGeminiChatRoutes(app);
 
 // Register Agentic Web3 Orchestrator & Tool routes
