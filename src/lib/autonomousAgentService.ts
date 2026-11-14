@@ -161,6 +161,7 @@ export class AutonomousAgentService {
     const sanitize = (agent: AutonomousAgent): AutonomousAgent => ({
       ...agent,
       status: "paused",
+      network: "base-mainnet",
       lastExecutedAt: 0,
       nextExecutionAt: 0,
       totalExecutions: 0,
