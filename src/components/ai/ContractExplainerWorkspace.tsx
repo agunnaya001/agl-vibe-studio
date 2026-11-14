@@ -26,6 +26,7 @@ import {
   SUPPORTED_NETWORKS 
 } from "../../types/aiSuite";
 import { AIService } from "../../lib/aiSuiteService";
+import { AGL_TOKEN_ADDRESS } from "../../lib/aglContracts";
 
 const POPULAR_CONTRACTS = [
   {
@@ -35,7 +36,7 @@ const POPULAR_CONTRACTS = [
   },
   {
     name: "AGL Token (Agunnaya Labs)",
-    address: "0x3F8a1B92003c20058bA524d4eAc32204c3D66F48",
+    address: AGL_TOKEN_ADDRESS,
     network: "base-mainnet" as NetworkKey
   },
   {
