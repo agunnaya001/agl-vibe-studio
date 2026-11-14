@@ -40,14 +40,16 @@ const DEFAULT_STATE: TreasuryFeeState = {
   accumulatedFeesUsd: 0.0418 * ETH_PRICE_USD + 1850 * AGL_PRICE_USD, // ~$436.48
   thresholdEth: 0.05,
   thresholdAgl: 2000,
-  autoSweepEnabled: true,
+  autoSweepEnabled: false,
   checkIntervalSeconds: 15,
-  lastSweepTimestamp: Date.now() - 3600000 * 3,
-  totalSweptEth: 2.845,
-  totalSweptAgl: 145000,
-  sweepCount: 18,
+  lastSweepTimestamp: 0,
+  totalSweptEth: 0,
+  totalSweptAgl: 0,
+  sweepCount: 0,
   treasuryRecipient: AGL_TREASURY_ADDRESS,
-  sweepHistory: [
+  sweepHistory: [],
+  /* historical demo entries removed; only verified on-chain receipts may populate this history */
+  /* [
     {
       id: "swp-101",
       timestamp: Date.now() - 3600000 * 3,
@@ -84,7 +86,7 @@ const DEFAULT_STATE: TreasuryFeeState = {
       status: "completed",
       triggerReason: "threshold_reached"
     }
-  ]
+  ] */
 };
 
 type Listener = (state: TreasuryFeeState, lastSweep?: TreasurySweepLog) => void;
@@ -174,63 +176,11 @@ export class TreasuryFeeService {
    * Triggers automated or manual transaction sweeping accumulated fees directly to the treasury wallet.
    */
   public static triggerSweepToTreasury(
-    triggerReason: "threshold_reached" | "periodic_cron" | "manual_force" = "manual_force",
-    sourceProtocol: string = "All Accumulated Protocol Fees",
-    customState?: TreasuryFeeState
+    _triggerReason: "threshold_reached" | "periodic_cron" | "manual_force" = "manual_force",
+    _sourceProtocol: string = "All Accumulated Protocol Fees",
+    _customState?: TreasuryFeeState
   ): { state: TreasuryFeeState; sweepLog: TreasurySweepLog } {
-    const state = customState || this.getState();
-    const ethToSweep = state.accumulatedFeesEth;
-    const aglToSweep = state.accumulatedFeesAgl;
-    const usdValue = ethToSweep * ETH_PRICE_USD + aglToSweep * AGL_PRICE_USD;
-
-    // Generate verified EVM transaction hash on Base Mainnet format
-    const randomHex = () => Math.floor(Math.random() * 16).toString(16);
-    const mockHash = "0x" + Array.from({ length: 64 }, randomHex).join("");
-
-    const sweepLog: TreasurySweepLog = {
-      id: `swp-${Date.now().toString().slice(-6)}`,
-      timestamp: Date.now(),
-      amountEth: parseFloat(ethToSweep.toFixed(6)),
-      amountAgl: parseFloat(aglToSweep.toFixed(2)),
-      amountUsd: parseFloat(usdValue.toFixed(2)),
-      txHash: mockHash,
-      sourceProtocol: sourceProtocol,
-      treasuryRecipient: AGL_TREASURY_ADDRESS,
-      status: "completed",
-      triggerReason: triggerReason
-    };
-
-    const newState: TreasuryFeeState = {
-      ...state,
-      accumulatedFeesEth: 0,
-      accumulatedFeesAgl: 0,
-      accumulatedFeesUsd: 0,
-      lastSweepTimestamp: Date.now(),
-      totalSweptEth: parseFloat((state.totalSweptEth + ethToSweep).toFixed(6)),
-      totalSweptAgl: parseFloat((state.totalSweptAgl + aglToSweep).toFixed(2)),
-      sweepCount: state.sweepCount + 1,
-      sweepHistory: [sweepLog, ...state.sweepHistory].slice(0, 50)
-    };
-
-    // Log to AgunnayaDatabase activity feed
-    try {
-      AgunnayaDatabase.addActivity({
-        type: "buy",
-        tokenSymbol: "ETH / AGL",
-        tokenAddress: AGL_TREASURY_ADDRESS,
-        user: AGL_TREASURY_ADDRESS,
-        amount: ethToSweep > 0 ? ethToSweep : aglToSweep,
-        ethValue: ethToSweep,
-        details: `Automated Treasury Service: Transferred ${ethToSweep.toFixed(4)} ETH and ${aglToSweep.toFixed(0)} AGL protocol fees to Treasury Wallet (${AGL_TREASURY_ADDRESS.slice(0, 6)}...${AGL_TREASURY_ADDRESS.slice(-4)})`
-      });
-    } catch (err) {
-      console.warn("Could not log activity to DB:", err);
-    }
-
-    this.saveState(newState);
-    this.notify(newState, sweepLog);
-
-    return { state: newState, sweepLog };
+    throw new Error("Treasury sweeps are disabled until a wallet-signed transfer is broadcast and its Base receipt is verified.");
   }
 
   /**
@@ -248,7 +198,7 @@ export class TreasuryFeeService {
       thresholdEth,
       thresholdAgl,
       checkIntervalSeconds,
-      autoSweepEnabled
+      autoSweepEnabled: false
     };
 
     this.saveState(newState);
