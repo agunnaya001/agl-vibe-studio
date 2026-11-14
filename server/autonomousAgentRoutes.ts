@@ -44,6 +44,12 @@ export function registerAutonomousAgentRoutes(app: Express) {
   // 1. GENERATE DEDICATED TREASURY WALLET
   // =========================================================================
   app.post("/api/ai/autonomous-agents/create-wallet", (req: Request, res: Response) => {
+    return res.status(501).json({
+      success: false,
+      code: "AUTONOMOUS_EXECUTION_NOT_CONFIGURED",
+      error: "This autonomous operation is disabled until secure wallet custody, explicit transaction approval, a verified on-chain executor, and receipt verification are implemented. No wallet was created and no transaction was submitted.",
+    });
+
     try {
       const { network = "base-sepolia", agentName = "Autonomous Agent" } = req.body;
       const walletInfo = generateTreasuryWalletAddress();
@@ -83,6 +89,12 @@ export function registerAutonomousAgentRoutes(app: Express) {
   // 2. MARKET-MAKING REASONING & EXECUTION ENGINE
   // =========================================================================
   app.post("/api/ai/autonomous-agents/execute-market-making", async (req: Request, res: Response) => {
+    return res.status(501).json({
+      success: false,
+      code: "AUTONOMOUS_EXECUTION_NOT_CONFIGURED",
+      error: "This autonomous operation is disabled until secure wallet custody, explicit transaction approval, a verified on-chain executor, and receipt verification are implemented. No wallet was created and no transaction was submitted.",
+    });
+
     try {
       const {
         agent,
@@ -172,7 +184,7 @@ Generate an autonomous algorithmic execution decision with quotes, skew adjustme
             }),
           {
             operationName: "Autonomous Market Making",
-            preferredModels: ["gemini-2.5-flash", "gemini-2.0-flash"],
+            preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
           }
         );
         parsedResult = safeParseJson(response?.text, fallbackData);
@@ -214,6 +226,12 @@ Generate an autonomous algorithmic execution decision with quotes, skew adjustme
   // 3. ARBITRAGE REASONING & ATOMIC EXECUTION ENGINE
   // =========================================================================
   app.post("/api/ai/autonomous-agents/execute-arbitrage", async (req: Request, res: Response) => {
+    return res.status(501).json({
+      success: false,
+      code: "AUTONOMOUS_EXECUTION_NOT_CONFIGURED",
+      error: "This autonomous operation is disabled until secure wallet custody, explicit transaction approval, a verified on-chain executor, and receipt verification are implemented. No wallet was created and no transaction was submitted.",
+    });
+
     try {
       const {
         agent,
@@ -303,7 +321,7 @@ Compute price disparity, optimal route (e.g. Buy on Venue 1 -> Sell on Venue 2),
             }),
           {
             operationName: "Autonomous Arbitrage Cycle",
-            preferredModels: ["gemini-2.5-flash", "gemini-2.0-flash"],
+            preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
           }
         );
         parsedResult = safeParseJson(response?.text, fallbackData);
@@ -347,6 +365,12 @@ Compute price disparity, optimal route (e.g. Buy on Venue 1 -> Sell on Venue 2),
   // 4. COMMUNITY GOVERNANCE REASONING & AUTONOMOUS VOTING ENGINE
   // =========================================================================
   app.post("/api/ai/autonomous-agents/execute-governance", async (req: Request, res: Response) => {
+    return res.status(501).json({
+      success: false,
+      code: "AUTONOMOUS_EXECUTION_NOT_CONFIGURED",
+      error: "This autonomous operation is disabled until secure wallet custody, explicit transaction approval, a verified on-chain executor, and receipt verification are implemented. No wallet was created and no transaction was submitted.",
+    });
+
     try {
       const {
         agent,
@@ -422,7 +446,7 @@ Determine the vote outcome ("FOR", "AGAINST", or "ABSTAIN"), provide an impact s
             }),
           {
             operationName: "Autonomous Governance Deliberation",
-            preferredModels: ["gemini-2.5-flash", "gemini-2.0-flash"],
+            preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
           }
         );
         parsedResult = safeParseJson(response?.text, fallbackData);
@@ -466,6 +490,12 @@ Determine the vote outcome ("FOR", "AGAINST", or "ABSTAIN"), provide an impact s
   // 5. UNIFIED AUTONOMOUS CYCLE TRIGGER (All Roles Supported)
   // =========================================================================
   app.post("/api/ai/autonomous-agents/run-cycle", async (req: Request, res: Response) => {
+    return res.status(501).json({
+      success: false,
+      code: "AUTONOMOUS_EXECUTION_NOT_CONFIGURED",
+      error: "This autonomous operation is disabled until secure wallet custody, explicit transaction approval, a verified on-chain executor, and receipt verification are implemented. No wallet was created and no transaction was submitted.",
+    });
+
     try {
       const { agent } = req.body;
       if (!agent) {
