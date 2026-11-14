@@ -214,109 +214,12 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
   }
 });
 
-// AI Portfolio Rebalancer Endpoint
-app.post("/api/ai/rebalance-portfolio", async (req, res) => {
-  try {
-    const { portfolio, riskTolerance, customDirectives } = req.body;
-    if (!portfolio) {
-      res.status(400).json({ error: "Portfolio data is required" });
-      return;
-    }
-
-    const client = getAIClient();
-
-    const systemInstruction = `You are an elite AI DeFi Strategist & Quantitative Portfolio Manager for Agunnaya Labs Studio on Base Mainnet.
-Given a user's current crypto asset holdings (ETH, AGL token, Staked AGL, USDC/Stablecoins) and their selected risk tolerance (conservative, balanced, or aggressive), analyze current market conditions on Base L2 and generate an optimal portfolio rebalancing strategy.
-
-You must output structured JSON matching the schema with:
-1. summary: A concise, highly professional executive summary explaining the strategy.
-2. riskProfile: The risk tolerance requested ("conservative", "balanced", or "aggressive").
-3. targetAllocation: Array of objects with asset name, currentPercent, targetPercent, targetValueUsd, and reasoning.
-4. rebalanceActions: Array of actionable trade/stake/bridge steps with id, type ("swap" | "stake" | "bridge"), title, description, fromAsset, toAsset, amount, estimatedGasFeeEth, and expectedYieldApy.
-5. marketOutlook: Market sentiment, Base L2 trends, risk analysis, and projected annual yield percentage.`;
-
-    const promptText = `Portfolio Holdings: ${JSON.stringify(portfolio)}
-Risk Tolerance: ${riskTolerance || "balanced"}
-User Custom Directives/Preferences: "${customDirectives || "Maximize yield while maintaining capital safety"}"`;
-
-    const response = await executeGeminiWithFallback(
-      async (client, modelName) => {
-        return await client.models.generateContent({
-          model: modelName,
-          contents: promptText,
-          config: {
-            systemInstruction,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              required: ["summary", "riskProfile", "targetAllocation", "rebalanceActions", "marketOutlook"],
-              properties: {
-                summary: { type: Type.STRING },
-                riskProfile: { type: Type.STRING },
-                targetAllocation: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    required: ["asset", "currentPercent", "targetPercent", "targetValueUsd", "reasoning"],
-                    properties: {
-                      asset: { type: Type.STRING },
-                      currentPercent: { type: Type.NUMBER },
-                      targetPercent: { type: Type.NUMBER },
-                      targetValueUsd: { type: Type.NUMBER },
-                      reasoning: { type: Type.STRING }
-                    }
-                  }
-                },
-                rebalanceActions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    required: ["id", "type", "title", "description", "fromAsset", "toAsset", "amount", "estimatedGasFeeEth"],
-                    properties: {
-                      id: { type: Type.STRING },
-                      type: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      description: { type: Type.STRING },
-                      fromAsset: { type: Type.STRING },
-                      toAsset: { type: Type.STRING },
-                      amount: { type: Type.STRING },
-                      estimatedGasFeeEth: { type: Type.STRING },
-                      expectedYieldApy: { type: Type.STRING }
-                    }
-                  }
-                },
-                marketOutlook: {
-                  type: Type.OBJECT,
-                  required: ["sentiment", "baseL2Trend", "riskAnalysis", "projectedAnnualYieldPercent"],
-                  properties: {
-                    sentiment: { type: Type.STRING },
-                    baseL2Trend: { type: Type.STRING },
-                    riskAnalysis: { type: Type.STRING },
-                    projectedAnnualYieldPercent: { type: Type.NUMBER }
-                  }
-                }
-              }
-            }
-          }
-        });
-      },
-      {
-        operationName: "Portfolio Rebalancer",
-        preferredModels: ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
-      }
-    );
-
-    const text = response.text || "{}";
-    const parsed = safeParseJson(text, null);
-    if (!parsed) throw new Error("Could not parse AI rebalance JSON");
-    res.json(parsed);
-  } catch (error: any) {
-    console.error("AI portfolio rebalancer provider error:", error?.message || error);
-    return res.status(503).json({
-      error: "AI portfolio analysis is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
-      code: "AI_PROVIDER_UNAVAILABLE",
-    });
-  }
+// AI Portfolio Rebalancer Endpoint — fail closed until verified price feeds are configured.
+app.post("/api/ai/rebalance-portfolio", (_req, res) => {
+  return res.status(503).json({
+    error: "Portfolio rebalancing is unavailable until verified ETH, AGL, and stablecoin price/balance sources are configured. No strategy or executable transaction plan was generated.",
+    code: "PRICE_DATA_UNAVAILABLE",
+  });
 });
 
 // AI Agent Chat proxy endpoint
