@@ -314,7 +314,7 @@ export default function GameBuilderWorkspace({
               <div className="max-w-md space-y-2">
                 <h3 className="text-base font-bold text-white">Web3 Game Builder Studio</h3>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Enter a prompt or select a template to generate complete Web3 game contracts, verifiable VRF logic, and an interactive in-browser playable arena.
+                  Enter a prompt or select a template to generate Web3 game contracts and a local preview. VRF and on-chain gameplay require separate deployment and verification.
                 </p>
               </div>
             </div>
@@ -328,7 +328,7 @@ export default function GameBuilderWorkspace({
               <div className="space-y-2">
                 <h3 className="text-base font-bold text-white">Assembling Web3 Game Engine</h3>
                 <p className="text-xs text-zinc-400 max-w-sm">
-                  Generating VRF verifiable randomness contracts, payout vault escrow, and player leaderboard schemas...
+                  Generating game contract templates and local preview assets. No on-chain game or VRF coordinator is deployed by this action.
                 </p>
               </div>
             </div>
