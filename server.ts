@@ -128,34 +128,11 @@ Format the output strictly as JSON.`;
     if (!parsed) throw new Error("Could not parse AI project JSON");
     res.json(parsed);
   } catch (error: any) {
-    console.warn("AI Build Fallback Triggered:", error?.message || error);
-    const cleanName = prompt.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("") || "Agunnaya";
-    const cleanSymbol = cleanName.slice(0, 5).toUpperCase() || "AGL";
-
-    res.json({
-      name: `${cleanName} Token`,
-      symbol: cleanSymbol,
-      description: `Autonomous Web3 smart contract protocol generated for prompt: "${prompt}". Native deployment ready for Base L2.`,
-      solidityCode: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport "@openzeppelin/contracts/token/ERC20/ERC20.sol";\nimport "@openzeppelin/contracts/access/Ownable.sol";\n\n/**\n * @title ${cleanName}Token\n * @dev Fully compliant ERC-20 smart contract for ${cleanName} ($${cleanSymbol})\n */\ncontract ${cleanName}Token is ERC20, Ownable {\n    uint256 public constant CREATOR_FEE_BPS = 100; // 1%\n\n    constructor(address initialOwner) ERC20("${cleanName}", "${cleanSymbol}") Ownable(initialOwner) {\n        _mint(initialOwner, 1_000_000 * 10**decimals());\n    }\n\n    function mint(address to, uint256 amount) external onlyOwner {\n        _mint(to, amount);\n    }\n}`,
-      parameters: {
-        initialSupply: "1000000",
-        mintPrice: "0.00001 ETH",
-        additionalConfig: "Base L2 mainnet & Sepolia sub-second execution"
-      },
-      securityAudit: "OpenZeppelin v5.0 compliant, zero unhandled low-level calls, reentrancy safe under CEI pattern.",
-      uiTheme: {
-        primaryColor: "purple-500",
-        glowColor: "purple-500/20"
-      },
-      launchChecklist: [
-        "Review smart contract code in IDE terminal",
-        "Test deployment on Base Sepolia testnet",
-        "Verify smart contract bytecode on BaseScan",
-        "Deploy liquidity pool on Bonding Curve Launchpad"
-      ]
-    });
-  }
-});
+    console.error("AI Build provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI project generation is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });});
 
 // AI Deployment Wizard Proposal Endpoint
 app.post("/api/ai/propose-deployment", async (req, res) => {
@@ -227,35 +204,11 @@ Provide standard OpenZeppelin compliant Solidity contract code implementing ERC2
     if (!parsed) throw new Error("Could not parse AI proposal JSON");
     res.json(parsed);
   } catch (error: any) {
-    console.warn("AI Propose Deployment Fallback Triggered:", error?.message || error);
-    const promptReq = req.body.prompt || "Web3 Utility Token";
-    const nameStr = promptReq.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("") || "Agunnaya";
-    const symStr = nameStr.slice(0, 5).toUpperCase() || "AGL";
-
-    res.json({
-      tokenName: `${nameStr} Token`,
-      tokenSymbol: symStr,
-      category: req.body.categoryPreference || "DeFi & Utility",
-      description: `Optimized bonding curve utility token configuration created for "${promptReq}". Native deployment on Base L2.`,
-      initialSupply: 10000000,
-      basePriceEth: 0.00001,
-      slopeK: 0.000000000001,
-      curveModel: "Linear Exponential Curve",
-      creatorFeePercent: 1.0,
-      protocolFeePercent: 0.5,
-      antiWhaleMaxPercent: 2.0,
-      antiBotCooldownSec: 15,
-      stakingVaultEnabled: true,
-      stakingApyPercent: 18.5,
-      solidityCode: `// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport "@openzeppelin/contracts/token/ERC20/ERC20.sol";\nimport "@openzeppelin/contracts/access/Ownable.sol";\n\ncontract ${nameStr}Token is ERC20, Ownable {\n    uint256 public constant CREATOR_FEE_BPS = 100;\n    constructor(address initialOwner) ERC20("${nameStr}", "${symStr}") Ownable(initialOwner) {\n        _mint(initialOwner, 10_000_000 * 10**18);\n    }\n}`,
-      securityScore: 98,
-      securityAuditSummary: "Checks-Effects-Interactions (CEI) safe, reentrancy guards active, zero low-level calls.",
-      tokenomicsReasoning: "Low base entry price ensures high accessibility while linear curve protects liquidity pool depth.",
-      suggestedTags: ["BaseL2", "BondingCurve", "DeFi", "Community"],
-      graduationTargetEth: 24.0
-    });
-  }
-});
+    console.error("AI deployment proposal provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI deployment proposals are temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });});
 
 // AI Portfolio Rebalancer Endpoint
 app.post("/api/ai/rebalance-portfolio", async (req, res) => {
@@ -354,37 +307,11 @@ User Custom Directives/Preferences: "${customDirectives || "Maximize yield while
     if (!parsed) throw new Error("Could not parse AI rebalance JSON");
     res.json(parsed);
   } catch (error: any) {
-    console.warn("AI Portfolio Rebalancer Fallback Triggered:", error?.message || error);
-    res.json({
-      summary: "AI Portfolio Rebalance Strategy optimized for Base L2 yields under current market volatility.",
-      riskProfile: req.body.riskTolerance || "balanced",
-      targetAllocation: [
-        { asset: "ETH", currentPercent: 50, targetPercent: 40, targetValueUsd: 1200, reasoning: "Maintain liquid base currency for gas & core trades" },
-        { asset: "AGL Staking Vault", currentPercent: 20, targetPercent: 35, targetValueUsd: 1050, reasoning: "Capture 18.5% APY yield rewards in AGL" },
-        { asset: "USDC Stablecoin", currentPercent: 30, targetPercent: 25, targetValueUsd: 750, reasoning: "Capital protection buffer" }
-      ],
-      rebalanceActions: [
-        {
-          id: "act-1",
-          type: "stake",
-          title: "Stake AGL Tokens in 18.5% Vault",
-          description: "Move 15% of idle portfolio balance into the AGL Staking Vault for daily compound yield.",
-          fromAsset: "AGL",
-          toAsset: "Staked AGL",
-          amount: "500 AGL",
-          estimatedGasFeeEth: "0.0001",
-          expectedYieldApy: "18.5%"
-        }
-      ],
-      marketOutlook: {
-        sentiment: "Bullish Base L2 Expansion",
-        baseL2Trend: "Increasing DEX volume and low gas fees",
-        riskAnalysis: "Low smart contract risk, audited OpenZeppelin vaults",
-        projectedAnnualYieldPercent: 16.8
-      }
-    });
-  }
-});
+    console.error("AI portfolio rebalancer provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI portfolio analysis is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });});
 
 // AI Agent Chat proxy endpoint
 app.post("/api/ai/agent-chat", async (req, res) => {
@@ -618,20 +545,17 @@ User instruction/guideline for response: ${prompt}`
       }
     );
 
-    const text = response.text || "{}";
-    const parsed = safeParseJson(text, {
-      subject: "Agunnaya Labs Studio Project Update",
-      body: "<p>Hello,<br/>Here is the latest update regarding your Web3 deployment on Base.</p>"
-    });
+    const parsed = safeParseJson(response.text, null);
+    if (!parsed || typeof parsed.subject !== "string" || typeof parsed.body !== "string") {
+      throw new Error("Gemini returned an invalid email draft payload.");
+    }
     res.json(parsed);
   } catch (error: any) {
-    console.error("AI Email Draft Error:", error);
-    res.json({
-      subject: "Agunnaya Labs Studio - Base L2 Update",
-      body: `<p>Hello,</p><p>Regarding your request: <em>${req.body.prompt || "Web3 Project Update"}</em></p><p>Your application and smart contract parameters on Base L2 have been processed successfully.</p>`
-    });
-  }
-});
+    console.error("AI Email Draft provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI email drafting is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });});
 
 // AI Audio Transcription endpoint
 app.post("/api/ai/transcribe", async (req, res) => {
@@ -836,7 +760,7 @@ app.get("/api/ai/gateway-status", (req, res) => {
     maskedGatewayKey: isGatewayConfigured
       ? `${gatewayKey!.slice(0, 4)}...${gatewayKey!.slice(-4)}`
       : "Not Configured (Using direct server Gemini routes)",
-    provider: "Agunnaya Labs Studio AI Gateway & Gemini 3.6 Proxy"
+    provider: "Direct Gemini API (server-side)"
   });
 });
 
