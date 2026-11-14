@@ -176,7 +176,7 @@ export default function AutonomousAgentDetailModal({
                     <div>
                       <div className="flex items-center gap-2 text-xs text-zinc-400 mb-1">
                         <Wallet className="w-4 h-4 text-blue-400" />
-                        <span>Dedicated On-Chain Treasury Wallet</span>
+                        <span>Treasury configuration (not deployed)</span>
                         <span className="px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">
                           {agent.treasury.walletType.replace("_", " ").toUpperCase()}
                         </span>
@@ -251,9 +251,7 @@ export default function AutonomousAgentDetailModal({
                     <div className="flex items-baseline justify-between mt-1">
                       <p className="text-2xl font-bold text-white">{agent.totalExecutions}</p>
                       <span className="text-xs text-emerald-400 font-semibold">
-                        {agent.totalExecutions > 0
-                          ? `${((agent.successfulExecutions / agent.totalExecutions) * 100).toFixed(0)}% success`
-                          : "100% success"}
+                        {agent.totalExecutions > 0 ? "Unverified" : "No verified cycles"}
                       </span>
                     </div>
                     <div className="w-full h-1.5 bg-zinc-800 rounded-full mt-3 overflow-hidden">
@@ -267,21 +265,19 @@ export default function AutonomousAgentDetailModal({
                   </div>
 
                   <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800">
-                    <span className="text-xs text-zinc-400">Daily Spending Budget</span>
+                    <span className="text-xs text-zinc-400">Configured daily spend limit</span>
                     <div className="flex items-baseline justify-between mt-1">
                       <p className="text-2xl font-bold text-white">
-                        {agent.treasury.spentTodayEth.toFixed(3)} / {agent.treasury.maxDailySpendEth} ETH
+                        {agent.treasury.walletType === "not_deployed" ? "Unavailable" : `${agent.treasury.maxDailySpendEth} ETH`}
                       </p>
                       <span className="text-xs text-zinc-400">
-                        {((agent.treasury.spentTodayEth / agent.treasury.maxDailySpendEth) * 100).toFixed(0)}% used
+                        {agent.treasury.walletType === "not_deployed" ? "Not tracked" : "Usage not verified"}
                       </span>
                     </div>
                     <div className="w-full h-1.5 bg-zinc-800 rounded-full mt-3 overflow-hidden">
                       <div
                         className="h-full bg-blue-500 rounded-full"
-                        style={{
-                          width: `${Math.min(100, (agent.treasury.spentTodayEth / agent.treasury.maxDailySpendEth) * 100)}%`,
-                        }}
+                        style={{ width: "0%" }}
                       />
                     </div>
                   </div>
@@ -380,12 +376,12 @@ export default function AutonomousAgentDetailModal({
                         <p className="font-semibold text-white mt-0.5 capitalize">{agent.governanceConfig.votingStrategy.replace("_", " ")}</p>
                       </div>
                       <div className="p-3 bg-zinc-900 rounded-lg">
-                        <span className="text-zinc-500">Voting Power</span>
+                        <span className="text-zinc-500">Configured vote weight (not verified)</span>
                         <p className="font-semibold text-white mt-0.5">{agent.governanceConfig.voteWeightTokens.toLocaleString()} tokens</p>
                       </div>
                       <div className="p-3 bg-zinc-900 rounded-lg">
                         <span className="text-zinc-500">Public Deliberation</span>
-                        <p className="font-semibold text-white mt-0.5">{agent.governanceConfig.autoPublishDeliberation ? "Enabled (On-chain)" : "Disabled"}</p>
+                        <p className="font-semibold text-white mt-0.5">{agent.governanceConfig.autoPublishDeliberation ? "Enabled (off-chain setting)" : "Disabled"}</p>
                       </div>
                     </div>
                   </div>
@@ -398,7 +394,7 @@ export default function AutonomousAgentDetailModal({
               <div className="rounded-xl border border-white/10 bg-zinc-950 p-5 text-xs text-zinc-400">
                 No verified autonomous execution records are available. Legacy simulated trade, vote, profit, gas, and transaction entries are hidden until each operation can be tied to a confirmed Base transaction receipt and verified contract event.
               </div>
-            )}}
+            )}
           </div>
 
           {/* Footer */}
