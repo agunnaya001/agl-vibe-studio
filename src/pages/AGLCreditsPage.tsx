@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { useAccount } from "wagmi";
 import { WalletState } from "../types";
+import { AgunnayaDatabase } from "../lib/db";
 import { getBaseProvider } from "../lib/tokenFactory";
 import { AGL_CREDITS_ADDRESS, AGL_TOKEN_ADDRESS, AGL_CREDITS_ABI, AGL_TOKEN_ABI } from "../lib/aglContracts";
 import { AlertCircle, ArrowRight, CheckCircle2, ExternalLink, Flame, RefreshCw, Wallet, Zap } from "lucide-react";
@@ -69,13 +70,15 @@ export default function AGLCreditsPage({ wallet, onRefreshWallet, addTerminalLog
         const nextAvailableCredits = previousOnChainTotal === undefined
           ? Math.max(wallet.aglCredits || 0, onChainCreditTotal)
           : (wallet.aglCredits || 0) + Math.max(0, onChainCreditTotal - previousOnChainTotal);
-        setWalletState({
+        const updatedWallet: WalletState = {
           ...wallet,
           aglCreditsOnChain: onChainCreditTotal,
           aglCredits: nextAvailableCredits,
           aglTokenBalance: Number(nextAgl),
           balanceEth: Number(nextEth)
-        });
+        };
+        AgunnayaDatabase.saveWallet(updatedWallet);
+        setWalletState(updatedWallet);
       } else {
         setCreditBalance("0");
         setAglBalance("0");
