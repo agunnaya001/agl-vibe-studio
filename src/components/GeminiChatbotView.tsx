@@ -516,7 +516,7 @@ export default function GeminiChatbotView({
               className="w-full p-2.5 rounded-lg bg-zinc-950 border border-white/10 text-xs font-mono text-zinc-200 focus:outline-none focus:border-brand-purple transition-colors resize-y"
               placeholder="Custom system instructions sent directly to Gemini with every turn..."
             />
-            {selectedModel === "gemini-4-carbon" && (
+            {selectedRole.id === "carbon-auditor" && selectedModel === "gemini-3.8-flash" && (
               <div className="flex items-center gap-3 pt-1 text-xs font-mono">
                 <span className="text-purple-300">Carbon Thinking Budget:</span>
                 {(["HIGH", "LOW", "MINIMAL"] as const).map(lvl => (
