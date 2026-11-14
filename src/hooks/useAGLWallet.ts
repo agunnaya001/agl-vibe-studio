@@ -15,6 +15,7 @@ import { AgunnayaDatabase } from "../lib/db";
 import { WalletState } from "../types";
 import { BASE_MAINNET, isBaseMainnet } from "../lib/chains";
 import { AGL_TOKEN_ADDRESS } from "../lib/aglContracts";
+import { isWalletConnectConfigured } from "../lib/wagmi";
 
 /**
  * Universal AGL Studio Wallet Hook
@@ -172,31 +173,32 @@ export function useAGLWallet() {
 
   // Connect via WalletConnect
   const connectWalletConnect = useCallback(async () => {
-    const wcConnector = connectors.find(c => c.id === "walletConnect");
-    if (wcConnector) {
-      await connectAsync({
-        connector: wcConnector,
-        chainId: BASE_MAINNET.id,
-      });
-    } else {
-      throw new Error("WalletConnect connector not configured.");
+    if (!isWalletConnectConfigured) {
+      throw new Error("WalletConnect is not configured. Add VITE_WALLETCONNECT_PROJECT_ID in the project environment variables, then redeploy.");
     }
+
+    const wcConnector = connectors.find(c => c.id === "walletConnect");
+    if (!wcConnector) {
+      throw new Error("WalletConnect connector is unavailable. Check the project configuration and reload.");
+    }
+
+    await connectAsync({
+      connector: wcConnector,
+      chainId: BASE_MAINNET.id,
+    });
   }, [connectAsync, connectors]);
 
   // Connect via Coinbase Wallet
   const connectCoinbase = useCallback(async () => {
     const cbConnector = connectors.find(c => c.id === "coinbaseWalletSDK" || c.id === "coinbaseWallet");
-    if (cbConnector) {
-      await connectAsync({
-        connector: cbConnector,
-        chainId: BASE_MAINNET.id,
-      });
-    } else {
-      const injectedConnector = connectors.find(c => c.id === "injected");
-      if (injectedConnector) {
-        await connectAsync({ connector: injectedConnector, chainId: BASE_MAINNET.id });
-      }
+    if (!cbConnector) {
+      throw new Error("Coinbase Wallet connector is unavailable. Check the project configuration and reload.");
     }
+
+    await connectAsync({
+      connector: cbConnector,
+      chainId: BASE_MAINNET.id,
+    });
   }, [connectAsync, connectors]);
 
   // Switch network to Base Mainnet
@@ -242,6 +244,7 @@ export function useAGLWallet() {
     isConnected: Boolean(isConnected && address),
     isConnecting,
     isReconnecting,
+    walletConnectConfigured: isWalletConnectConfigured,
     status,
     address,
     connector,
