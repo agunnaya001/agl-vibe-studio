@@ -57,7 +57,7 @@ const DEFAULT_BATCH_TOKENS = [
     name: "Agunnaya Utility Token",
     symbol: "AGL",
     decimals: 18,
-    priceUsd: 0.1625,
+    priceUsd: 0,
     logoUrl: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
   },
   {
@@ -65,7 +65,7 @@ const DEFAULT_BATCH_TOKENS = [
     name: "USD Coin (Base)",
     symbol: "USDC",
     decimals: 6,
-    priceUsd: 1.00,
+    priceUsd: 0,
     logoUrl: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png"
   },
   {
@@ -73,7 +73,7 @@ const DEFAULT_BATCH_TOKENS = [
     name: "Aerodrome Token",
     symbol: "AERO",
     decimals: 18,
-    priceUsd: 1.25,
+    priceUsd: 0,
     logoUrl: "https://assets.coingecko.com/coins/images/31745/large/aerodrome.png"
   },
   {
@@ -81,7 +81,7 @@ const DEFAULT_BATCH_TOKENS = [
     name: "Coinbase Wrapped Staked ETH",
     symbol: "cbETH",
     decimals: 18,
-    priceUsd: 3510.00,
+    priceUsd: 0,
     logoUrl: "https://assets.coingecko.com/coins/images/27008/large/cbeth.png"
   }
 ];
@@ -158,24 +158,10 @@ export default function BatchTokenTransferPage({
   // History
   const [history, setHistory] = useState<BatchTransferRecord[]>([]);
 
-  // Load History
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("agl_batch_transfer_history");
-      if (saved) {
-        setHistory(JSON.parse(saved));
-      }
-    } catch {}
-  }, []);
+  // Legacy local batch history may contain simulated transaction hashes; keep it hidden until receipt verification.
+  const [history] = useState<BatchTransferRecord[]>([]);
 
-  // Save History Helper
-  const saveHistoryRecord = (record: BatchTransferRecord) => {
-    const updated = [record, ...history];
-    setHistory(updated);
-    try {
-      localStorage.setItem("agl_batch_transfer_history", JSON.stringify(updated));
-    } catch {}
-  };
+
 
   // Selected Token object details
   const allAvailableTokens = [
@@ -185,7 +171,7 @@ export default function BatchTokenTransferPage({
       name: t.name,
       symbol: t.symbol,
       decimals: 18,
-      priceUsd: t.currentPrice * 3500, // ETH price approx
+      priceUsd: 0,
       logoUrl: t.logoUrl || "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
     }))
   ];
@@ -197,16 +183,16 @@ export default function BatchTokenTransferPage({
     name: "Custom ERC-20 Token",
     symbol: "TOKEN",
     decimals: 18,
-    priceUsd: 1.00,
+    priceUsd: 0,
     logoUrl: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=128&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
   };
 
   // Get User Token Balance
   const getUserBalance = (): number => {
     if (currentToken.symbol === "AGL") {
-      return wallet.aglTokenBalance ?? 10000;
+      return wallet.aglTokenBalance ?? 0;
     }
-    return 5000; // Default simulated balance for other ERC-20 tokens
+    return 0; // Other token balances are not read by this page.
   };
 
   // Address validation helper
@@ -386,8 +372,7 @@ export default function BatchTokenTransferPage({
   const hasDuplicates = recipientAddresses.length > uniqueAddressesCount;
 
   // Estimated Gas Cost
-  const estimatedGasUnits = 21000 + (recipients.length * 15000);
-  const estimatedGasEth = (estimatedGasUnits * 0.000000002).toFixed(6); // 2 gwei Base L2 gas rate
+  const estimatedGasEth = "Unavailable"; // No RPC gas estimation is performed by this read-only builder.
 
   // Copy helper
   const copyToClipboard = (text: string, id: string) => {
@@ -396,143 +381,29 @@ export default function BatchTokenTransferPage({
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  // Dry Run Simulation
+  // Local recipient/amount validation only. No RPC simulation or gas estimate is performed.
   const handleRunSimulation = () => {
     if (recipients.length === 0) {
-      showToast("Add at least one recipient to simulate.", "error");
+      showToast("Add at least one recipient to validate.", "error");
       return;
     }
-
     if (validRecipients.length < recipients.length) {
-      showToast("Fix invalid addresses or amounts before running simulation.", "error");
+      showToast("Fix invalid addresses or amounts before continuing.", "error");
       return;
     }
-
     if (!hasEnoughBalance) {
-      showToast(`Insufficient balance. Required: ${totalTransferAmount} ${currentToken.symbol}, Available: ${userBalance}`, "error");
+      showToast("The selected token balance is unavailable or insufficient. No transaction was submitted.", "error");
       return;
     }
-
-    setIsSimulating(true);
-    addTerminalLog("system", `[BATCH] Simulating multi-receiver transfer sequence for ${recipients.length} recipients...`);
-
-    setTimeout(() => {
-      setIsSimulating(false);
-      setSimulationPassed(true);
-      addTerminalLog("success", `[BATCH] Dry run successful! Total ${totalTransferAmount} ${currentToken.symbol} validated for ${recipients.length} receivers. Est Gas: ${estimatedGasEth} ETH.`);
-      showToast("Batch simulation passed cleanly! Ready to execute.", "success");
-    }, 1000);
+    setSimulationPassed(true);
+    addTerminalLog("info", "[BATCH] Local input validation passed. No RPC simulation, gas estimate, or transaction was performed.");
+    showToast("Recipient input validation passed. Execution remains disabled.", "info");
   };
 
-  // Execute Batch Transfer
+  // Batch execution is disabled until each token transfer is wallet-signed and receipt-verified.
   const handleExecuteBatchTransfer = async () => {
-    showToast("Batch transfers are temporarily disabled until each ERC-20 transfer is wallet-signed and receipt-verified. No transfers were submitted.", "error");
-    return;
-
-    if (!wallet.isConnected) {
-      onOpenConnectWallet();
-      return;
-    }
-
-    if (recipients.length === 0) {
-      showToast("Recipient list is empty.", "error");
-      return;
-    }
-
-    if (validRecipients.length < recipients.length) {
-      showToast("Some recipient entries contain invalid address or amount format.", "error");
-      return;
-    }
-
-    if (!hasEnoughBalance) {
-      showToast(`Insufficient balance to cover total transfer of ${totalTransferAmount} ${currentToken.symbol}.`, "error");
-      return;
-    }
-
-    setIsExecuting(true);
-    addTerminalLog("system", `[BATCH-SEND] Initiating multi-recipient transaction sequence on Base Mainnet...`);
-    addTerminalLog("info", `[BATCH-SEND] Token: ${currentToken.name} (${currentToken.symbol}) | Total: ${totalTransferAmount} ${currentToken.symbol}`);
-
-    // Process each row sequentially
-    const updatedRows = [...recipients];
-    const executedRecipientsList: Array<{ address: string; amount: number; txHash: string }> = [];
-
-    for (let i = 0; i < updatedRows.length; i++) {
-      setCurrentExecutingIndex(i);
-      const row = updatedRows[i];
-
-      // Mark row pending
-      updatedRows[i] = { ...row, status: "pending" };
-      setRecipients([...updatedRows]);
-
-      addTerminalLog("info", `[BATCH-SEND] [${i + 1}/${updatedRows.length}] Transferring ${row.amount} ${currentToken.symbol} -> ${row.address.slice(0, 8)}...${row.address.slice(-6)}`);
-
-      // Simulate network latency / transaction submission
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const simulatedTxHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-
-      updatedRows[i] = {
-        ...updatedRows[i],
-        status: "success",
-        txHash: simulatedTxHash
-      };
-      setRecipients([...updatedRows]);
-
-      executedRecipientsList.push({
-        address: row.address,
-        amount: parseFloat(row.amount),
-        txHash: simulatedTxHash
-      });
-
-      addTerminalLog("success", `[BATCH-SEND] [${i + 1}/${updatedRows.length}] Confirmed! Tx: ${simulatedTxHash.slice(0, 12)}...`);
-    }
-
-    // Deduct from wallet balance in DB if AGL token
-    if (currentToken.symbol === "AGL") {
-      const currentAgl = wallet.aglTokenBalance ?? 10000;
-      const newBalance = Math.max(0, currentAgl - totalTransferAmount);
-      
-      const updatedWallet = {
-        ...wallet,
-        aglTokenBalance: newBalance
-      };
-      AgunnayaDatabase.saveWallet(updatedWallet);
-    }
-
-    // Create Activity log
-    AgunnayaDatabase.addActivity({
-      type: "create",
-      tokenSymbol: currentToken.symbol,
-      tokenAddress: currentToken.address,
-      user: wallet.address || "0xUserWallet",
-      amount: totalTransferAmount,
-      ethValue: totalUsdValue / 3500,
-      details: `Batch token transfer to ${recipients.length} recipients (${totalTransferAmount} ${currentToken.symbol})`
-    });
-
-    // Record Batch History
-    const batchRecord: BatchTransferRecord = {
-      id: "batch_" + Date.now(),
-      txHash: executedRecipientsList[0]?.txHash || "0xBatchTxHash",
-      tokenSymbol: currentToken.symbol,
-      tokenAddress: currentToken.address,
-      totalAmount: totalTransferAmount,
-      recipientCount: recipients.length,
-      recipients: executedRecipientsList,
-      senderAddress: wallet.address || "0xSenderAddress",
-      timestamp: Date.now(),
-      status: "completed"
-    };
-
-    saveHistoryRecord(batchRecord);
-
-    setIsExecuting(false);
-    setCurrentExecutingIndex(-1);
-    onRefreshWallet();
-
-    addTerminalLog("success", `[BATCH-COMPLETE] Successfully executed batch token transfer of ${totalTransferAmount} ${currentToken.symbol} to ${recipients.length} addresses!`);
-    showToast(`Batch transfer complete! ${totalTransferAmount} ${currentToken.symbol} dispatched to ${recipients.length} recipients.`, "success");
+    showToast("Batch transfers are disabled until token-specific transfer calls, wallet signatures, and confirmed Base receipts are implemented. No transfers were submitted.", "info");
+    addTerminalLog("info", "[BATCH] Execution disabled. No transaction was submitted.");
   };
 
   // Download CSV Receipt
@@ -972,7 +843,7 @@ export default function BatchTokenTransferPage({
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Execute Batch Transfer</span>
+                    <span>Batch transfer unavailable</span>
                   </>
                 )}
               </button>
