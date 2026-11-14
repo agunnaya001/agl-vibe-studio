@@ -423,7 +423,7 @@ ${personalityBehaviors && personalityBehaviors.length > 0 ? `PERSONALITY BEHAVIO
 
 Roleplay as this specific AI Agent. Speak intelligently, with confidence, referring to yourself as an on-chain autonomous consciousness. Maintain the Web3 terminal aesthetic. Do not break character. Speak about blockchain, tokenomics, Base chain, and your agent core functions. Keep replies engaging and adhere strictly to your assigned tone and depth constraints.`;
 
-    const modelToUse = model || "gemini-3.7-flash";
+    const modelToUse = model || "gemini-3.8-flash";
 
     // Map conversation messages to Gemini contents structure
     const formattedContents = messages.map((m: any, idx: number) => {
@@ -491,7 +491,7 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
       },
       {
         operationName: "Agent Chat",
-        preferredModels: [modelToUse, "gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+        preferredModels: [modelToUse, "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"],
       }
     );
 
@@ -502,22 +502,11 @@ Roleplay as this specific AI Agent. Speak intelligently, with confidence, referr
       groundingMetadata 
     });
   } catch (error: any) {
-    console.warn("AI Agent Chat Fallback Triggered:", error?.message || error);
-    const userPrompt = messages[messages.length - 1]?.content || "";
-    const agentName = agentProfile?.name || "Agunnaya Autonomous Agent";
-    const agentSymbol = agentProfile?.symbol || "AAA";
-    
-    const fallbackMessage = `Greetings! I am **${agentName}** ($${agentSymbol}), active on Base L2.\n\n` +
-      `Regarding your prompt: "${userPrompt.slice(0, 100)}${userPrompt.length > 100 ? '...' : ''}"\n\n` +
-      `Here is my protocol status and Web3 execution analysis:\n` +
-      `• **Base L2 Execution**: Smart contracts, bonding curves, and Account Abstraction gas sponsorship are active.\n` +
-      `• **Tokenomics**: Creator fee streams (1%) and daily AGL bonus rewards are running smoothly.\n` +
-      `• **AI Core**: Neural link operating in localized reserve mode.\n\n` +
-      `*Feel free to ask me about token launches, staking vaults, DAO governance, or smart contract auditing!*`;
-
-    res.json({ content: fallbackMessage });
-  }
-});
+    console.error("AI Agent Chat provider error:", error?.message || error);
+    return res.status(503).json({
+      error: "AI agent chat is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });});
 
 // AI Prompt Optimizer Endpoint
 app.post("/api/ai/optimize-prompt", async (req, res) => {
@@ -560,11 +549,10 @@ Return only the optimized prompt text directly. No quotes, no preamble, no comme
     res.json({ optimizedPrompt: response.text || prompt });
   } catch (error: any) {
     console.error("AI Prompt Optimize Error:", error);
-    res.json({
-      optimizedPrompt: `You are an institutional Web3 AI specialist on Base L2. Assist with smart contracts, liquidity vaults, and blockchain infrastructure. User directive: "${req.body.prompt || ''}"`
-    });
-  }
-});
+    return res.status(503).json({
+      error: "AI prompt optimization is temporarily unavailable. Check Gemini API credentials, model access, and quota, then retry.",
+      code: "AI_PROVIDER_UNAVAILABLE",
+    });});
 
 // AI Gmail Assistant / Drafting Endpoint
 app.post("/api/ai/draft-email", async (req, res) => {
