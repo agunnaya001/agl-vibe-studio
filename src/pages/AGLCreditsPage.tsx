@@ -150,6 +150,8 @@ export default function AGLCreditsPage({ wallet, onRefreshWallet, addTerminalLog
       }
 
       setAction("burn");
+      // Preflight the declared contract method before submitting the irreversible burn.
+      await credits.burnAglForCredits.staticCall(amountWei);
       addTerminalLog("info", "AGL_CREDITS: Requesting wallet signature to burn AGL for credits.");
       const tx = await credits.burnAglForCredits(amountWei);
       setTxHash(tx.hash);
@@ -189,6 +191,8 @@ export default function AGLCreditsPage({ wallet, onRefreshWallet, addTerminalLog
       const credits = new ethers.Contract(AGL_CREDITS_ADDRESS, AGL_CREDITS_ABI, signer);
       const pricePerCreditWei = await credits.creditPriceEth();
       const totalValue = pricePerCreditWei * BigInt(amount);
+      // Simulate the payable call before asking the wallet to sign it.
+      await credits.buyCreditsWithEth.staticCall(BigInt(amount), { value: totalValue });
       addTerminalLog("info", `AGL_CREDITS: Requesting wallet signature to purchase ${amount} credits with ETH.`);
       const tx = await credits.buyCreditsWithEth(BigInt(amount), { value: totalValue });
       setTxHash(tx.hash);
