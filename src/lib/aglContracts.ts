@@ -370,125 +370,34 @@ export const AGL_CREDITS_ABI = [
  * Complete, untruncated ABI for AGLSTAKING.sol (Staking & Dynamic Yield Vault)
  */
 export const AGL_STAKING_ABI = [
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
-      { "indexed": false, "internalType": "uint256", "name": "stakeIndex", "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
-    ],
-    "name": "RewardClaimed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
-      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "lockPeriodDays", "type": "uint256" }
-    ],
-    "name": "Staked",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
-      { "indexed": false, "internalType": "uint256", "name": "stakeIndex", "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
-    ],
-    "name": "Unstaked",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "aprRate",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "user", "type": "address" },
-      { "internalType": "uint256", "name": "stakeIndex", "type": "uint256" }
-    ],
-    "name": "calculateReward",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "uint256", "name": "stakeIndex", "type": "uint256" }],
-    "name": "claimRewards",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "address", "name": "user", "type": "address" }],
-    "name": "getUserStakes",
-    "outputs": [
-      {
-        "components": [
-          { "internalType": "uint256", "name": "amount", "type": "uint256" },
-          { "internalType": "uint256", "name": "startTime", "type": "uint256" },
-          { "internalType": "uint256", "name": "lockPeriodDays", "type": "uint256" },
-          { "internalType": "uint256", "name": "lastClaimTime", "type": "uint256" },
-          { "internalType": "bool", "name": "active", "type": "bool" }
-        ],
-        "internalType": "struct AGLStaking.Stake[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "rewardToken",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "amount", "type": "uint256" },
-      { "internalType": "uint256", "name": "lockPeriodDays", "type": "uint256" }
-    ],
-    "name": "stake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "stakingToken",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalStaked",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "uint256", "name": "stakeIndex", "type": "uint256" }],
-    "name": "unstake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
+  "function aglToken() view returns (address)",
+  "function owner() view returns (address)",
+  "function totalStaked() view returns (uint256)",
+  "function rewardPoolBalance() view returns (uint256)",
+  "function tierCount() view returns (uint256)",
+  "function getTier(uint8 tierId) view returns (uint32 lockDuration, uint16 aprBasisPoints, bool active)",
+  "function positionCount(address user) view returns (uint256)",
+  "function getPosition(address user, uint256 positionId) view returns (uint256 amount, uint64 startTime, uint64 unlockTime, uint8 tierId, uint16 aprBasisPoints, bool withdrawn)",
+  "function pendingReward(address user, uint256 positionId) view returns (uint256)",
+  "function totalClaimable(address user, uint256 positionId) view returns (uint256)",
+  "function paused() view returns (bool)",
+  "function stake(uint256 amount, uint8 tierId)",
+  "function unstake(uint256 positionId)",
+  "function emergencyWithdraw(uint256 positionId)",
+  "function fundRewardPool(uint256 amount)",
+  "function withdrawExcessReserves(address to, uint256 amount)",
+  "function withdrawRewardPool(address to, uint256 amount)",
+  "function setTier(uint8 tierId, uint32 lockDuration, uint16 aprBasisPoints, bool active)",
+  "function addTier(uint32 lockDuration, uint16 aprBasisPoints)",
+  "function pause()",
+  "function unpause()",
+  "event Staked(address indexed user, uint256 indexed positionId, uint8 tierId, uint256 amount, uint64 unlockTime)",
+  "event Unstaked(address indexed user, uint256 indexed positionId, uint256 principal, uint256 reward)",
+  "event EmergencyWithdraw(address indexed user, uint256 indexed positionId, uint256 principal)",
+  "event RewardPoolFunded(address indexed funder, uint256 amount)",
+  "event RewardPoolWithdrawn(address indexed to, uint256 amount)",
+  "event TierUpdated(uint8 indexed tierId, uint32 lockDuration, uint16 aprBasisPoints, bool active)",
+  "event TierAdded(uint8 indexed tierId, uint32 lockDuration, uint16 aprBasisPoints)"
 ];
 
 /**
