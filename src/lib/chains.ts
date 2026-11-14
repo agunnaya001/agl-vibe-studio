@@ -1,123 +1,80 @@
-import { defineChain } from "viem";
-import { base as wagmiBase, baseSepolia as wagmiBaseSepolia } from "viem/chains";
+import type { Chain } from "viem";
+import {
+  arbitrum,
+  avalanche,
+  base,
+  baseSepolia,
+  bsc,
+  mainnet,
+  optimism,
+  polygon,
+  zora,
+} from "viem/chains";
 
-export interface SupportedChainConfig {
-  id: number;
-  name: string;
-  network: string;
-  nativeCurrency: {
-    name: string;
-    symbol: string;
-    decimals: number;
-  };
-  rpcUrls: {
-    default: { http: string[] };
-    public: { http: string[] };
-  };
-  blockExplorers: {
-    default: { name: string; url: string };
-  };
-  testnet: boolean;
+export interface SupportedChainConfig extends Chain {
   hexChainId: `0x${string}`;
   badgeLabel: string;
+  logoLabel: string;
   isPrimary: boolean;
+  networkHealth: "unverified";
+  features: {
+    nativeBalance: true;
+    gasEstimate: true;
+    aglContracts: false;
+    contractDeployment: false;
+  };
 }
 
-/**
- * Base Mainnet Primary Configuration
- * Chain ID: 8453 (0x2105)
- */
-export const BASE_MAINNET: SupportedChainConfig = {
-  id: 8453,
-  name: "Base",
-  network: "base",
-  nativeCurrency: {
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [
-        "https://mainnet.base.org",
-        "https://base.llamarpc.com",
-        "https://base-mainnet.public.blastapi.io",
-        "https://1rpc.io/base"
-      ],
+function registerChain(chain: Chain, badgeLabel: string, logoLabel: string, isPrimary = false): SupportedChainConfig {
+  return {
+    ...chain,
+    hexChainId: `0x${chain.id.toString(16)}`,
+    badgeLabel,
+    logoLabel,
+    isPrimary,
+    networkHealth: "unverified",
+    features: {
+      nativeBalance: true,
+      gasEstimate: true,
+      aglContracts: false,
+      contractDeployment: false,
     },
-    public: {
-      http: [
-        "https://mainnet.base.org",
-        "https://base.llamarpc.com",
-        "https://base-mainnet.public.blastapi.io"
-      ],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "BaseScan",
-      url: "https://basescan.org",
-    },
-  },
-  testnet: false,
-  hexChainId: "0x2105",
-  badgeLabel: "Base Mainnet",
-  isPrimary: true,
-};
+  };
+}
 
-/**
- * Base Sepolia Sandbox Configuration
- * Chain ID: 84532 (0x14a34)
- */
-export const BASE_SEPOLIA: SupportedChainConfig = {
-  id: 84532,
-  name: "Base Sepolia",
-  network: "base-sepolia",
-  nativeCurrency: {
-    name: "Sepolia Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [
-        "https://sepolia.base.org",
-        "https://base-sepolia.public.blastapi.io"
-      ],
-    },
-    public: {
-      http: [
-        "https://sepolia.base.org"
-      ],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "BaseScan Sepolia",
-      url: "https://sepolia.basescan.org",
-    },
-  },
-  testnet: true,
-  hexChainId: "0x14a34",
-  badgeLabel: "Base Sepolia (Testnet)",
-  isPrimary: false,
-};
+export const BASE_MAINNET = registerChain(base, "Base Mainnet", "BASE", true);
+export const ETHEREUM_MAINNET = registerChain(mainnet, "Ethereum Mainnet", "ETH");
+export const ARBITRUM_ONE = registerChain(arbitrum, "Arbitrum One", "ARB");
+export const OPTIMISM_MAINNET = registerChain(optimism, "Optimism Mainnet", "OP");
+export const POLYGON_POS = registerChain(polygon, "Polygon PoS", "POL");
+export const BNB_SMART_CHAIN = registerChain(bsc, "BNB Smart Chain", "BNB");
+export const AVALANCHE_C_CHAIN = registerChain(avalanche, "Avalanche C-Chain", "AVAX");
+export const ZORA_MAINNET = registerChain(zora, "Zora Mainnet", "ZORA");
+export const BASE_SEPOLIA = registerChain(baseSepolia, "Base Sepolia (Testnet)", "BASE");
 
-export const SUPPORTED_CHAINS: SupportedChainConfig[] = [BASE_MAINNET, BASE_SEPOLIA];
+export const SUPPORTED_CHAINS = [
+  BASE_MAINNET,
+  ETHEREUM_MAINNET,
+  ARBITRUM_ONE,
+  OPTIMISM_MAINNET,
+  POLYGON_POS,
+  BNB_SMART_CHAIN,
+  AVALANCHE_C_CHAIN,
+  ZORA_MAINNET,
+  BASE_SEPOLIA,
+] as const;
 
 export const PRIMARY_CHAIN = BASE_MAINNET;
 
-export function getChainConfig(chainId?: number): SupportedChainConfig {
-  if (!chainId) return PRIMARY_CHAIN;
-  const found = SUPPORTED_CHAINS.find(c => c.id === chainId);
-  return found || PRIMARY_CHAIN;
+export function getChainConfig(chainId?: number): SupportedChainConfig | undefined {
+  if (!chainId) return undefined;
+  return SUPPORTED_CHAINS.find((chain) => chain.id === chainId);
 }
 
 export function isSupportedChain(chainId?: number): boolean {
-  if (!chainId) return false;
-  return SUPPORTED_CHAINS.some(c => c.id === chainId);
+  return Boolean(chainId && SUPPORTED_CHAINS.some((chain) => chain.id === chainId));
 }
 
 export function isBaseMainnet(chainId?: number): boolean {
-  return chainId === 8453;
+  return chainId === BASE_MAINNET.id;
 }

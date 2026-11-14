@@ -1,47 +1,74 @@
-import React from "react";
-import { AlertTriangle, Check, RefreshCw } from "lucide-react";
-import { useAGLWallet } from "../hooks/useAGLWallet";
-import { BASE_MAINNET, BASE_SEPOLIA, SUPPORTED_CHAINS } from "../lib/chains";
+import { useState, type ChangeEvent } from "react";
+import { AlertTriangle, ChevronDown, LoaderCircle } from "lucide-react";
+import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { getChainConfig, SUPPORTED_CHAINS } from "../lib/chains";
 
 interface NetworkSwitcherProps {
   className?: string;
-  showDetails?: boolean;
 }
 
-export default function NetworkSwitcher({
-  className = "",
-  showDetails = false,
-}: NetworkSwitcherProps) {
-  const { chainId, chainName, isBaseNetwork, switchToBase, isConnected } = useAGLWallet();
+export default function NetworkSwitcher({ className = "" }: NetworkSwitcherProps) {
+  const { isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const activeChain = getChainConfig(chainId);
 
-  if (!isConnected) return null;
+  const handleNetworkChange = async (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextChainId = Number(event.target.value);
+    if (!isConnected || !SUPPORTED_CHAINS.some((chain) => chain.id === nextChainId)) return;
 
-  if (isBaseNetwork) {
-    return (
-      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-mono ${className}`}>
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="font-bold">Base Mainnet</span>
-      </div>
-    );
-  }
+    setSwitchError(null);
+    setIsSwitching(true);
+    try {
+      await switchChainAsync({ chainId: nextChainId });
+    } catch (error) {
+      setSwitchError(error instanceof Error ? error.message.slice(0, 180) : "The wallet could not switch networks.");
+    } finally {
+      setIsSwitching(false);
+    }
+  };
 
   return (
-    <div className={`flex items-center gap-2 p-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-mono animate-fade-in ${className}`}>
-      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <span className="font-bold">Wrong Network: {chainName || `Chain ${chainId}`}</span>
-        {showDetails && (
-          <p className="text-[10px] text-zinc-300 mt-0.5">
-            AGL Studio requires Base Mainnet (8453) for contract interactions and rewards.
-          </p>
-        )}
+    <div className={`min-w-0 ${className}`}>
+      <label className="sr-only" htmlFor="active-network-select">Active EVM network</label>
+      <div className="relative flex h-11 min-w-[148px] items-center rounded-lg border border-white/10 bg-black/60">
+        <span aria-hidden="true" className="ml-3 shrink-0 rounded bg-blue-500/15 px-1.5 py-1 text-[9px] font-bold text-blue-300">
+          {activeChain?.logoLabel ?? "EVM"}
+        </span>
+        <select
+          id="active-network-select"
+          value={activeChain?.id ?? ""}
+          disabled={!isConnected || isSwitching}
+          onChange={handleNetworkChange}
+          className="h-full min-w-0 flex-1 appearance-none bg-transparent py-2 pl-2 pr-8 text-xs font-semibold text-white outline-none disabled:cursor-not-allowed disabled:opacity-70"
+          aria-describedby={switchError ? "network-switch-error" : undefined}
+        >
+          {!activeChain && <option value="">Unsupported network ({chainId})</option>}
+          {SUPPORTED_CHAINS.map((chain) => (
+            <option key={chain.id} value={chain.id} className="bg-zinc-950 text-white">
+              {chain.badgeLabel}
+              {chain.isPrimary ? " · Primary" : ""}
+            </option>
+          ))}
+        </select>
+        <span aria-hidden="true" className="pointer-events-none absolute right-2.5 text-zinc-400">
+          {isSwitching ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-4 w-4" />}
+        </span>
       </div>
-      <button
-        onClick={switchToBase}
-        className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] cursor-pointer shadow-sm transition-colors shrink-0"
-      >
-        Switch to Base
-      </button>
+      {switchError ? (
+        <p id="network-switch-error" role="alert" className="mt-1 max-w-52 text-[10px] text-rose-300">
+          {switchError}
+        </p>
+      ) : activeChain && !activeChain.features.aglContracts ? (
+        <p className="mt-1 flex items-center gap-1 text-[10px] text-amber-300">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          AGL contract capabilities are unverified on this network.
+        </p>
+      ) : !isConnected ? (
+        <p className="mt-1 text-[10px] text-zinc-500">Connect a wallet to switch networks.</p>
+      ) : null}
     </div>
   );
 }

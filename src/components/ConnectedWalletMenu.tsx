@@ -16,7 +16,7 @@ import {
   History
 } from "lucide-react";
 import { useAGLWallet } from "../hooks/useAGLWallet";
-import { BASE_MAINNET, BASE_SEPOLIA } from "../lib/chains";
+import { getChainConfig } from "../lib/chains";
 import { AGL_TOKEN_ADDRESS } from "../lib/aglContracts";
 import RecentTransactionsModal from "./RecentTransactionsModal";
 
@@ -164,11 +164,11 @@ export default function ConnectedWalletMenu({
             <span className="text-white font-bold block truncate">
               {nativeBalance ? parseFloat(ethers.formatUnits(nativeBalance.value, nativeBalance.decimals)).toFixed(4) : "0.0000"}
             </span>
-            <span className="text-[9px] text-zinc-500">Base L2</span>
+            <span className="text-[9px] text-zinc-500">{getChainConfig(chainId)?.badgeLabel ?? `Chain ${chainId}`}</span>
           </div>
 
           <div className="bg-zinc-900/60 border border-white/5 p-3 rounded-2xl">
-            <span className="text-[9px] text-zinc-500 block uppercase mb-1">AGL Tokens</span>
+            <span className="text-[9px] text-zinc-500 block uppercase mb-1">AGL Tokens · Base</span>
             <span className="text-purple-300 font-bold block truncate">
               {aglTokenBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
             </span>
@@ -176,7 +176,7 @@ export default function ConnectedWalletMenu({
           </div>
 
           <div className="bg-zinc-900/60 border border-white/5 p-3 rounded-2xl">
-            <span className="text-[9px] text-zinc-500 block uppercase mb-1">AGL Credits</span>
+            <span className="text-[9px] text-zinc-500 block uppercase mb-1">AGL Credits · App</span>
             <span className="text-amber-400 font-bold block truncate">
               {aglCredits.toLocaleString()}
             </span>

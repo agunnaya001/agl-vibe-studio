@@ -66,7 +66,6 @@ export default function App() {
   const [isLaunched, setIsLaunched] = useState(false);
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
-  const [network, setNetwork] = useState<"sepolia" | "mainnet">("mainnet");
 
   // Modals state
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -720,13 +719,6 @@ export default function App() {
     AgunnayaDatabase.saveWallet(freshWallet);
     setWallet(freshWallet);
     addTerminalLog("system", "SECURE LINK: Wallet link severed by user.");
-  };
-
-  const handleSwitchNetwork = () => {
-    addTerminalLog("info", "Switching between Base Sepolia and Base Mainnet networks...");
-    setTimeout(() => {
-      addTerminalLog("success", "Switched network safely. Reserves are compiled.");
-    }, 800);
   };
 
   // Determine page metadata dynamically for Open Graph dynamic social sharing previews
@@ -1409,11 +1401,6 @@ export default function App() {
             onOpenConnect={() => setIsWalletModalOpen(true)}
             onDisconnect={handleWalletDisconnect}
             onFundWallet={handleFundWallet}
-            network={network}
-            setNetwork={(net) => {
-              setNetwork(net);
-              handleSwitchNetwork();
-            }}
             tokens={tokens}
             nfts={nfts}
             agents={agents}
@@ -1437,18 +1424,9 @@ export default function App() {
           </main>
 
           {/* Bottom Activity Bar / Footer */}
-          <footer className="h-12 border-t border-white/5 bg-[#050505] flex items-center px-8 justify-between shrink-0 text-zinc-500 text-[10px] font-mono">
-            <div className="flex gap-8">
-              <span>GAS: <span className="text-white">0.01 Gwei</span></span>
-              <span>TXS: <span className="text-white">1.2k/min</span></span>
-              <span>AGL STAKED: <span className="text-white">85%</span></span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
-                <span className="font-bold text-white/60">SYSTEMS OPERATIONAL</span>
-              </div>
-            </div>
+          <footer className="min-h-12 border-t border-white/5 bg-[#050505] flex items-center px-4 sm:px-8 py-2 justify-between gap-3 shrink-0 text-zinc-500 text-[10px] font-mono">
+            <span>Base is the primary AGL network. Other-chain AGL contracts are unavailable.</span>
+            <span className="shrink-0">Network data is shown when verified.</span>
           </footer>
         </div>
 
