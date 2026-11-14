@@ -33,7 +33,6 @@ import GoogleFormsPage from "./pages/GoogleFormsPage";
 import TokenFactoryPage from "./pages/TokenFactoryPage";
 import TokenBurnerPage from "./pages/TokenBurnerPage";
 import BatchTokenTransferPage from "./pages/BatchTokenTransferPage";
-import StakingVaultPage from "./pages/StakingVaultPage";
 import TaskSyncPage from "./pages/TaskSyncPage";
 import PitchDeckPage from "./pages/PitchDeckPage";
 import AISuitePage from "./pages/AISuitePage";
@@ -1224,9 +1223,9 @@ export default function App() {
         );
       case "staking-vault":
         return (
-          <StakingVaultPage
+          <DeFiPage
             wallet={wallet}
-            onOpenConnectWallet={() => setIsWalletModalOpen(true)}
+            initialHubTab="swaps-staking"
             onRefreshWallet={refreshAllData}
             addTerminalLog={addTerminalLog}
             showToast={showToast}
@@ -1405,7 +1404,7 @@ export default function App() {
       >
         {/* Side Navigation bar */}
         <Sidebar 
-          currentTab={selectedToken ? "explore" : currentTab} 
+          currentTab={selectedToken ? "explore" : currentTab === "staking-vault" ? "defi" : currentTab} 
           onSelectTab={handleTabChange} 
           isAdmin={wallet.isConnected}
           onGoHome={() => setIsLaunched(false)}
