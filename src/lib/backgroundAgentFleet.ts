@@ -24,8 +24,7 @@ class BackgroundFleetEngine {
 
   constructor() {
     this.loadState();
-    // Auto-start master scheduler loop
-    this.startMasterLoop();
+    // The read-only monitor does not auto-start; users must explicitly start monitoring.
   }
 
   private loadState() {
@@ -59,9 +58,9 @@ class BackgroundFleetEngine {
   }
 
   private seedDefaultFleet() {
-    const seed1 = this.createAgentFromLab("lab-liquidity-sentinel", true);
-    const seed2 = this.createAgentFromLab("lab-security-watchdog", true);
-    const seed3 = this.createAgentFromLab("lab-yield-compounding", true);
+    const seed1 = this.createAgentFromLab("lab-liquidity-sentinel", false);
+    const seed2 = this.createAgentFromLab("lab-security-watchdog", false);
+    const seed3 = this.createAgentFromLab("lab-yield-compounding", false);
 
     this.agents = [seed1, seed2, seed3].filter(Boolean) as BackgroundFleetAgent[];
     this.saveState();
@@ -115,7 +114,7 @@ class BackgroundFleetEngine {
     agent.totalRuns += 1;
 
     try {
-      // Simulate real-world decision logic based on agent type
+      // Run read-only monitoring logic. This path never submits a transaction.
       const result = await this.evaluateAgentStrategy(agent);
 
       const log: FleetActionLog = {
@@ -140,11 +139,11 @@ class BackgroundFleetEngine {
       if (result.executed) {
         agent.successfulActions += 1;
         const currentGas = parseFloat(agent.totalGasSpentEth) || 0;
-        const addGas = parseFloat(result.gasCostEth || "0.00008");
+        const addGas = parseFloat(result.gasCostEth || "0");
         agent.totalGasSpentEth = (currentGas + addGas).toFixed(6);
 
         const currentVal = parseFloat(agent.estimatedValueGeneratedUsd) || 0;
-        const addVal = result.valueGeneratedUsd || 12.5;
+        const addVal = result.valueGeneratedUsd || 0;
         agent.estimatedValueGeneratedUsd = (currentVal + addVal).toFixed(2);
       }
 
@@ -194,7 +193,7 @@ class BackgroundFleetEngine {
     return this.agents.find((a) => a.id === id);
   }
 
-  public createAgentFromLab(labId: string, autoStart: boolean = false): BackgroundFleetAgent | null {
+  public createAgentFromLab(labId: string, _autoStart: boolean = false): BackgroundFleetAgent | null {
     const lab = AGENT_FLEET_LABS.find((l) => l.id === labId);
     if (!lab || !lab.defaultAgentConfig) return null;
 
@@ -203,7 +202,7 @@ class BackgroundFleetEngine {
       name: lab.defaultAgentConfig.name || "Autonomous Worker",
       description: lab.defaultAgentConfig.description || "Background autonomous Web3 agent",
       type: lab.defaultAgentConfig.type || "liquidity_rebalancer",
-      status: autoStart ? "RUNNING" : "IDLE",
+      status: "IDLE",
       network: lab.defaultAgentConfig.network || "base-mainnet",
       targetContract: lab.defaultAgentConfig.targetContract,
       contractName: lab.defaultAgentConfig.contractName,
