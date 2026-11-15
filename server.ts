@@ -5,10 +5,12 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel, GenerateVideosOperation } from "@google/genai";
 import revenueRouter from "./src/server/revenue";
+import emailRouter from "./src/server/email";
 
 const app = express();
 const PORT = 3000;
 
+app.use(emailRouter);
 app.use(revenueRouter);
 app.use(express.json());
 

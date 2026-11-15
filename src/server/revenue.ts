@@ -3,6 +3,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import express, { Router, type Request, type Response } from "express";
+import { sendAdminNotification, sendTransactionNotification } from "./email";
 import { Contract, getAddress, Interface, isAddress, JsonRpcProvider, parseUnits } from "ethers";
 
 const router = Router();
@@ -568,8 +569,16 @@ router.post("/api/revenue/orders/:id/verify-payment", async (req, res) => {
       return "paid";
     });
     if (paymentStatus === "paid") {
-      await sendRevenueEmail(user.email!, `Payment confirmed for ${order.invoiceReference}`, `<p>We verified your payment for <strong>${escapeHtml(order.projectName)}</strong>.</p><ul><li>Invoice: ${escapeHtml(order.invoiceReference)}</li><li>Amount: ${escapeHtml(formatBaseUnits(order.amountTokenUnits, order.tokenDecimals))} ${escapeHtml(order.tokenSymbol)}</li><li>Transaction: ${escapeHtml(transactionHash)}</li><li>Base confirmations: ${confirmationCount}</li></ul>`, `payment-${orderId}-${transactionHash}`);
-      await sendRevenueEmail(getAdminEmails(), `Payment received: ${order.invoiceReference}`, `<p>Verified payment received for <strong>${escapeHtml(order.projectName)}</strong>.</p><ul><li>Invoice: ${escapeHtml(order.invoiceReference)}</li><li>Amount: ${escapeHtml(formatBaseUnits(order.amountTokenUnits, order.tokenDecimals))} ${escapeHtml(order.tokenSymbol)}</li><li>Transaction: ${escapeHtml(transactionHash)}</li></ul>`, `payment-admin-${orderId}-${transactionHash}`);
+      const verifiedDetails = [
+        { label: "Invoice", value: order.invoiceReference },
+        { label: "Project", value: order.projectName },
+        { label: "Amount", value: `${formatBaseUnits(order.amountTokenUnits, order.tokenDecimals)} ${order.tokenSymbol}` },
+        { label: "Base confirmations", value: String(confirmationCount) },
+      ];
+      await Promise.allSettled([
+        sendTransactionNotification({ to: user.email!, userId: user.uid, eventId: `payment:${orderId}:${transactionHash}`, verifiedEvent: true, details: verifiedDetails, transactionHash, status: "confirmed" }),
+        sendAdminNotification({ severity: "INFO", subject: `Payment received: ${order.invoiceReference}`, message: `A Base payment was verified for ${order.projectName}.`, eventId: `payment-admin:${orderId}:${transactionHash}`, category: "verified_payment" }),
+      ]);
     }
     res.json({ status: paymentStatus, transactionHash, confirmationCount });
   } catch (error) {

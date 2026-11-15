@@ -13,6 +13,7 @@ import AIAssistantSidebar from "./components/AIAssistantSidebar";
 import LandingPage from "./pages/LandingPage";
 import ServicesPage from "./pages/ServicesPage";
 import RevenueAdminPage from "./pages/RevenueAdminPage";
+import EmailPreferencesPage from "./pages/EmailPreferencesPage";
 import DashboardPage from "./pages/DashboardPage";
 import ExplorePage from "./pages/ExplorePage";
 import CreatePage from "./pages/CreatePage";
@@ -641,6 +642,8 @@ export default function App() {
     switch (currentTab) {
       case "revenue-admin":
         return <RevenueAdminPage user={firebaseUser} onSignIn={handleSignInWithGoogle} />;
+      case "email-preferences":
+        return <EmailPreferencesPage user={firebaseUser} onSignIn={handleSignInWithGoogle} />;
       case "services":
         return (
           <ServicesPage

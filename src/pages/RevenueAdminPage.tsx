@@ -1,7 +1,7 @@
 import React, { useState, type FormEvent } from "react";
 import useSWR from "swr";
 import type { User } from "firebase/auth";
-import { ArrowUpRight, Check, ChevronDown, CircleDollarSign, FileText, LoaderCircle, LockKeyhole, RefreshCw, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, CircleAlert, CircleCheck, CircleDollarSign, FileText, LoaderCircle, LockKeyhole, Mail, RefreshCw, ShieldCheck, WalletCards } from "lucide-react";
 
 type Inquiry = {
   id: string;
@@ -42,6 +42,21 @@ type Order = {
   createdAt: string | null;
 };
 
+type EmailOverview = {
+  total: number;
+  delivered: number;
+  failed: number;
+  bounced: number;
+  complaints: number;
+  bounceRate: number;
+  activity: Array<{ id: string; recipient: string; subject: string; category: string; kind: string; status: string; createdAt: string | null; updatedAt: string | null }>;
+  adminActivity: Array<{ id: string; action: string; actorUid: string; createdAt: string | null }>;
+  lastWebhookAt: string | null;
+  lastWebhookType: string | null;
+  resendConfigured: boolean;
+  administratorEmail: string;
+};
+
 type Overview = {
   recentInquiryCount: number;
   recentOrderCount: number;
@@ -56,6 +71,26 @@ type Overview = {
 export default function RevenueAdminPage({ user, onSignIn }: { user: User | null; onSignIn: () => void }) {
   const key = user ? (["/api/revenue/admin/overview", user.uid] as const) : null;
   const { data, error, isLoading, mutate } = useSWR<Overview>(key, async ([url]) => adminRequest(user, url));
+  const emailKey = user ? (["/api/email/admin/overview", user.uid] as const) : null;
+  const { data: emailData, error: emailError, isLoading: emailLoading, mutate: mutateEmail } = useSWR<EmailOverview>(emailKey, async ([url]) => adminRequest(user, url));
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testMessage, setTestMessage] = useState("");
+  const [testError, setTestError] = useState("");
+
+  async function sendTestEmail() {
+    setSendingTest(true);
+    setTestMessage("");
+    setTestError("");
+    try {
+      const result = await adminRequest(user, "/api/email/admin/test", { method: "POST", body: JSON.stringify({}) });
+      setTestMessage(`Resend accepted the test message for ${result.recipient}. Delivery is confirmed only when a webhook reports it.`);
+      void mutateEmail();
+    } catch (requestError) {
+      setTestError(requestError instanceof Error ? requestError.message : "Test email could not be sent.");
+    } finally {
+      setSendingTest(false);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-7 pb-10 text-zinc-100">
@@ -69,6 +104,31 @@ export default function RevenueAdminPage({ user, onSignIn }: { user: User | null
       {!user && <div className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5"><h2 className="font-display text-lg font-semibold text-white">Sign in to verify founder access</h2><p className="mt-2 text-sm text-zinc-400">Use the Google account configured in the server-side admin allowlist. Access is re-checked on every request.</p><button type="button" onClick={onSignIn} className="mt-4 min-h-11 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-black">Continue with Google</button></div>}
       {isLoading && <p className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#0b0d0c] p-4 text-sm text-zinc-400"><LoaderCircle className="h-4 w-4 animate-spin" />Verifying access and loading records…</p>}
       {error && <div role="alert" className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-4"><p className="text-sm font-semibold text-amber-100">{error.message.includes("403") ? "This account is not on the founder allowlist." : error.message.includes("401") ? "Sign in again to continue." : error.message}</p><p className="mt-1 text-xs leading-5 text-zinc-500">Inquiry details and invoices are never sent to this page until the server verifies your Google account against the private admin allowlist.</p></div>}
+      {emailLoading && user && <p className="rounded-xl border border-white/10 bg-[#0b0d0c] p-4 text-sm text-zinc-400">Loading email health…</p>}
+      {emailError && user && <div role="alert" className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm text-amber-100">Email monitoring is unavailable: {emailError.message.includes("403") ? "this account is not authorized for administrator access." : emailError.message}</div>}
+
+      {emailData && <section aria-labelledby="email-monitoring-heading" className="space-y-4 rounded-2xl border border-lime-300/20 bg-[#0b0d0c] p-4 sm:p-6">
+        <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-lime-300"><Mail className="h-4 w-4" /> Transactional email</p><h2 id="email-monitoring-heading" className="mt-1 font-display text-xl font-semibold text-white">Email &amp; System Monitoring</h2><p className="mt-1 text-xs text-zinc-500">Recent {emailData.total} records · administrator contact {emailData.administratorEmail}</p></div>
+          <button type="button" onClick={() => void sendTestEmail()} disabled={sendingTest} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-50">{sendingTest ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}Send test email</button>
+        </div>
+        {testMessage && <p role="status" className="rounded-xl border border-lime-300/20 bg-lime-300/5 p-3 text-xs leading-5 text-lime-100">{testMessage}</p>}
+        {testError && <p role="alert" className="rounded-xl border border-red-300/20 bg-red-300/5 p-3 text-xs text-red-200">{testError}</p>}
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <EmailMetric label="Delivery records · recent" value={emailData.total.toLocaleString()} />
+          <EmailMetric label="Delivered" value={emailData.delivered.toLocaleString()} good />
+          <EmailMetric label="Failed" value={emailData.failed.toLocaleString()} warning={emailData.failed > 0} />
+          <EmailMetric label="Bounce rate · recent" value={`${emailData.bounceRate}%`} warning={emailData.bounceRate > 5} />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="flex items-center gap-2 text-xs font-semibold text-white"><CircleAlert className="h-4 w-4 text-amber-300" />Complaints</p><p className="mt-2 text-sm text-zinc-300">{emailData.complaints} recorded</p><p className="mt-1 text-[11px] leading-4 text-zinc-500">Bounce / complaint metrics use the latest 500 delivery records.</p></div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="flex items-center gap-2 text-xs font-semibold text-white">{emailData.resendConfigured ? <CircleCheck className="h-4 w-4 text-lime-300" /> : <CircleAlert className="h-4 w-4 text-amber-300" />}Resend configuration</p><p className="mt-2 text-sm text-zinc-300">{emailData.resendConfigured ? "API and signed webhook configured" : "API key, verified domain, and webhook secret required"}</p><p className="mt-1 text-[11px] leading-4 text-zinc-500">Last webhook: {emailData.lastWebhookAt ? `${emailData.lastWebhookType || "event"} · ${new Date(emailData.lastWebhookAt).toLocaleString()}` : "No verified events received"}</p></div>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="min-w-0"><h3 className="mb-2 text-xs font-semibold text-white">Recent email activity</h3>{emailData.activity.length ? <ul className="max-h-72 space-y-2 overflow-y-auto">{emailData.activity.slice(0, 20).map((row) => <li key={row.id} className="rounded-lg border border-white/10 bg-black/20 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-medium text-zinc-200">{row.subject}</span><span className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-zinc-300">{row.status}</span></div><p className="mt-1 break-all text-[11px] text-zinc-500">{row.recipient} · {row.category} · {row.createdAt ? new Date(row.createdAt).toLocaleString() : "timestamp unavailable"}</p></li>)}</ul> : <p className="rounded-lg border border-dashed border-white/10 p-4 text-xs text-zinc-500">No email delivery records yet.</p>}</div>
+          <div className="min-w-0"><h3 className="mb-2 text-xs font-semibold text-white">System &amp; administrator activity</h3><ul className="max-h-72 space-y-2 overflow-y-auto">{[...emailData.activity.filter((row) => row.kind === "admin").slice(0, 10).map((row) => ({ id: row.id, text: `${row.subject} · ${row.status}`, date: row.createdAt })), ...emailData.adminActivity.slice(0, 10).map((row) => ({ id: row.id, text: row.action.replaceAll(".", " "), date: row.createdAt }))].slice(0, 20).map((row) => <li key={row.id} className="rounded-lg border border-white/10 bg-black/20 p-3"><p className="text-xs text-zinc-200">{row.text}</p><p className="mt-1 text-[11px] text-zinc-500">{row.date ? new Date(row.date).toLocaleString() : "timestamp unavailable"}</p></li>)}</ul>{!emailData.adminActivity.length && !emailData.activity.some((row) => row.kind === "admin") && <p className="rounded-lg border border-dashed border-white/10 p-4 text-xs text-zinc-500">No administrator alerts recorded.</p>}</div>
+        </div>
+      </section>}
 
       {data && <>
         <section aria-label="Settlement overview" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -181,6 +241,10 @@ function OrderCard({ order, customer, user, onSaved }: { order: Order; customer?
 
 function Metric({ icon: Icon, label, value, detail }: { icon: typeof CircleDollarSign; label: string; value: string; detail: string }) {
   return <article className="min-w-0 rounded-2xl border border-white/10 bg-[#0b0d0c] p-4"><div className="flex items-center gap-2 text-emerald-300"><Icon className="h-4 w-4" /><h2 className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">{label}</h2></div><p className="mt-3 break-words font-mono text-xl font-semibold text-white">{value}</p><p className="mt-1 text-[10px] leading-4 text-zinc-600">{detail}</p></article>;
+}
+
+function EmailMetric({ label, value, good = false, warning = false }: { label: string; value: string; good?: boolean; warning?: boolean }) {
+  return <article className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] uppercase tracking-wide text-zinc-500">{label}</p><p className={`mt-2 break-words font-mono text-xl font-semibold ${warning ? "text-amber-200" : good ? "text-lime-200" : "text-white"}`}>{value}</p></article>;
 }
 
 function Field({ label, value, onChange, type = "text", min, step, inputMode, placeholder, required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; step?: string; inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]; placeholder?: string; required?: boolean }) {

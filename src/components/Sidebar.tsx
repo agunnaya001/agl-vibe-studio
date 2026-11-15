@@ -69,6 +69,7 @@ export default function Sidebar({
     { id: "landing", label: "Studio Home", icon: Sparkles, category: "Welcome" },
     { id: "services", label: "Developer Services", icon: Layers, category: "Welcome" },
     { id: "revenue-admin", label: "Services & Revenue Console", icon: Coins, category: "Administration" },
+    { id: "email-preferences", label: "Email Preferences", icon: Mail, category: "Settings" },
     { id: "dashboard", label: "My Hub", icon: LayoutDashboard, category: "Workspace" },
     { id: "ai-builder", label: "AI Contract Builder", icon: Sparkles, category: "Workspace", highlight: true },
     { id: "gdrive", label: "Google Drive Cloud", icon: HardDrive, category: "Workspace" },
@@ -106,8 +107,8 @@ export default function Sidebar({
 
       <aside 
         id="app-sidebar" 
-        className={`w-64 border-r border-white/10 bg-[#0a0a0a] flex flex-col justify-between shrink-0 h-screen sticky top-0 overflow-y-auto overscroll-contain transition-transform duration-300 ease-in-out z-50
-          fixed md:sticky md:translate-x-0
+        className={`w-64 border-r border-white/10 bg-[#0a0a0a] flex flex-col justify-between shrink-0 h-screen overflow-y-auto overscroll-contain transition-transform duration-300 ease-in-out z-50
+          fixed md:sticky md:top-0 md:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
